@@ -148,7 +148,7 @@ case "$ARG" in
       ;;
   "arc_liberate")
 	    cd /app/moz-extensions/
-	    /app/arcanist/bin/arc liberate src/
+	    /app/arcanist/bin/arc liberate src/ --
 	    ;;
   "test_phab")
 	    # Find all extension tests and call them
