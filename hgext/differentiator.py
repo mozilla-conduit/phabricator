@@ -33,7 +33,7 @@ def get_local_repo_callsign(repo) -> str:
     response = call_conduit("diffusion.repository.search", {})
 
     # Retrieve the repo objects.
-    repo_objects = response["response"]["data"]
+    repo_objects = response["result"]["data"]
 
     for repo_object in repo_objects:
         # If the repo ID we parsed from the working directory matches the
