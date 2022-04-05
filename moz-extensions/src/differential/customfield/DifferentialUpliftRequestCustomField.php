@@ -299,22 +299,47 @@ final class DifferentialUpliftRequestCustomField
             return $validation_errors;
         }
 
+        $valid_questions = array_keys(self::BETA_UPLIFT_FIELDS);
+
+        $validated_question = array();
         foreach($form as $question => $answer) {
-            // `empty(false)` is `true` so handle `bool` separately.
-            if (is_bool($answer)) {
+            # Assert the question is valid.
+            if (!in_array($question, $valid_questions)) {
+                $validation_errors[] = "Invalid question: '$question'";
                 continue;
             }
 
-            if (empty($answer)) {
+            # Assert the type from the response matches the type of the default.
+            $default_type = gettype(self::BETA_UPLIFT_FIELDS[$question]);
+            $answer_type = gettype($answer);
+            if ($default_type != $answer_type) {
+                $validation_errors[] = "Parsing error: type '$answer_type' for '$question' doesn't match expected '$default_type'!";
+                continue;
+            }
+
+            # Assert the value is not empty.
+            if ($default_type == "string" && empty($answer)) {
                 $validation_errors[] = "Need to answer '$question'";
+                continue;
+            }
+
+            $validated_question[] = $question;
+        }
+
+        # Make sure we have all the required fields present in the response.
+        $missing = array_diff($valid_questions, $validated_question);
+        if ($missing) {
+            foreach($missing as $missing_question) {
+                $validation_errors[] = "Missing response for $missing_question";
             }
         }
+
 
         return $validation_errors;
     }
 
     public function qeRequired() {
-        return $this->getValue()['Needs manual QE test'];
+        return $this->getValue()['Needs manual QE test'] === true;
     }
 
     public function validateApplicationTransactions(
