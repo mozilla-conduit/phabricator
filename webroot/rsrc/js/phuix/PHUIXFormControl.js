@@ -376,6 +376,7 @@ JX.install('PHUIXFormControl', {
             } else if (value_type == "boolean") {
                 var options = [];
 
+                options.push(JX.$N('option', {value: null}, '-- Select One --'));
                 options.push(JX.$N('option', {value: 'yes'}, 'Yes'));
                 options.push(JX.$N('option', {value: 'no'}, 'No'));
 
@@ -419,7 +420,19 @@ JX.install('PHUIXFormControl', {
 
                     // Convert "yes" and "no" to boolean.
                     if (question_obj.type == "select-one") {
-                        var bool_value = (question_obj.value === 'yes');
+                        var bool_value;
+                        switch (question_obj.value) {
+                            case 'yes':
+                                bool_value = true;
+                                break;
+                            case 'no':
+                                bool_value = false;
+                                break;
+                            default:
+                                bool_value = null;
+                                break;
+                        }
+
                         map[question_obj.question] = bool_value;
                     } else {
                         map[question_obj.question] = question_obj.value;
