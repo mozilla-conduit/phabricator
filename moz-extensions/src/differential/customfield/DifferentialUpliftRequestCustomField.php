@@ -278,7 +278,7 @@ final class DifferentialUpliftRequestCustomField
     public function newCommentAction() {
         // Returning `null` causes no comment action to render, effectively
         // "disabling" the field.
-        if (!$this->isUpliftTagSet()) {
+        if (!$this->isFieldActive()) {
             return null;
         }
 
