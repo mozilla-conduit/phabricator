@@ -347,11 +347,24 @@ JX.install('PHUIXFormControl', {
       };
     },
 
+    // Convert "true" and "false" strings to bool.
+    _boolValue: function(string_value) {
+        switch (string_value) {
+            case 'true':
+                return true;
+            case 'false':
+                return false;
+        }
+
+        return null;
+    },
+
     // Render a sub-form within the form control space.
     // Takes a spec of fields and their answer formats and returns
     // a mapping of fields to values.
     _newForm: function(spec) {
         var questions_parsed = spec.questions;
+        var initial = spec.initial;
 
         var questions = [];
         var question_list = [];
@@ -374,18 +387,25 @@ JX.install('PHUIXFormControl', {
                   question: question,
               });
             } else if (value_type == "boolean") {
-                var options = [];
-
-                options.push(JX.$N('option', {value: null}, '-- Select One --'));
-                options.push(JX.$N('option', {value: 'yes'}, 'Yes'));
-                options.push(JX.$N('option', {value: 'no'}, 'No'));
-
-                question_obj = JX.$N('select', {
-                    className: 'phuix-form-form-select',
-                    id: question_id,
-                    question: question,
-                    value: value,
-                }, options);
+                // Set "Select One" as the default.
+                if (initial) {
+                    value = null;
+                }
+                question_obj = JX.Prefab.renderSelect(
+                    {
+                        null: 'Select One',
+                        true: 'Yes',
+                        false: 'No',
+                    },
+                    value,
+                    {
+                        className: 'phuix-form-form-select',
+                        id: question_id,
+                        question: question,
+                        value: value,
+                    },
+                    [null, true, false]
+                );
             }
 
             questions.push(question_obj);
@@ -418,22 +438,10 @@ JX.install('PHUIXFormControl', {
                 for (var ii = 0; ii < questions.length; ii++) {
                     var question_obj = questions[ii];
 
-                    // Convert "yes" and "no" to boolean.
                     if (question_obj.type == "select-one") {
-                        var bool_value;
-                        switch (question_obj.value) {
-                            case 'yes':
-                                bool_value = true;
-                                break;
-                            case 'no':
-                                bool_value = false;
-                                break;
-                            default:
-                                bool_value = null;
-                                break;
-                        }
-
-                        map[question_obj.question] = bool_value;
+                        // Convert "true" and "false" string values to boolean.
+                        var bool_val = this._boolValue(question_obj.value);
+                        map[question_obj.question] = bool_val;
                     } else {
                         map[question_obj.question] = question_obj.value;
                     }
