@@ -517,6 +517,8 @@ final class PhabricatorMarkupEngine extends Phobject {
       $rules[] = new PhabricatorYoutubeRemarkupRule();
     }
 
+    $rules[] = new PhabricatorBugzillaLinkRule();
+
     $rules[] = new PhabricatorIconRemarkupRule();
     $rules[] = new PhabricatorEmojiRemarkupRule();
     $rules[] = new PhabricatorHandleRemarkupRule();
