@@ -53,10 +53,13 @@ jobs:
           name: Deploy to docker hub
           command: |
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
-            docker tag "${DOCKERHUB_REPO}" "${DOCKERHUB_REPO}:${CIRCLE_SHA1}"
-            docker push "${DOCKERHUB_REPO}:${CIRCLE_SHA1}"
+            docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$CIRCLE_SHA1"
+            docker push "$DOCKERHUB_REPO:$CIRCLE_SHA1"
             if [[ "$CIRCLE_BRANCH" == "master" ]]; then
-              docker push "${DOCKERHUB_REPO}:latest"
+              docker push "$DOCKERHUB_REPO:latest"
+            else
+              docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
+              docker push "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
             fi
       - store_artifacts:
           path: /artifacts
