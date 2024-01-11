@@ -96,9 +96,12 @@ final class DifferentialCreateCommentConduitAPIMethod
 
     if ($request->getValue('attach_inlines')) {
       $type_inline = DifferentialTransaction::TYPE_INLINE;
-      $inlines = DifferentialTransactionQuery::loadUnsubmittedInlineComments(
-        $viewer,
-        $revision);
+      $inlines = id(new DifferentialDiffInlineCommentQuery())
+        ->setViewer($viewer)
+        ->withRevisionPHIDs(array($revision->getPHID()))
+        ->withPublishedComments(false)
+        ->execute();
+      $inlines = mpull($inlines, 'newInlineCommentObject');
       foreach ($inlines as $inline) {
         $xactions[] = id(new DifferentialTransaction())
           ->setTransactionType($type_inline)
