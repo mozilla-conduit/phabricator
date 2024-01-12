@@ -99,7 +99,7 @@ final class DifferentialCreateCommentConduitAPIMethod
       $inlines = id(new DifferentialDiffInlineCommentQuery())
         ->setViewer($viewer)
         ->withRevisionPHIDs(array($revision->getPHID()))
-        ->withPublishedComments(false)
+        ->withPublishableComments(true)
         ->execute();
       $inlines = mpull($inlines, 'newInlineCommentObject');
       foreach ($inlines as $inline) {
