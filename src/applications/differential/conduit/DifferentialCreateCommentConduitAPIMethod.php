@@ -157,10 +157,10 @@ final class DifferentialCreateCommentConduitAPIMethod
       // as it is currently shown to the user, not as it was stored the last
       // time they clicked "Save".
 
-      $draft_content = $inline->getContentForEdit($viewer);
-      if (strlen($draft_content)) {
-        $inline->setContent($draft_content);
-      }
+      // $draft_content = $inline->getContentForEdit($viewer);
+      // if (strlen($draft_content)) {
+      //   $inline->setContent($draft_content);
+      // }
     }
 
     $inlines = mpull($inlines, 'getStorageObject');
