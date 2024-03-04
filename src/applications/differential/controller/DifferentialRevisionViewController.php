@@ -183,6 +183,9 @@ final class DifferentialRevisionViewController
     $moz_warnings = new DifferentialRevisionWarning();
     $moz_warnings = $moz_warnings->createWarnings($viewer, $revision);
 
+    $review_helper = new DifferentialReviewHelper();
+    $review_helper = $review_helper->createJWT($viewer, $revision);
+
     $large = $request->getStr('large');
 
     $large_warning =
@@ -640,6 +643,7 @@ final class DifferentialRevisionViewController
         array(
           $operations_box,
           $moz_warnings,
+          $review_helper,
           $info_view,
           $details,
           $diff_detail_box,
