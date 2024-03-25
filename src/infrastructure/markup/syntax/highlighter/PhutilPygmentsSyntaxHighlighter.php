@@ -133,6 +133,8 @@ final class PhutilPygmentsSyntaxHighlighter extends Phobject {
       'jbst' => 'duel',
       'kid' => 'genshi',
       'ksh' => 'bash',
+      'kt' => 'kotlin',
+      'kts' => 'kotlin',
       'less' => 'css',
       'lgt' => 'logtalk',
       'lisp' => 'common-lisp',
