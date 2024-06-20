@@ -55,6 +55,7 @@ final class DifferentialRevisionInlineTransaction
       'line' => (int)$comment->getLineNumber(),
       'length' => (int)($comment->getLineLength() + 1),
       'replyToCommentPHID' => $comment->getReplyToCommentPHID(),
+      'isNewFile' => (bool)$comment->getIsNewFile(),
       'isDone' => $is_done,
     );
   }
