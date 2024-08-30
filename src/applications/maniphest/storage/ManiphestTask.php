@@ -538,7 +538,7 @@ final class ManiphestTask extends ManiphestDAO
   }
 
   public function attachBridgedObject(
-    DoorkeeperExternalObject $object = null) {
+    ?DoorkeeperExternalObject $object = null) {
     $this->bridgedObject = $object;
     return $this;
   }
