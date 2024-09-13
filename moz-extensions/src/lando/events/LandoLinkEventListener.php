@@ -43,8 +43,7 @@ final class LandoLinkEventListener extends PhabricatorEventListener {
     $action = id(new PhabricatorActionView())
       ->setHref($lando_stack_uri)
       ->setName(pht('View Stack in Lando'))
-      ->setIcon('fa-link')
-      ->setDisabled(!$object->isAccepted());
+      ->setIcon('fa-link');
 
     $actions = $event->getValue('actions');
     $actions[] = $action;
