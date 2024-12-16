@@ -24,7 +24,7 @@ final class DifferentialLintField
   }
 
   public function shouldAppearInDiffPropertyView() {
-    return true;
+    return false;
   }
 
   public function renderDiffPropertyViewLabel(DifferentialDiff $diff) {
