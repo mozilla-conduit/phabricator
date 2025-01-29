@@ -59,9 +59,15 @@ final class HarbormasterHTTPRequestBuildStepImplementation
 
     $method = nonempty(idx($settings, 'method'), 'POST');
 
+    $content_type = $settings['content_type'];
+
     $future = id(new HTTPSFuture($uri))
       ->setMethod($method)
       ->setTimeout(60);
+
+    if ($content_type) {
+      $future->addHeader('Content-Type', $content_type);
+    }
 
     $credential_phid = $this->getSetting('credential');
     if ($credential_phid) {
@@ -105,6 +111,11 @@ final class HarbormasterHTTPRequestBuildStepImplementation
           => PassphrasePasswordCredentialType::CREDENTIAL_TYPE,
         'credential.provides'
           => PassphrasePasswordCredentialType::PROVIDES_TYPE,
+      ),
+      'content_type' => array(
+        'name' => pht('Content-Type header'),
+        'type' => 'text',
+        'required' => false,
       ),
     );
   }
