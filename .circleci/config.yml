@@ -52,6 +52,7 @@ jobs:
           name: Deploy to docker hub
           command: |
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
+            echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
             docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$CIRCLE_SHA1"
             docker push "$DOCKERHUB_REPO:$CIRCLE_SHA1"
             if [[ "$CIRCLE_BRANCH" == "master" ]]; then
