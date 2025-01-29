@@ -22,15 +22,15 @@ commands:
             fi
 
 jobs:
-  build:
+  full:
     docker:
-      - image: cimg/base:current
+      - image: cimg/base:stable
     steps:
       - setup_remote_docker
       - setup_local_docker
       - checkout
       - run:
-          name: Instal invoke
+          name: Install invoke
           command: |
             sudo apt-get update && \
             sudo apt-get install -y python3-pip && \
@@ -46,7 +46,9 @@ jobs:
       - run: invoke test
       - run: docker inspect $(invoke imageid)
       - run: invoke imageid | tee /tmp/artifacts/docker-image-shasum256.txt
-      - deploy:
+      - store_artifacts:
+          path: /tmp/artifacts
+      - run:
           name: Deploy to docker hub
           command: |
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
@@ -58,5 +60,8 @@ jobs:
               docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
               docker push "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
             fi
-      - store_artifacts:
-          path: /tmp/artifacts
+
+workflows:
+  main:
+    jobs:
+      - full
