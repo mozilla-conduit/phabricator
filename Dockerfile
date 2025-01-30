@@ -3,7 +3,7 @@ FROM php:7.4.19-fpm-alpine AS base
 LABEL maintainer="dkl@mozilla.com"
 
 # From https://github.com/marco-c/risk-analysis-addon/releases
-ENV RISK_ANALYSIS_VERSION v0.6.0
+ENV RISK_ANALYSIS_VERSION=v0.6.0
 
 # These are unlikely to change from version to version of the container
 EXPOSE 9000
@@ -11,8 +11,8 @@ EXPOSE 9003
 ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]
 CMD ["/app/entrypoint.sh", "start"]
 
-ENV REPOSITORY_LOCAL_PATH /repo
-ENV TMPDIR /tmp
+ENV REPOSITORY_LOCAL_PATH=/repo
+ENV TMPDIR=/tmp
 
 USER root
 
@@ -106,7 +106,7 @@ RUN pip install --require-hashes -r requirements.txt
 USER app
 
 # Install PHP dependencies
-ENV COMPOSER_VENDOR_DIR /app/phabricator/externals/extensions
+ENV COMPOSER_VENDOR_DIR=/app/phabricator/externals/extensions
 COPY --chown=app composer.json composer.lock ./
 RUN mkdir ${COMPOSER_VENDOR_DIR} \
     && composer install --no-dev
@@ -160,7 +160,7 @@ COPY --chown=app version.json* ./
 COPY --chown=app moz-extensions moz-extensions
 RUN chmod +x /app/moz-extensions/bin/*
 
-FROM base as development
+FROM base AS development
 
 USER root
 RUN apk add --no-cache $PHPIZE_DEPS \

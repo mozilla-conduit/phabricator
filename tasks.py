@@ -47,22 +47,22 @@ def imageid(ctx):
 @task
 def buildtest(ctx):
     """Test phabricator extensions."""
-    ctx.run("docker-compose build test_phab")
+    ctx.run("docker compose build test_phab")
 
 
 @task
 def buildtestlocal(ctx):
     """Test phabricator extensions."""
-    ctx.run("docker-compose build test_phab_local")
+    ctx.run("docker compose build test_phab_local")
 
 
 @task
 def test(ctx):
     """Test phabricator extensions."""
-    ctx.run("docker-compose run test_phab")
+    ctx.run("docker compose run test_phab")
 
 
 @task
 def liberate(ctx):
     """Update phutil_map."""
-    ctx.run("docker-compose run --rm test_phab arc_liberate")
+    ctx.run("docker compose run --rm test_phab arc_liberate")
