@@ -26,6 +26,12 @@ final class PhabricatorLandoConfigOptions
         'string',
         '')
         ->setDescription(pht('Full URL for the Lando UI server. '.
+                             'Set to an empty string to disable the link on the Revision page.')),
+      $this->newOption(
+        'lando.url',
+        'string',
+        '')
+        ->setDescription(pht('Full URL for the new Lando server. '.
                              'Set to an empty string to disable the link on the Revision page.'))
     );
   }
