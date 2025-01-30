@@ -26,8 +26,10 @@ final class LandoLinkEventListener extends PhabricatorEventListener {
       return;
     }
 
-    $lando_uri = PhabricatorEnv::getEnvConfig('lando-ui.url');
-    if (!$lando_uri) {
+    $legacy_lando_uri = PhabricatorEnv::getEnvConfig('lando-ui.url');
+    $new_lando_uri = PhabricatorEnv::getEnvConfig('lando.url');
+
+    if (!$legacy_lando_uri && !$new_lando_uri) {
       return;
     }
 
@@ -36,7 +38,42 @@ final class LandoLinkEventListener extends PhabricatorEventListener {
       return;
     }
 
-    // View stack in Lando Action
+
+    // Get repository projects, and determine if it uses the new Lando.
+    // If a repository is associated with the "lando" project, it is treated
+    // as a repo that uses the modern Lando. Otherwise, it is treated as using
+    // the legacy Lando.
+    $repository_phid = $object->getRepositoryPHID();
+    $repository = id(new PhabricatorRepositoryQuery())
+      ->setViewer(PhabricatorUser::getOmnipotentUser())
+      ->needProjectPHIDs(true)
+      ->withPHIDs(array($repository_phid))
+      ->executeOne();
+
+    $repository_project_phids = $repository->getProjectPHIDs();
+
+    if ($repository_project_phids) {
+        $projects = id(new PhabricatorProjectQuery())
+          ->setViewer(PhabricatorUser::getOmnipotentUser())
+          ->withPHIDs($repository_project_phids)
+          ->execute();
+
+        $lando_project = id(new PhabricatorProjectQuery())
+          ->setViewer(PhabricatorUser::getOmnipotentUser())
+          ->withNames(array("lando"))
+          ->executeOne();
+
+        $uses_new_lando = in_array($lando_project, $projects);
+    } else {
+        $uses_new_lando = false;
+    }
+
+    if ($uses_new_lando) {
+        $lando_uri = $new_lando_uri;
+    } else {
+        $lando_uri = $legacy_lando_uri;
+    }
+ 
     $lando_stack_uri = (string) id(new PhutilURI($lando_uri))
       ->setPath('/D' . $object->getID() . '/');
 
