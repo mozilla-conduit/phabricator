@@ -59,14 +59,19 @@ final class HarbormasterHTTPRequestBuildStepImplementation
 
     $method = nonempty(idx($settings, 'method'), 'POST');
 
-    $content_type = $settings['content_type'];
-
     $future = id(new HTTPSFuture($uri))
       ->setMethod($method)
       ->setTimeout(60);
 
+    $content_type = $settings['content_type'];
     if ($content_type) {
       $future->addHeader('Content-Type', $content_type);
+    }
+
+    $body = $settings['http_body'];
+    if ($body) {
+      $body = $this->mergeVariables('vurisprintf', $body, $variables);
+      $future->setData($body);
     }
 
     $credential_phid = $this->getSetting('credential');
@@ -114,6 +119,11 @@ final class HarbormasterHTTPRequestBuildStepImplementation
       ),
       'content_type' => array(
         'name' => pht('Content-Type header'),
+        'type' => 'text',
+        'required' => false,
+      ),
+      'http_body' => array(
+        'name' => pht('HTTP Body'),
         'type' => 'text',
         'required' => false,
       ),
