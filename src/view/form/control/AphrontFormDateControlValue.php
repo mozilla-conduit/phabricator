@@ -297,6 +297,10 @@ final class AphrontFormDateControlValue extends Phobject {
   }
 
   private function getStandardDateFormat($date) {
+    // no value entered into the field at all
+    if (!$date) {
+      return null;
+    }
     $colloquial = array(
       'newyear' => 'January 1',
       'valentine' => 'February 14',
