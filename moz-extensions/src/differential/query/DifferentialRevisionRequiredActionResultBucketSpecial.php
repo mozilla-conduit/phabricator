@@ -10,13 +10,6 @@ final class DifferentialRevisionRequiredActionResultBucketSpecial
   }
 
   private function filterMustReview(array $phids) {
-    $blocking = array(
-      DifferentialReviewerStatus::STATUS_BLOCKING,
-      DifferentialReviewerStatus::STATUS_REJECTED,
-      DifferentialReviewerStatus::STATUS_REJECTED_OLDER,
-    );
-    $blocking = array_fuse($blocking);
-
     $objects = $this->getRevisionsUnderReview($this->objects, $phids);
 
     $results = array();
@@ -29,13 +22,6 @@ final class DifferentialRevisionRequiredActionResultBucketSpecial
   }
 
   private function filterShouldReview(array $phids) {
-    $reviewing = array(
-      DifferentialReviewerStatus::STATUS_ADDED,
-      DifferentialReviewerStatus::STATUS_COMMENTED,
-      DifferentialReviewerStatus::STATUS_ACCEPTED,
-    );
-    $reviewing = array_fuse($reviewing);
-
     $objects = $this->getRevisionsUnderReview($this->objects, $phids);
 
     $results = array();
