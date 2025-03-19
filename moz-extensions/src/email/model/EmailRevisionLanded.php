@@ -36,7 +36,7 @@ class EmailRevisionLanded implements PublicEmailBody
     $hgLink = $resolveRepositoryDetails->resolveHgLink($commit);
 
     $landoLink = null;
-    $landoUri = PhabricatorEnv::getEnvConfig('lando-ui.url');
+    $landoUri = PhabricatorEnv::getEnvConfig('lando.url');
     if ($landoUri) {
       $landoLink = (string) id(new PhutilURI($landoUri))
         ->setPath("/D{$rawRevision->getID()}/");
