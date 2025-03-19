@@ -17,7 +17,7 @@ class ResolveRevisionStatus {
   }
 
   public function resolveLandoLink(): string {
-    $landoUri = PhabricatorEnv::getEnvConfig('lando-ui.url');
+    $landoUri = PhabricatorEnv::getEnvConfig('lando.url');
     return (string) (new PhutilURI($landoUri))
       ->setPath('/' . $this->rawRevision->getMonogram() . '/');
   }

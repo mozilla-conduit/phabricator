@@ -110,7 +110,7 @@ final class DifferentialDiffCreateController extends DifferentialController {
       $lando_link = phutil_tag(
         'a',
         array(
-          'href' => PhabricatorEnv::getEnvConfig('lando-ui.url'),
+          'href' => PhabricatorEnv::getEnvConfig('lando.url'),
           'target' => '_blank',
         ),
         pht('Lando'));
