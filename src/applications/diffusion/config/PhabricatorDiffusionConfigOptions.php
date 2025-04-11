@@ -159,6 +159,12 @@ final class PhabricatorDiffusionConfigOptions
             ->getCustomFieldBaseClass())
         ->setDescription(
           pht('Select and reorder Diffusion fields.')),
+      $this->newOption('diffusion.shallow-repos', 'wild', null)
+        ->setSummary(pht('Callsigns for repos to fetch shallowly.'))
+        ->setDescription(
+          pht(
+            'JSON with config options, e.g., {"<callsign>": "<isoformat date cutoff>", ...}')),
+
     );
   }
 

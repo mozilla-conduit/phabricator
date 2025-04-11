@@ -266,6 +266,15 @@ final class PhabricatorRepositoryPullEngine
     $repository->execxRemoteCommand(
       'init --bare -- %s',
       $path);
+
+    // Check if repository fetching should use --shallow-exclude.
+    $config = PhabricatorEnv::getEnvConfig('diffusion.shallow-repos');
+    $callsign = $repository->getCallsign();
+    if (array_key_exists($callsign, $config)) {
+      $cutoff = $config[$callsign];
+      $repository->execLocalCommand(
+        'config --local --add "alias.ft" "fetch --shallow-since=%s"', $cutoff);
+    }
   }
 
 
@@ -444,7 +453,7 @@ final class PhabricatorRepositoryPullEngine
     // checked out. See T13280.
 
     $future = $repository->getRemoteCommandFuture(
-      'fetch --no-tags --update-head-ok -- %P %Ls',
+      'ft --no-tags --update-head-ok -- %P %Ls',
       $repository->getRemoteURIEnvelope(),
       $fetch_rules);
 
