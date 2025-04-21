@@ -105,7 +105,6 @@ USER root
 RUN pip install --require-hashes -r requirements.txt
 
 # Use ft as an alias of fetch.
-RUN mkdir /usr/etc
 RUN git config --system --add "alias.ft" "fetch"
 
 USER app
