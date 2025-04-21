@@ -118,12 +118,22 @@ final class DifferentialDiffExtractionEngine extends Phobject {
     $commit_data = $commit->getCommitData();
     $message = $commit_data->getCommitMessage();
 
+    $commit_tree = null;
+    $commit_ref = $commit_data->getCommitRef();
+    $commit_hashes = $commit_ref->getHashes();
+    foreach ($commit_hashes as $commit_hash) {
+      if ($commit_hash->getHashType() == ArcanistDifferentialRevisionHash::HASH_GIT_TREE) {
+        $commit_tree = $commit_hash->getHashValue();
+      }
+    }
+
     $properties = array(
       'local:commits' => array(
         $identifier => array(
           'author' => $commit_data->getCommitDetail('authorName'),
           'commit' => $identifier,
           'rev' => $identifier,
+          'tree' => $commit_tree,
           'authorEmail' => $commit_data->getCommitDetail('authorEmail'),
           'summary' => $commit_data->summarizeCommitMessage($message),
           'message' => $message,
