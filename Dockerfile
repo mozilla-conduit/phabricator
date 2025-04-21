@@ -103,6 +103,10 @@ RUN git clone https://github.com/mozilla-conduit/arcanist -b stable arcanist \
 COPY --chown=app requirements.txt ./
 USER root
 RUN pip install --require-hashes -r requirements.txt
+
+# Use ft as an alias of fetch.
+RUN git config --system --add "alias.ft" "fetch"
+
 USER app
 
 # Install PHP dependencies
