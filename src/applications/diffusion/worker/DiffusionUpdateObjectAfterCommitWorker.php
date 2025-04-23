@@ -183,7 +183,7 @@ final class DiffusionUpdateObjectAfterCommitWorker
 
     $xactions = array();
 
-    if ($revision->getRepository() === $commit->getRepository()) {
+    if ($revision->getRepository()->getId() === $commit->getRepository()->getId()) {
       $xactions[] = $this->newEdgeTransaction(
         $revision,
         $commit,
