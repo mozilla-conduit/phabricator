@@ -183,20 +183,22 @@ final class DiffusionUpdateObjectAfterCommitWorker
 
     $xactions = array();
 
-    $xactions[] = $this->newEdgeTransaction(
-      $revision,
-      $commit,
-      DifferentialRevisionHasCommitEdgeType::EDGECONST);
+    if ($revision->getRepository() === $commit->getRepository()) {
+      $xactions[] = $this->newEdgeTransaction(
+        $revision,
+        $commit,
+        DifferentialRevisionHasCommitEdgeType::EDGECONST);
 
-    $match_data = $this->getUpdateProperty('revisionMatchData');
+      $match_data = $this->getUpdateProperty('revisionMatchData');
 
-    $type_close = DifferentialRevisionCloseTransaction::TRANSACTIONTYPE;
-    $xactions[] = $revision->getApplicationTransactionTemplate()
-      ->setTransactionType($type_close)
-      ->setNewValue(true)
-      ->setMetadataValue('isCommitClose', true)
-      ->setMetadataValue('revisionMatchData', $match_data)
-      ->setMetadataValue('commitPHID', $commit->getPHID());
+      $type_close = DifferentialRevisionCloseTransaction::TRANSACTIONTYPE;
+      $xactions[] = $revision->getApplicationTransactionTemplate()
+        ->setTransactionType($type_close)
+        ->setNewValue(true)
+        ->setMetadataValue('isCommitClose', true)
+        ->setMetadataValue('revisionMatchData', $match_data)
+        ->setMetadataValue('commitPHID', $commit->getPHID());
+    }
 
     $extraction_engine = id(new DifferentialDiffExtractionEngine())
       ->setViewer($viewer)
