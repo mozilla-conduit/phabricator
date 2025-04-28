@@ -183,7 +183,23 @@ final class DiffusionUpdateObjectAfterCommitWorker
 
     $xactions = array();
 
-    if ($revision->getRepository()->getId() === $commit->getRepository()->getId()) {
+    // Assume there's a callsign on repo object.
+    $revisionRepositoryCallsign = $revision->getRepository()->getCallsign();
+    $commitRepositoryCallsign = $commit->getRepository()->getCallsign();
+
+    $mustCloseRevision = false;
+    if ($revisionRepositoryCallsign === $commitRepositoryCallsign) {
+      $mustCloseRevision = true;
+    } else {
+      $config = PhabricatorEnv::getEnvConfig('diffusion.legacy-repos-mapping');
+      if (array_key_exists($revisionRepositoryCallsign, $config)) {
+        if ($config[$revisionRepositoryCallsign] === $commitRepositoryCallsign) {
+          $mustCloseRevision = true;
+        }
+      }
+    }
+
+    if ($mustCloseRevision) {
       $xactions[] = $this->newEdgeTransaction(
         $revision,
         $commit,
