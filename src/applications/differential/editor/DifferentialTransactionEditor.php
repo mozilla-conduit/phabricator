@@ -1316,7 +1316,7 @@ final class DifferentialTransactionEditor
       case DifferentialRevisionControlSystem::GIT:
         foreach ($data as $commit) {
           $commit_hash = $commit['commit'];
-          $commit_tree = $commit['tree'] ?? "";
+          $commit_tree = $commit['tree'] ?? "0000000000000000000000000000000000000000";
 
           $hashes[] = array(
             ArcanistDifferentialRevisionHash::HASH_GIT_COMMIT,
