@@ -1315,13 +1315,17 @@ final class DifferentialTransactionEditor
     switch ($vcs) {
       case DifferentialRevisionControlSystem::GIT:
         foreach ($data as $commit) {
+          $commit_hash = $commit['commit'];
+          $commit_tree = $commit['tree'] ?? "";
+
           $hashes[] = array(
             ArcanistDifferentialRevisionHash::HASH_GIT_COMMIT,
-            $commit['commit'],
+            $commit_hash,
           );
+
           $hashes[] = array(
             ArcanistDifferentialRevisionHash::HASH_GIT_TREE,
-            $commit['tree'],
+            $commit_tree,
           );
         }
         break;
