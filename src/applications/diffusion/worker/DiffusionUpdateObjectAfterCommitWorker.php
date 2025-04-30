@@ -183,7 +183,6 @@ final class DiffusionUpdateObjectAfterCommitWorker
 
     $xactions = array();
 
-    // Assume there's a callsign on repo object.
     $revisionRepositoryCallsign = $revision->getRepository()->getCallsign();
     $commitRepositoryCallsign = $commit->getRepository()->getCallsign();
 
