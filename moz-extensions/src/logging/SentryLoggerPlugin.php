@@ -52,8 +52,8 @@ class SentryLoggerPlugin extends Phobject {
     return implode('&', $params);
   }
 
-  public static function filter_values($array, $fields_re) {
-    if (empty($fields_re)) {
+  public static function filter_values($array, $fields_re = null) {
+    if ($fields_re === null) {
       $fields_re = '/^(__csrf__|token)$/i';
     }
 
