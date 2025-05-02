@@ -67,6 +67,7 @@ RUN apk --no-cache add --virtual build-dependencies \
         --with-jpeg \
     && docker-php-ext-install -j "$(nproc)" \
         gd \
+        mbstring \
         mysqli \
         pcntl \
     && pecl install apcu-5.1.17 \
@@ -127,7 +128,9 @@ USER root
 RUN pip install --require-hashes -r requirements.txt
 
 # Use ft as an alias of fetch.
-RUN git config --system --add "alias.ft" "fetch"
+RUN mkdir -p /usr/etc \
+  && touch /usr/etc/gitconfig \
+  && git config --system --add "alias.ft" "fetch"
 
 USER app
 
@@ -218,6 +221,7 @@ RUN apk --update --no-cache add \
     make
 
 USER app
+COPY --chown=app .git .git
 COPY --chown=app .arcunit .arcunit
 COPY --chown=app test-arcconfig .arcconfig
 COPY --chown=app moz-extensions moz-extensions
