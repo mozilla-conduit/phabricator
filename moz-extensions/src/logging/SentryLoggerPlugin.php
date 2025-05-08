@@ -52,6 +52,31 @@ class SentryLoggerPlugin extends Phobject {
     return implode('&', $params);
   }
 
+  public static function filter_values($array, $fields_re = null) {
+    if ($fields_re === null) {
+      $fields_re = '/^(__csrf__|token)$/i';
+    }
+
+    $sanitize = function(&$item, $key, $fields_re) {
+      if (empty($key)) {
+        return;
+      }
+      if (preg_match($fields_re, $key)) {
+        $item = '********';
+      }
+    };
+
+    if (is_array($array)) {
+      array_walk_recursive($array, $sanitize, $fields_re);
+    } else {
+      if (preg_match($fields_re, $array)) {
+        $array = '********';
+      }
+    }
+
+    return $array;
+  }
+
   public static function handleError($event, $value, $metadata) {
     $sentry_dsn = PhabricatorEnv::getEnvConfigIfExists('sentry.dsn');
 
@@ -69,21 +94,12 @@ class SentryLoggerPlugin extends Phobject {
       $request = $event->getRequest();
 
       // Sanitize HTTP POST data
-      $fields_re = '/^(__csrf__|token)$/i';
-      $sanitize = function(&$item, $key, $fields_re) {
-        if (empty($key)) {
-          return;
-        }
-        if (preg_match($fields_re, $key)) {
-          $item = '********';
-        }
-      };
-      array_walk_recursive($request['data'], $sanitize, $fields_re);
+      $request['data'] = self::filter_values($request['data']);
 
-      if (array_key_exists('params', $request['data'])) {
+      if (is_array($request['data']) && array_key_exists('params', $request['data'])) {
         try {
           $params = phutil_json_decode($request['data']['params']);
-          array_walk_recursive($params, $sanitize, $fields_re);
+          $params = self::filter_values($params);
           $request['data']['params'] = phutil_json_encode($params);
         } catch (PhutilJSONParserException $ex) {
           // data['params'] wasn't JSON, so we're finished sanitizing the request data.
@@ -92,7 +108,7 @@ class SentryLoggerPlugin extends Phobject {
 
       // Sanitize query string
       $query_data = self::parse_query_str($request['query_string']);
-      array_walk_recursive($query_data, $sanitize, $fields_re);
+      $query_data = self::filter_values($query_data);
       $request['query_string'] = self::generate_query_str($query_data);
 
       // Sanitize cookie data
@@ -101,8 +117,7 @@ class SentryLoggerPlugin extends Phobject {
       }
 
       // Sanitize header data
-      $headers_re = '/^(Cookie|X-Phabricator-Csfr)$/i';
-      array_walk_recursive($request['headers'], $sanitize, $headers_re);
+      $request['headers'] = self::filter_values($request['headers'], '/^(Cookie|X-Phabricator-Csfr)$/i');
 
       $event->setRequest($request);
       return $event;
