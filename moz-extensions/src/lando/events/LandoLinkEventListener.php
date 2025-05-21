@@ -50,6 +50,10 @@ final class LandoLinkEventListener extends PhabricatorEventListener {
       ->withPHIDs(array($repository_phid))
       ->executeOne();
 
+    if (!$repository) {
+        return;
+    }
+
     $repository_project_phids = $repository->getProjectPHIDs();
 
     if ($repository_project_phids) {
@@ -73,7 +77,7 @@ final class LandoLinkEventListener extends PhabricatorEventListener {
     } else {
         $lando_uri = $legacy_lando_uri;
     }
- 
+
     $lando_stack_uri = (string) id(new PhutilURI($lando_uri))
       ->setPath('/D' . $object->getID() . '/');
 
