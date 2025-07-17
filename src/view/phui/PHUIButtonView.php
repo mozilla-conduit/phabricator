@@ -32,6 +32,12 @@ final class PHUIButtonView extends AphrontTagView {
   private $hasCaret;
   private $buttonType = self::BUTTONTYPE_DEFAULT;
   private $auralLabel;
+  private $tabIndex;
+
+  public function setTabIndex($tabIndex) {
+    $this->tabIndex = $tabIndex;
+    return $this;
+  }
 
   public function setName($name) {
     $this->name = $name;
@@ -249,6 +255,7 @@ final class PHUIButtonView extends AphrontTagView {
       'sigil'  => $sigil,
       'meta'   => $meta,
       'role' => $role,
+      'tabindex' => $this->tabIndex,
     );
 
     if ($this->tag == 'input') {

@@ -67,6 +67,7 @@ final class PhabricatorConduitTokensSettingsPanel
             'class' => 'button small button-grey',
             'href' => '/conduit/token/terminate/'.$token->getID().'/',
             'sigil' => 'workflow',
+            'tabindex' => -1
           ),
           pht('Terminate')),
       );
@@ -104,7 +105,8 @@ final class PhabricatorConduitTokensSettingsPanel
       ->setTag('a')
       ->setWorkflow(true)
       ->setIcon('fa-exclamation-triangle')
-      ->setColor(PHUIButtonView::RED);
+      ->setColor(PHUIButtonView::RED)
+      ->setTabIndex(-1);
 
     $header = id(new PHUIHeaderView())
       ->setHeader(pht('Active API Tokens'))
