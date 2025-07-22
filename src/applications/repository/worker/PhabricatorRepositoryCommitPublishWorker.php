@@ -456,6 +456,25 @@ final class PhabricatorRepositoryCommitPublishWorker
       return;
     }
 
+    $revisionRepositoryCallsign = $revision->getRepository()->getCallsign();
+    $commitRepositoryCallsign = $commit->getRepository()->getCallsign();
+
+    $mustCloseRevision = false;
+    if ($revisionRepositoryCallsign === $commitRepositoryCallsign) {
+      $mustCloseRevision = true;
+    } else {
+      $config = PhabricatorEnv::getEnvConfig('diffusion.legacy-repos-mapping');
+      if (array_key_exists($revisionRepositoryCallsign, $config)) {
+        if ($config[$revisionRepositoryCallsign] === $commitRepositoryCallsign) {
+          $mustCloseRevision = true;
+        }
+      }
+    }
+
+    if (!$mustCloseRevision) {
+      return;
+    }
+
     // NOTE: This is very old code from when revisions had a single reviewer.
     // It still powers the "Reviewer (Deprecated)" field in Herald, but should
     // be removed.
