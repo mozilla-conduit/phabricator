@@ -1,0 +1,21 @@
+name: Build and Push
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  build-and-push:
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+    uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
+    with:
+      image_name: phabricator
+      gar_name: phabricator-prod
+      project_id: moz-fx-phabricator-prod
+      prebuild_script: true
+      image_tag_metadata: ${{ github.sha }}
