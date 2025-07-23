@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - main
+      - chore/build-and-push-gha # temporary branch for testing
 
 jobs:
   build-and-push:
