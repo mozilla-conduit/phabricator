@@ -13,6 +13,7 @@ jobs:
       id-token: write
       packages: write
     uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@v4.0.4
+    with:
       image_name: phabricator
       gar_name: phabricator-prod
       project_id: moz-fx-phabricator-prod
