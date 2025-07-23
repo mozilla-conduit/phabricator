@@ -58,8 +58,10 @@ jobs:
             if [[ "$CIRCLE_BRANCH" == "master" ]]; then
               docker push "$DOCKERHUB_REPO:latest"
             else
-              docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
-              docker push "$DOCKERHUB_REPO:$CIRCLE_BRANCH"
+              # Replace forward slashes with hyphens in branch name for Docker tag
+              SAFE_BRANCH_NAME=$(echo "$CIRCLE_BRANCH" | tr '/' '-')
+              docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$SAFE_BRANCH_NAME"
+              docker push "$DOCKERHUB_REPO:$SAFE_BRANCH_NAME"
             fi
 
 workflows:
