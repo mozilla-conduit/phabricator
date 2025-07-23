@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - fix/gha-package-permission
 
 jobs:
   build-and-push:
@@ -11,6 +12,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: none
     uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
     with:
       image_name: phabricator
