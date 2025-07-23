@@ -11,10 +11,10 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: write
     uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
     with:
       image_name: phabricator
       gar_name: phabricator-prod
       project_id: moz-fx-phabricator-prod
       prebuild_script: true
-      image_tag_metadata: ${{ github.sha }}
