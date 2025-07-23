@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - fix/gha-package-permission
 
 jobs:
   build-and-push:
