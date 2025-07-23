@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-      packages: read
+      packages: write
     uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
     with:
       image_name: phabricator
