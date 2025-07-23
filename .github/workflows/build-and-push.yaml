@@ -19,4 +19,3 @@ jobs:
       gar_name: phabricator-prod
       project_id: moz-fx-phabricator-prod
       prebuild_script: true
-      image_tag_metadata: ${{ github.sha }}
