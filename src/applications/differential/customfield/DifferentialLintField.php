@@ -16,7 +16,7 @@ final class DifferentialLintField
   }
 
   public function shouldAppearInPropertyView() {
-    return true;
+    return false;
   }
 
   public function renderPropertyViewValue(array $handles) {

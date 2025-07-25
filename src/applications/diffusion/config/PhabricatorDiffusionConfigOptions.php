@@ -164,7 +164,11 @@ final class PhabricatorDiffusionConfigOptions
         ->setDescription(
           pht(
             'JSON with config options, e.g., {"<callsign>": "<isoformat date cutoff>", ...}')),
-
+      $this->newOption('diffusion.legacy-repos-mapping', 'wild', null)
+        ->setSummary(pht('Mapping of callsigns of legacy and new repos.'))
+        ->setDescription(
+          pht(
+            'JSON with config options, e.g., {"<legacy_repo_callsign>": "<new_repo_callsign>", ...}')),
     );
   }
 

@@ -183,20 +183,37 @@ final class DiffusionUpdateObjectAfterCommitWorker
 
     $xactions = array();
 
-    $xactions[] = $this->newEdgeTransaction(
-      $revision,
-      $commit,
-      DifferentialRevisionHasCommitEdgeType::EDGECONST);
+    $revisionRepositoryCallsign = $revision->getRepository()->getCallsign();
+    $commitRepositoryCallsign = $commit->getRepository()->getCallsign();
 
-    $match_data = $this->getUpdateProperty('revisionMatchData');
+    $mustCloseRevision = false;
+    if ($revisionRepositoryCallsign === $commitRepositoryCallsign) {
+      $mustCloseRevision = true;
+    } else {
+      $config = PhabricatorEnv::getEnvConfig('diffusion.legacy-repos-mapping');
+      if (array_key_exists($revisionRepositoryCallsign, $config)) {
+        if ($config[$revisionRepositoryCallsign] === $commitRepositoryCallsign) {
+          $mustCloseRevision = true;
+        }
+      }
+    }
 
-    $type_close = DifferentialRevisionCloseTransaction::TRANSACTIONTYPE;
-    $xactions[] = $revision->getApplicationTransactionTemplate()
-      ->setTransactionType($type_close)
-      ->setNewValue(true)
-      ->setMetadataValue('isCommitClose', true)
-      ->setMetadataValue('revisionMatchData', $match_data)
-      ->setMetadataValue('commitPHID', $commit->getPHID());
+    if ($mustCloseRevision) {
+      $xactions[] = $this->newEdgeTransaction(
+        $revision,
+        $commit,
+        DifferentialRevisionHasCommitEdgeType::EDGECONST);
+
+      $match_data = $this->getUpdateProperty('revisionMatchData');
+
+      $type_close = DifferentialRevisionCloseTransaction::TRANSACTIONTYPE;
+      $xactions[] = $revision->getApplicationTransactionTemplate()
+        ->setTransactionType($type_close)
+        ->setNewValue(true)
+        ->setMetadataValue('isCommitClose', true)
+        ->setMetadataValue('revisionMatchData', $match_data)
+        ->setMetadataValue('commitPHID', $commit->getPHID());
+    }
 
     $extraction_engine = id(new DifferentialDiffExtractionEngine())
       ->setViewer($viewer)
