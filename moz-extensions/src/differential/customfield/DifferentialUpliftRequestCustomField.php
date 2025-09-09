@@ -63,7 +63,7 @@ final class DifferentialUpliftRequestCustomField
 
     public function shouldAppearInEditView() {
         // Should the field appear in Edit Revision feature
-        return true;
+        return false;
     }
 
     // How the uplift text is rendered in the "Details" section.
