@@ -1459,7 +1459,7 @@ final class DifferentialRevisionViewController
       }
     }
 
-    if (isset($diffs[$old_id])) {
+    if ($old_id && isset($diffs[$old_id])) {
       return $old_id;
     }
 
@@ -1479,7 +1479,7 @@ final class DifferentialRevisionViewController
       return new Aphront404Response();
     }
 
-    if (isset($diffs[$new_id])) {
+    if ($new_id && isset($diffs[$new_id])) {
       return $new_id;
     }
 
