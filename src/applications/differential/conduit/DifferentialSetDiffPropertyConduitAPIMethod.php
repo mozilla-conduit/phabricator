@@ -28,6 +28,7 @@ final class DifferentialSetDiffPropertyConduitAPIMethod
       'ERR_NOT_FOUND'    => pht('Diff was not found.'),
       'ERR_PERMISSIONS'  => pht('You do not have permission to modify this diff.'),
       'ERR_INVALID_DATA' => pht('Property data is not valid JSON.'),
+      'ERR_NO_NAME'      => pht('Name cannot be empty.'),
     );
   }
 
@@ -35,6 +36,9 @@ final class DifferentialSetDiffPropertyConduitAPIMethod
     $viewer = $request->getUser();
     $diff_id = $request->getValue('diff_id');
     $name = $request->getValue('name');
+    if (!phutil_nonempty_string($name)) {
+      throw new ConduitException('ERR_NO_NAME');
+    }
 
     try {
       $data = phutil_json_decode($request->getValue('data'));
