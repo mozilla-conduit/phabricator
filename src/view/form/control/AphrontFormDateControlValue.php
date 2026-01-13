@@ -316,7 +316,7 @@ final class AphrontFormDateControlValue extends Phobject {
     $normalized = preg_replace('/day\z/', '', $normalized);
     $normalized = preg_replace('/s\z/', '', $normalized);
 
-    if (isset($colloquial[$normalized])) {
+    if ($normalized !== null && isset($colloquial[$normalized])) {
       return $colloquial[$normalized];
     }
 
