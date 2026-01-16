@@ -27,8 +27,8 @@ final class ReviewHelperRequestController extends PhabricatorController {
         ->setSeverity(PHUIInfoView::SEVERITY_WARNING)
         ->setTitle(pht('Revision is ') . $status->getDisplayName())
         ->appendChild(
-          pht('This revision is not open. Requesting a review for a closed ' .
-            'revision may not be what you intend.')
+          pht('This revision is closed. Requesting a review for a closed ' .
+            'revision may not be what you intended.')
         );
       return $this->newDialog()
         ->setTitle(pht('Review Helper'))
