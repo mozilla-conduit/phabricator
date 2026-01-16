@@ -37,20 +37,20 @@ final class ReviewHelperRequestController extends PhabricatorController {
         ->addCancelButton($revision_uri);
     }
 
-    list($data, $error) = $this->requestReview($viewer, $revision);
-
-    if ($error) {
+    try {
+      $data = $this->requestReview($viewer, $revision);
+    } catch (ReviewHelperServiceException $ex) {
       MozLogger::log(
         'Review Helper request failed',
         'reviewhelper.request.error',
         array('Fields' => array(
           'revision_id' => $revision_id,
-          'error' => $error,
+          'error' => $ex->getMessage(),
         ))
       );
       return $this->newDialog()
         ->setTitle(pht('Review Helper'))
-        ->setErrors(array($error))
+        ->setErrors(array($ex->getMessage()))
         ->addCancelButton($revision_uri);
     }
 
@@ -87,42 +87,37 @@ final class ReviewHelperRequestController extends PhabricatorController {
     try {
       list($status, $body) = $future->resolve();
     } catch (HTTPFutureResponseStatus $ex) {
-      return array(
-        null,
-        pht('The AI review service encountered a connection or unexpected response error (%s).', $ex->getStatusCode()),
+      throw new ReviewHelperServiceException(
+        pht('The AI review service encountered a connection or unexpected response error (%s).', $ex->getStatusCode())
       );
     }
 
     if ($status->isTimeout()) {
-      return array(
-        null,
-        pht('The AI review service request timed out. Please try again later.'),
+      throw new ReviewHelperServiceException(
+        pht('The AI review service request timed out. Please try again later.')
       );
     }
 
     if ($status->isError()) {
-      return array(
-        null,
-        pht('The AI review service returned an HTTP error response (%s).', $status->getStatusCode()),
+      throw new ReviewHelperServiceException(
+        pht('The AI review service returned an HTTP error response (%s).', $status->getStatusCode())
       );
     }
 
     try {
       $data = phutil_json_decode($body);
     } catch (PhutilJSONParserException $ex) {
-      return array(
-        null,
-        pht('The AI review service returned malformed JSON.'),
+      throw new ReviewHelperServiceException(
+        pht('The AI review service returned malformed JSON.')
       );
     }
 
     if (!is_array($data) || !array_key_exists('message', $data)) {
-      return array(
-        null,
-        pht('The AI review service returned an unexpected or malformed response.'),
+      throw new ReviewHelperServiceException(
+        pht('The AI review service returned an unexpected or malformed response.')
       );
     }
 
-    return array($data, null);
+    return $data;
   }
 }
