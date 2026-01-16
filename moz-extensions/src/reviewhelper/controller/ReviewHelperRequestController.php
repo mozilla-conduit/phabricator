@@ -80,7 +80,7 @@ final class ReviewHelperRequestController extends PhabricatorController {
       ->setMethod('POST')
       ->addHeader('Content-Type', 'application/json')
       ->addHeader('Authorization', 'Bearer ' . $auth_key)
-      ->addHeader('User-Agent', 'Phabricator (ReviewHelper)')
+      ->addHeader('User-Agent', 'Phabricator')
       ->addHeader('Origin', rtrim(PhabricatorEnv::getAnyBaseURI(), '/'))
       ->setTimeout($timeout)
       ->setData(phutil_json_encode($payload));
