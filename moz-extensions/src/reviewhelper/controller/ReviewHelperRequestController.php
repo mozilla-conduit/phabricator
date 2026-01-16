@@ -12,6 +12,7 @@ final class ReviewHelperRequestController extends PhabricatorController {
     $revision = id(new DifferentialRevisionQuery())
       ->setViewer($viewer)
       ->withIDs(array($revision_id))
+      ->needDiffIDs(true)
       ->executeOne();
 
     if (!$revision) {
@@ -70,7 +71,7 @@ final class ReviewHelperRequestController extends PhabricatorController {
 
     $payload = array(
       'revision_id' => $revision->getID(),
-      'revision_phid' => $revision->getPHID(),
+      'diff_id' => max($revision->getDiffIDs()),
       'user_id' => $viewer->getID(),
       'user_name' => $viewer->getUsername(),
     );
