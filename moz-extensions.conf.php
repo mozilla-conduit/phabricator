@@ -8,5 +8,6 @@ return array(
     'LandoLinkEventListener',
     'NewChangesLinkEventListener',
     'RiskAnalyzerEventListener',
+    'ReviewHelperEventListener',
   )
 );
