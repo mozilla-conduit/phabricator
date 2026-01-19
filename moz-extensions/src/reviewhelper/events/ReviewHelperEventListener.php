@@ -62,5 +62,21 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
     array_unshift($actions, $action);
 
     $event->setValue('actions', $actions);
+
+    // Initialize feedback feature only if bot username is configured
+    $bot_username = PhabricatorEnv::getEnvConfig('reviewhelper.bot-username');
+    if (!$bot_username) {
+      return;
+    }
+
+    require_celerity_resource('reviewhelper-feedback-css', 'moz-extensions');
+    Javelin::initBehavior(
+      'reviewhelper-feedback',
+      array(
+        'botUsername' => $bot_username,
+        'feedbackURI' => '/reviewhelper/feedback/',
+      ),
+      'moz-extensions'
+    );
   }
 }
