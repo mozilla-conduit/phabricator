@@ -47,41 +47,40 @@ extends PhabricatorApplicationConfigOptions {
     );
   }
 
-  protected function didValidateOption(
-    PhabricatorConfigOption $option,
-    $value
-  ) {
-
+  protected function didValidateOption(PhabricatorConfigOption $option, $value) {
     $key = $option->getKey();
-
     if ($key === 'reviewhelper.url') {
-      if ($value === '' || $value === null) {
-        return;
-      }
+      $this->validateServiceURL($value);
+    }
+  }
 
-      try {
-        PhabricatorEnv::requireValidRemoteURIForFetch(
+  private function validateServiceURL($value) {
+    if ($value === '' || $value === null) {
+      return;
+    }
+
+    try {
+      PhabricatorEnv::requireValidRemoteURIForFetch(
+        $value,
+        array('https')
+      );
+    } catch (Exception $ex) {
+      throw new PhabricatorConfigValidationException(
+        pht(
+          'The Review Helper URL "%s" is not valid: %s',
           $value,
-          array('https')
-        );
-      } catch (Exception $ex) {
-        throw new PhabricatorConfigValidationException(
-          pht(
-            'The Review Helper URL "%s" is not valid: %s',
-            $value,
-            $ex->getMessage()
-          )
-        );
-      }
+          $ex->getMessage()
+        )
+      );
+    }
 
-      $auth_key = PhabricatorEnv::getEnvConfig('reviewhelper.auth-key');
-      if ($auth_key === '' || $auth_key === null) {
-        throw new PhabricatorConfigValidationException(
-          pht(
-            'The Review Helper authentication key must be set when a Review Helper URL is configured.'
-          )
-        );
-      }
+    $auth_key = PhabricatorEnv::getEnvConfig('reviewhelper.auth-key');
+    if ($auth_key === '' || $auth_key === null) {
+      throw new PhabricatorConfigValidationException(
+        pht(
+          'The Review Helper authentication key must be set before a Review Helper URL is configured.'
+        )
+      );
     }
   }
 }
