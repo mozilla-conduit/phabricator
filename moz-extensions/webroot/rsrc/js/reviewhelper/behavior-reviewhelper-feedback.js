@@ -85,7 +85,7 @@ JX.behavior("reviewhelper-feedback", function (config) {
     }
 
     // We only want to enhance comments made by the Review Helper bot
-    var authorName = data.snippet?.split(":")[0];
+    var authorName = data.snippet ? data.snippet.split(":")[0] : null;
     if (authorName !== botUsername) {
       return;
     }

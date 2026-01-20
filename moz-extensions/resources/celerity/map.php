@@ -8,10 +8,10 @@
 return array(
   'names' => array(
     'rsrc/css/reviewhelper/reviewhelper-feedback.css' => '0f9cbe2d',
-    'rsrc/js/reviewhelper/behavior-reviewhelper-feedback.js' => '3e87d69f',
+    'rsrc/js/reviewhelper/behavior-reviewhelper-feedback.js' => '08402370',
   ),
   'symbols' => array(
-    'javelin-behavior-reviewhelper-feedback' => '3e87d69f',
+    'javelin-behavior-reviewhelper-feedback' => '08402370',
     'reviewhelper-feedback-css' => '0f9cbe2d',
   ),
   'requires' => array(),
