@@ -52,6 +52,20 @@ abstract class ReviewHelperController extends PhabricatorController {
       );
     }
 
+    // On 422 errors, Review Helper will return user friendly error messages
+    if ($status->getStatusCode() == 422) {
+      try {
+        $data = phutil_json_decode($body);
+        if (is_array($data) && array_key_exists('error_message', $data)) {
+          throw new ReviewHelperServiceException($data['error_message']);
+        }
+      } catch (PhutilJSONParserException $ex) {
+        throw new ReviewHelperServiceException(
+          pht('Review Helper cannot process the request (422).')
+        );
+      }
+    }
+
     if ($status->isError()) {
       throw new ReviewHelperServiceException(
         pht(
