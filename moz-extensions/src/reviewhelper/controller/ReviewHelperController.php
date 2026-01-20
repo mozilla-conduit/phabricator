@@ -39,8 +39,10 @@ abstract class ReviewHelperController extends PhabricatorController {
       list($status, $body) = $future->resolve();
     } catch (HTTPFutureResponseStatus $ex) {
       throw new ReviewHelperServiceException(
-        pht('Review Helper encountered a connection error (%s).',
-            $ex->getStatusCode())
+        pht(
+          'Review Helper encountered a connection error (%s).',
+          $ex->getStatusCode()
+        )
       );
     }
 
@@ -52,8 +54,10 @@ abstract class ReviewHelperController extends PhabricatorController {
 
     if ($status->isError()) {
       throw new ReviewHelperServiceException(
-        pht('Review Helper returned an HTTP error (%s).',
-            $status->getStatusCode())
+        pht(
+          'Review Helper returned an HTTP error (%s).',
+          $status->getStatusCode()
+        )
       );
     }
 

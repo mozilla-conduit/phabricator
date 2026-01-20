@@ -23,6 +23,6 @@ final class CelerityMozExtensionsResources extends CelerityResourcesOnDisk {
 
   private function getMozExtensionsPath($to_file = '') {
     $root = dirname(dirname(dirname(__FILE__)));
-    return $root.'/'.$to_file;
+    return $root . '/' . $to_file;
   }
 }
