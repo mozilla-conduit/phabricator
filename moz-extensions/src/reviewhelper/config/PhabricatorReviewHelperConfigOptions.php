@@ -44,6 +44,13 @@ extends PhabricatorApplicationConfigOptions {
         30
       )
         ->setDescription(pht('Request timeout in seconds for the AI review service.')),
+      $this->newOption(
+        'reviewhelper.bot-username',
+        'string',
+        ''
+      )
+        ->setDescription(pht('Username of the bot account that posts AI review comments. ' .
+          'Feedback buttons will appear on inline comments from this user.')),
     );
   }
 
@@ -51,6 +58,8 @@ extends PhabricatorApplicationConfigOptions {
     $key = $option->getKey();
     if ($key === 'reviewhelper.url') {
       $this->validateServiceURL($value);
+    } elseif ($key === 'reviewhelper.bot-username') {
+      $this->validateBotUsername($value);
     }
   }
 
@@ -79,6 +88,26 @@ extends PhabricatorApplicationConfigOptions {
       throw new PhabricatorConfigValidationException(
         pht(
           'The Review Helper authentication key must be set before a Review Helper URL is configured.'
+        )
+      );
+    }
+  }
+
+  private function validateBotUsername($value) {
+    if ($value === '' || $value === null) {
+      return;
+    }
+
+    $user = id(new PhabricatorUser())->loadOneWhere(
+      'userName = %s',
+      $value
+    );
+
+    if (!$user) {
+      throw new PhabricatorConfigValidationException(
+        pht(
+          'The bot username "%s" does not match any existing Phabricator user.',
+          $value
         )
       );
     }

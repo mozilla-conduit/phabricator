@@ -29,6 +29,7 @@ final class PhabricatorReviewHelperApplication extends PhabricatorApplication {
     return array(
       '/reviewhelper/' => array(
         'request/(?P<revisionID>[1-9]\d*)/' => 'ReviewHelperRequestController',
+        'feedback/' => 'ReviewHelperFeedbackController',
       ),
     );
   }
