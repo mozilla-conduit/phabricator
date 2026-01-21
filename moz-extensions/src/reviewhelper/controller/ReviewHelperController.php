@@ -60,9 +60,7 @@ abstract class ReviewHelperController extends PhabricatorController {
           throw new ReviewHelperServiceException($data['error_message']);
         }
       } catch (PhutilJSONParserException $ex) {
-        throw new ReviewHelperServiceException(
-          pht('Review Helper cannot process the request (422).')
-        );
+        // Fall through to generic error below
       }
     }
 
