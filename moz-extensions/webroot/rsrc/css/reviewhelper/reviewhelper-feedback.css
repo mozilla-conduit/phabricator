@@ -1,0 +1,16 @@
+/**
+ * @provides reviewhelper-feedback-css
+ */
+
+.reviewhelper-feedback-footer {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #c7ccd1;
+  background: #f7f7f9;
+  font-size: 12px;
+}
+
+.reviewhelper-feedback-footer .button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
