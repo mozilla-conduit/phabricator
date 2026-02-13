@@ -5,6 +5,32 @@
 
 abstract class ReviewHelperController extends PhabricatorController {
 
+  protected function determineActingCapacity(
+    PhabricatorUser $viewer,
+    DifferentialRevision $revision
+  ) {
+    if ($viewer->getPHID() === $revision->getAuthorPHID()) {
+      return 'author';
+    }
+
+    foreach ($revision->getReviewers() as $reviewer) {
+      if ($reviewer->getReviewerPHID() === $viewer->getPHID()) {
+        return 'reviewer:' . $reviewer->getReviewerStatus();
+      }
+    }
+
+    $subscribers = id(new PhabricatorSubscribersQuery())
+      ->withObjectPHIDs(array($revision->getPHID()))
+      ->withSubscriberPHIDs(array($viewer->getPHID()))
+      ->execute();
+
+    if (!empty($subscribers[$revision->getPHID()])) {
+      return 'participant';
+    }
+
+    return null;
+  }
+
   /**
    * Make a request to the Review Helper service.
    *

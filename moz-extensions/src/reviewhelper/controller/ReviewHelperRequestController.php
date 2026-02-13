@@ -13,6 +13,7 @@ final class ReviewHelperRequestController extends ReviewHelperController {
       ->setViewer($viewer)
       ->withIDs(array($revision_id))
       ->needDiffIDs(true)
+      ->needReviewers(true)
       ->executeOne();
 
     if (!$revision) {
@@ -65,11 +66,14 @@ final class ReviewHelperRequestController extends ReviewHelperController {
     PhabricatorUser $viewer,
     DifferentialRevision $revision
   ) {
+    $acting_capacity = $this->determineActingCapacity($viewer, $revision);
+
     $payload = array(
       'revision_id' => $revision->getID(),
       'diff_id' => max($revision->getDiffIDs()),
       'user_id' => $viewer->getID(),
       'user_name' => $viewer->getUsername(),
+      'acting_capacity' => $acting_capacity,
     );
 
     $data = $this->makeServiceRequest('/request', $payload);
