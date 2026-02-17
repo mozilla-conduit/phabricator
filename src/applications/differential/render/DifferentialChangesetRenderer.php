@@ -521,7 +521,7 @@ abstract class DifferentialChangesetRenderer extends Phobject {
         }
       }
 
-      if (isset($hunk_starts[$ospec['line']])) {
+      if ($ospec['line'] !== null  && isset($hunk_starts[$ospec['line']])) {
         $primitives[] = array(
           'type' => 'no-context',
         );
