@@ -56,12 +56,22 @@ final class ReviewHelperFeedbackController extends ReviewHelperController {
       ->withIDs(array($comment_id))
       ->executeOne();
 
+    if (!$comment) {
+      throw new ReviewHelperServiceException(
+        pht('Comment not found or you do not have permission to view it.')
+      );
+    }
     $revision = id(new DifferentialRevisionQuery())
       ->setViewer($viewer)
       ->withPHIDs(array($comment->getRevisionPHID()))
       ->needReviewers(true)
       ->executeOne();
 
+    if (!$revision) {
+      throw new ReviewHelperServiceException(
+        pht('Unable to load revision for this comment.')
+      );
+    }
     $acting_capacity = $this->determineActingCapacity($viewer, $revision);
 
     $payload = array(
