@@ -51,11 +51,35 @@ final class ReviewHelperFeedbackController extends ReviewHelperController {
     $comment_id,
     $feedback_type
   ) {
+    $comment = id(new DifferentialDiffInlineCommentQuery())
+      ->setViewer($viewer)
+      ->withIDs(array($comment_id))
+      ->executeOne();
+
+    if (!$comment) {
+      throw new ReviewHelperServiceException(
+        pht('Comment not found or you do not have permission to view it.')
+      );
+    }
+    $revision = id(new DifferentialRevisionQuery())
+      ->setViewer($viewer)
+      ->withPHIDs(array($comment->getRevisionPHID()))
+      ->needReviewers(true)
+      ->executeOne();
+
+    if (!$revision) {
+      throw new ReviewHelperServiceException(
+        pht('Unable to load revision for this comment.')
+      );
+    }
+    $acting_capacity = $this->determineActingCapacity($viewer, $revision);
+
     $payload = array(
       'comment_id' => $comment_id,
       'feedback_type' => $feedback_type,
       'user_id' => $viewer->getID(),
       'user_name' => $viewer->getUsername(),
+      'acting_capacity' => $acting_capacity,
     );
 
     return $this->makeServiceRequest('/feedback', $payload);
