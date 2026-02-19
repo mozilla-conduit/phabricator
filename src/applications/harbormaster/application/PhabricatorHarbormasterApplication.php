@@ -52,6 +52,11 @@ final class PhabricatorHarbormasterApplication extends PhabricatorApplication {
   }
 
   public function getRoutes() {
+    /* Bug 2015969 */
+    /* 'hook/' => array( */
+    /*   'circleci/' => 'HarbormasterCircleCIHookController', */
+    /*   'buildkite/' => 'HarbormasterBuildkiteHookController', */
+    /* ), */
     return array(
       '/B(?P<id>[1-9]\d*)' => 'HarbormasterBuildableViewController',
       '/harbormaster/' => array(
@@ -95,7 +100,6 @@ final class PhabricatorHarbormasterApplication extends PhabricatorApplication {
           '(?P<id>\d+)/' => 'HarbormasterLintMessagesController',
         ),
         'hook/' => array(
-          'circleci/' => 'HarbormasterCircleCIHookController',
           'buildkite/' => 'HarbormasterBuildkiteHookController',
         ),
         'log/' => array(
