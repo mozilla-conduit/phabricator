@@ -53,13 +53,13 @@ final class ReviewHelperRequestController extends ReviewHelperController {
       return $this->newDialog()
         ->setTitle(pht('Review Helper'))
         ->setErrors(array($ex->getMessage()))
-        ->addCancelButton($revision_uri);
+        ->addCancelButton($revision_uri, pht('Okay'));
     }
 
     return $this->newDialog()
       ->setTitle(pht('Review Helper'))
       ->appendParagraph($data['message'])
-      ->addCancelButton($revision_uri);
+      ->addCancelButton($revision_uri, pht('Okay'));
   }
 
   private function requestReview(
