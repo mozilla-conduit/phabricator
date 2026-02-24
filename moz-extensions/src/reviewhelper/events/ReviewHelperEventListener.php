@@ -40,7 +40,8 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
       return;
     }
 
-    if (!ReviewHelperService::isEligibleForReview($object)) {
+    $allow_private = PhabricatorEnv::getEnvConfig('reviewhelper.allow-private-revisions');
+    if (!$allow_private && isRevisionPrivate($user, $object)) {
       return;
     }
 
