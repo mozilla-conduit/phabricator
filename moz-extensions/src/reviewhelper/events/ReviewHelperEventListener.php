@@ -41,8 +41,15 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
     }
 
     $allow_private = PhabricatorEnv::getEnvConfig('reviewhelper.allow-private-revisions');
-    if (!$allow_private && isRevisionPrivate($user, $object)) {
-      return;
+    if (!$allow_private) {
+      $view_policy = $object->getViewPolicy();
+      $is_private = !in_array($view_policy, array(
+        PhabricatorPolicies::POLICY_PUBLIC,
+        PhabricatorPolicies::POLICY_USER,
+      ));
+      if ($is_private) {
+        return;
+      }
     }
 
     $status = $object->getStatusObject();
