@@ -45,6 +45,13 @@ extends PhabricatorApplicationConfigOptions {
       )
         ->setDescription(pht('Request timeout in seconds for the AI review service.')),
       $this->newOption(
+        'reviewhelper.allow-private-revisions',
+        'bool',
+        false
+      )
+        ->setDescription(pht('Allow AI review requests for private (secure) revisions. ' .
+          'When disabled, the "Request AI Review" button and AI feedback controls are hidden on private revisions.')),
+      $this->newOption(
         'reviewhelper.bot-username',
         'string',
         ''
