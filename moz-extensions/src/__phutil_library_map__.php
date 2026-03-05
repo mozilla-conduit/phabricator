@@ -138,6 +138,7 @@ phutil_register_library_map(array(
     'StoryQueryResult' => 'email/adapter/StoryQueryResult.php',
     'TransactionList' => 'email/adapter/TransactionList.php',
     'UserPhabricatorReviewer' => 'email/adapter/UserPhabricatorReviewer.php',
+    'DifferentialRevisionRequiredActionResultBucketSpecial' => 'differential/query/DifferentialRevisionRequiredActionResultBucketSpecial.php',
   ),
   'function' => array(
     'isRevisionPrivate' => 'differential/view/DifferentialRevisionWarning.php',
@@ -230,5 +231,6 @@ phutil_register_library_map(array(
     'SentryConfigOptions' => 'PhabricatorApplicationConfigOptions',
     'SentryLoggerPlugin' => 'Phobject',
     'UserPhabricatorReviewer' => 'PhabricatorReviewer',
+    'DifferentialRevisionRequiredActionResultBucketSpecial' => 'DifferentialRevisionRequiredActionResultBucket'
   ),
 ));
