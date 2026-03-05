@@ -1,6 +1,6 @@
 <?php
 
-final class DifferentialRevisionRequiredActionResultBucket
+class DifferentialRevisionRequiredActionResultBucket
   extends DifferentialRevisionResultBucket {
 
   const BUCKETKEY = 'action';
@@ -8,7 +8,7 @@ final class DifferentialRevisionRequiredActionResultBucket
   const KEY_MUSTREVIEW = 'must-review';
   const KEY_SHOULDREVIEW = 'should-review';
 
-  private $objects;
+  protected $objects;
 
   public function getResultBucketName() {
     return pht('Bucket by Required Action');
@@ -96,7 +96,7 @@ final class DifferentialRevisionRequiredActionResultBucket
     return $groups;
   }
 
-  private function filterMustReview(array $phids) {
+  protected function filterMustReview(array $phids) {
     $blocking = array(
       DifferentialReviewerStatus::STATUS_BLOCKING,
       DifferentialReviewerStatus::STATUS_REJECTED,
@@ -119,7 +119,7 @@ final class DifferentialRevisionRequiredActionResultBucket
     return $results;
   }
 
-  private function filterShouldReview(array $phids) {
+  protected function filterShouldReview(array $phids) {
     $reviewing = array(
       DifferentialReviewerStatus::STATUS_ADDED,
       DifferentialReviewerStatus::STATUS_COMMENTED,

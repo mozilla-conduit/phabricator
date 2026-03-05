@@ -140,6 +140,7 @@ final class DifferentialRevisionSearchEngine
 
     if ($this->requireViewer()->isLoggedIn()) {
       $names['active'] = pht('Active Revisions');
+      $names['special'] = pht('Special Revisions');
       $names['authored'] = pht('Authored');
     }
 
@@ -157,6 +158,13 @@ final class DifferentialRevisionSearchEngine
     switch ($query_key) {
       case 'active':
         $bucket_key = DifferentialRevisionRequiredActionResultBucket::BUCKETKEY;
+
+        return $query
+          ->setParameter('responsiblePHIDs', array($viewer->getPHID()))
+          ->setParameter('statuses', array('open()'))
+          ->setParameter('bucket', $bucket_key);
+      case 'special':
+        $bucket_key = DifferentialRevisionRequiredActionResultBucketSpecial::BUCKETKEY;
 
         return $query
           ->setParameter('responsiblePHIDs', array($viewer->getPHID()))
