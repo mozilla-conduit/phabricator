@@ -9,7 +9,7 @@ class EmailRevisionCommented implements PublicEmailBody
   public array $inlineComments;
   /** @var EmailRecipient[] */
   public array $subscribers;
-  /** @var EmailRecipient[] */
+  /** @var EmailReviewer[] */
   public array $reviewers;
   public ?EmailRecipient $author;
 
@@ -18,7 +18,7 @@ class EmailRevisionCommented implements PublicEmailBody
    * @param EmailCommentMessage|null $mainCommentMessage
    * @param EmailInlineComment[] $inlineComments
    * @param EmailRecipient[] $subscribers
-   * @param EmailRecipient[] $reviewers
+   * @param EmailReviewer[] $reviewers
    * @param EmailRecipient|null $author
    */
   public function __construct(string $transactionLink, ?EmailCommentMessage $mainCommentMessage, array $inlineComments, array $subscribers, array $reviewers, ?EmailRecipient $author)

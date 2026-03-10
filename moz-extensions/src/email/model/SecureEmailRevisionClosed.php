@@ -5,7 +5,7 @@ class SecureEmailRevisionClosed implements SecureEmailBody
 {
   /** @var EmailRecipient[] */
   public array $subscribers;
-  /** @var EmailRecipient[] */
+  /** @var EmailReviewer[] */
   public array $reviewers;
   public ?EmailRecipient $author;
   public int $commentCount;
@@ -13,7 +13,7 @@ class SecureEmailRevisionClosed implements SecureEmailBody
 
   /**
    * @param EmailRecipient[] $subscribers
-   * @param EmailRecipient[] $reviewers
+   * @param EmailReviewer[] $reviewers
    * @param EmailRecipient|null $author
    * @param int $commentCount
    * @param string $transactionLink
