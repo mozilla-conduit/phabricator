@@ -6,7 +6,7 @@ class SecureEmailRevisionRequestedChanges implements SecureEmailBody
   public string $transactionLink;
   /** @var EmailRecipient[] */
   public array $subscribers;
-  /** @var EmailRecipient[] */
+  /** @var EmailReviewer[] */
   public array $reviewers;
   public ?EmailRecipient $author;
   public int $commentCount;
@@ -14,7 +14,7 @@ class SecureEmailRevisionRequestedChanges implements SecureEmailBody
   /**
    * @param string $transactionLink
    * @param EmailRecipient[] $subscribers
-   * @param EmailRecipient[] $reviewers
+   * @param EmailReviewer[] $reviewers
    * @param EmailRecipient|null $author
    * @param int $commentCount
    */
