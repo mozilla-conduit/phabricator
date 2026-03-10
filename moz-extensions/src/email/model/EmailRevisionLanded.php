@@ -5,7 +5,7 @@ class EmailRevisionLanded implements PublicEmailBody
 {
   /** @var EmailRecipient[] */
   public array $subscribers;
-  /** @var EmailRecipient[] */
+  /** @var EmailReviewer[] */
   public array $reviewers;
   public ?EmailRecipient $author;
   public string $revisionHash;
@@ -14,7 +14,7 @@ class EmailRevisionLanded implements PublicEmailBody
 
   /**
    * @param EmailRecipient[] $subscribers
-   * @param EmailRecipient[] $reviewers
+   * @param EmailReviewer[] $reviewers
    * @param EmailRecipient|null $author
    * @param string $revisionHash
    * @param string|null $hgLink
@@ -44,7 +44,7 @@ class EmailRevisionLanded implements PublicEmailBody
 
     return new EmailRevisionLanded(
       $resolveUsers->resolveSubscribersAsRecipients(),
-      $resolveUsers->resolveReviewersAsRecipients(),
+      $resolveUsers->resolveReviewers(false),
       $resolveUsers->resolveAuthorAsRecipient(),
       $commit->getCommitIdentifier(),
       $hgLink,

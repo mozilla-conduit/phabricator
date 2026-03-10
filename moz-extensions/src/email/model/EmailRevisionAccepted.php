@@ -11,7 +11,7 @@ class EmailRevisionAccepted implements PublicEmailBody
   public bool $isReadyToLand;
   /** @var EmailRecipient[] */
   public array $subscribers;
-  /** @var EmailRecipient[] */
+  /** @var EmailReviewer[] */
   public array $reviewers;
   public ?EmailRecipient $author;
 
@@ -22,7 +22,7 @@ class EmailRevisionAccepted implements PublicEmailBody
    * @param string $landoLink
    * @param bool $isReadyToLand
    * @param EmailRecipient[] $subscribers
-   * @param EmailRecipient[] $reviewers
+   * @param EmailReviewer[] $reviewers
    * @param EmailRecipient|null $author
    */
   public function __construct(?EmailCommentMessage $mainCommentMessage, array $inlineComments, string $transactionLink, string $landoLink, bool $isReadyToLand, array $subscribers, array $reviewers, ?EmailRecipient $author) {
