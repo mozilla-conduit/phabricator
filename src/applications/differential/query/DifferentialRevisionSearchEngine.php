@@ -140,7 +140,7 @@ final class DifferentialRevisionSearchEngine
 
     if ($this->requireViewer()->isLoggedIn()) {
       $names['active'] = pht('Active Revisions');
-      $names['special'] = pht('Special Revisions');
+      $names['action-with-needs-changes'] = pht('Active With Needs Changes');
       $names['authored'] = pht('Authored');
     }
 
@@ -163,8 +163,8 @@ final class DifferentialRevisionSearchEngine
           ->setParameter('responsiblePHIDs', array($viewer->getPHID()))
           ->setParameter('statuses', array('open()'))
           ->setParameter('bucket', $bucket_key);
-      case 'special':
-        $bucket_key = DifferentialRevisionRequiredActionResultBucketSpecial::BUCKETKEY;
+      case 'action-with-needs-changes':
+        $bucket_key = DifferentialRevisionRequiredActionWithNeedsChangesResultBucket::BUCKETKEY;
 
         return $query
           ->setParameter('responsiblePHIDs', array($viewer->getPHID()))

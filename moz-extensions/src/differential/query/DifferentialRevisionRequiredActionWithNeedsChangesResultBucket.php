@@ -1,35 +1,12 @@
 <?php
 
-final class DifferentialRevisionRequiredActionResultBucketSpecial
+final class DifferentialRevisionRequiredActionWithNeedsChangesResultBucket
   extends DifferentialRevisionRequiredActionResultBucket {
 
-  const BUCKETKEY = 'special';
+  const BUCKETKEY = 'action-with-needs-changes';
 
   public function getResultBucketName() {
     return pht('Bucket by Required Action (Include Needs Changes)');
-  }
-
-  protected function filterMustReview(array $phids) {
-    $blocking = array(
-      DifferentialReviewerStatus::STATUS_BLOCKING,
-      DifferentialReviewerStatus::STATUS_REJECTED,
-      DifferentialReviewerStatus::STATUS_REJECTED_OLDER,
-    );
-    $blocking = array_fuse($blocking);
-
-    $objects = $this->getRevisionsUnderReview($this->objects, $phids);
-
-    $results = array();
-    foreach ($objects as $key => $object) {
-      if (!$this->hasReviewersWithStatus($object, $phids, $blocking)) {
-        continue;
-      }
-
-      $results[$key] = $object;
-      unset($this->objects[$key]);
-    }
-
-    return $results;
   }
 
   protected function filterShouldReview(array $phids) {

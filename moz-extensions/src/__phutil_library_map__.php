@@ -22,6 +22,7 @@ phutil_register_library_map(array(
     'DifferentialUpliftRequestCustomField' => 'differential/customfield/DifferentialUpliftRequestCustomField.php',
     'DifferentialUpliftRequestCustomFieldTestCase' => 'differential/customfield/__tests__/DifferentialUpliftRequestCustomFieldTestCase.php',
     'PhabricatorUpdateUpliftCommentAction' => 'applications/transactions/commentaction/PhabricatorUpdateUpliftCommentAction.php',
+    'DifferentialRevisionRequiredActionWithNeedsChangesResultBucket' => 'differential/query/DifferentialRevisionRequiredActionWithNeedsChangesResultBucket.php',
     'DifferentialRevisionWarning' => 'differential/view/DifferentialRevisionWarning.php',
     'EmailAPIAuthorization' => 'email/EmailAPIAuthorization.php',
     'EmailAffectedFile' => 'email/model/EmailAffectedFile.php',
@@ -121,7 +122,6 @@ phutil_register_library_map(array(
     'StoryQueryResult' => 'email/adapter/StoryQueryResult.php',
     'TransactionList' => 'email/adapter/TransactionList.php',
     'UserPhabricatorReviewer' => 'email/adapter/UserPhabricatorReviewer.php',
-    'DifferentialRevisionRequiredActionResultBucketSpecial' => 'differential/query/DifferentialRevisionRequiredActionResultBucketSpecial.php',
   ),
   'function' => array(
     'isRevisionPrivate' => 'differential/view/DifferentialRevisionWarning.php',
@@ -138,6 +138,7 @@ phutil_register_library_map(array(
     'DifferentialBugzillaBugIDValidator' => 'Phobject',
     'DifferentialUpliftRequestCustomField' => 'DifferentialStoredCustomField',
     'PhabricatorUpdateUpliftCommentAction' => 'PhabricatorEditEngineCommentAction',
+    'DifferentialRevisionRequiredActionWithNeedsChangesResultBucket' => 'DifferentialRevisionRequiredActionResultBucket',
     'DifferentialRevisionWarning' => 'Phobject',
     'EmailRevisionAbandoned' => 'PublicEmailBody',
     'EmailRevisionAccepted' => 'PublicEmailBody',
@@ -197,6 +198,5 @@ phutil_register_library_map(array(
     'SentryConfigOptions' => 'PhabricatorApplicationConfigOptions',
     'SentryLoggerPlugin' => 'Phobject',
     'UserPhabricatorReviewer' => 'PhabricatorReviewer',
-    'DifferentialRevisionRequiredActionResultBucketSpecial' => 'DifferentialRevisionRequiredActionResultBucket'
   ),
 ));
