@@ -140,7 +140,7 @@ final class DifferentialRevisionSearchEngine
 
     if ($this->requireViewer()->isLoggedIn()) {
       $names['active'] = pht('Active Revisions');
-      $names['special'] = pht('Special Revisions');
+      $names['action-with-needs-changes'] = pht('Active With Needs Changes');
       $names['authored'] = pht('Authored');
     }
 
@@ -163,8 +163,14 @@ final class DifferentialRevisionSearchEngine
           ->setParameter('responsiblePHIDs', array($viewer->getPHID()))
           ->setParameter('statuses', array('open()'))
           ->setParameter('bucket', $bucket_key);
+<<<<<<< HEAD
       case 'special':
         $bucket_key = DifferentialRevisionRequiredActionResultBucketSpecial::BUCKETKEY;
+||||||| parent of 0686660427 (Bug 1907593 - Consider changing default setting when a reviewer requests changes so revisions don't disappear from other reviewers' queues)
+=======
+      case 'action-with-needs-changes':
+        $bucket_key = DifferentialRevisionRequiredActionWithNeedsChangesResultBucket::BUCKETKEY;
+>>>>>>> 0686660427 (Bug 1907593 - Consider changing default setting when a reviewer requests changes so revisions don't disappear from other reviewers' queues)
 
         return $query
           ->setParameter('responsiblePHIDs', array($viewer->getPHID()))
