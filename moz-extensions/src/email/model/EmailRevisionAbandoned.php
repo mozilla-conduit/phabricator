@@ -7,7 +7,7 @@ class EmailRevisionAbandoned implements PublicEmailBody
   /** @var EmailInlineComment[] */
   public array $inlineComments;
   public string $transactionLink;
-  /** @var EmailRecipient[] */
+  /** @var EmailReviewer[] */
   public array $reviewers;
   /** @var EmailRecipient[] */
   public array $subscribers;
@@ -16,7 +16,7 @@ class EmailRevisionAbandoned implements PublicEmailBody
    * @param EmailCommentMessage|null $mainCommentMessage
    * @param EmailInlineComment[] $inlineComments
    * @param string $transactionLink
-   * @param EmailRecipient[] $reviewers
+   * @param EmailReviewer[] $reviewers
    * @param EmailRecipient[] $subscribers
    */
   public function __construct(?EmailCommentMessage $mainCommentMessage, array $inlineComments, string $transactionLink, array $reviewers, array $subscribers)
