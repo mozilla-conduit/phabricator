@@ -11,21 +11,12 @@ final class PhabricatorFileImageProxyController
     $viewer = $request->getViewer();
     $img_uri = $request->getStr('uri');
 
-    // Validate the URI before doing anything
-    PhabricatorEnv::requireValidRemoteURIForLink($img_uri);
+    // Validate the URI before doing anything, including DNS resolution and
+    // outbound blacklist check, to fail fast before consuming rate limit tokens.
+    PhabricatorEnv::requireValidRemoteURIForFetch(
+      $img_uri,
+      array('http', 'https'));
     $uri = new PhutilURI($img_uri);
-    $proto = $uri->getProtocol();
-
-    $allowed_protocols = array(
-      'http',
-      'https',
-    );
-    if (!in_array($proto, $allowed_protocols)) {
-      throw new Exception(
-        pht(
-          'The provided image URI must use one of these protocols: %s.',
-          implode(', ', $allowed_protocols)));
-    }
 
     // Check if we already have the specified image URI downloaded
     $cached_request = id(new PhabricatorFileExternalRequest())->loadOneWhere(
@@ -45,10 +36,11 @@ final class PhabricatorFileImageProxyController
     $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
     $save_request = false;
     try {
-      // Rate limit outbound fetches to make this mechanism less useful for
-      // scanning networks and ports.
+      // Rate limit outbound fetches by remote IP to make this mechanism less
+      // useful for scanning networks and ports. Using IP (not PHID) ensures
+      // anonymous users are not all collapsed into a single actor.
       PhabricatorSystemActionEngine::willTakeAction(
-        array($viewer->getPHID()),
+        array(PhabricatorSystemActionEngine::newActorFromRequest($request)),
         new PhabricatorFilesOutboundRequestAction(),
         1);
 
@@ -64,13 +56,14 @@ final class PhabricatorFileImageProxyController
         $engine = new PhabricatorDestructionEngine();
         $engine->destroyObject($file);
         $file = null;
+        phlog(pht(
+          'Image proxy rejected "%s": not a valid image (MIME type: "%s").',
+          $uri,
+          $mime_type));
         throw new Exception(
           pht(
-            'The URI "%s" does not correspond to a valid image file (got '.
-            'a file with MIME type "%s"). You must specify the URI of a '.
-            'valid image file.',
-            $uri,
-            $mime_type));
+            'The URI does not correspond to a valid image file. '.
+            'You must specify the URI of a valid image file.'));
       }
 
       $file->save();
@@ -119,11 +112,12 @@ final class PhabricatorFileImageProxyController
   private function getExternalResponse(
     PhabricatorFileExternalRequest $request) {
     if (!$request->getIsSuccessful()) {
+      phlog(pht(
+        'Image proxy failed for "%s": %s',
+        $request->getURI(),
+        $request->getResponseMessage()));
       throw new Exception(
-        pht(
-          'Request to "%s" failed: %s',
-          $request->getURI(),
-          $request->getResponseMessage()));
+        pht('Unable to load the requested image.'));
     }
 
     $file = id(new PhabricatorFileQuery())
