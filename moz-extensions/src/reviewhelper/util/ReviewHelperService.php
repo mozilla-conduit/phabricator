@@ -155,3 +155,26 @@ final class ReviewHelperService extends Phobject {
 
     return $data;
   }
+
+  /**
+   * Check if a revision is eligible for AI review.
+   *
+   * @param DifferentialRevision $revision
+   * @return bool
+   */
+  public static function isEligibleForReview(DifferentialRevision $revision) {
+    $allow_private = PhabricatorEnv::getEnvConfig('reviewhelper.allow-private-revisions');
+    if (!$allow_private) {
+      $view_policy = $revision->getViewPolicy();
+      $is_private = !in_array($view_policy, array(
+        PhabricatorPolicies::POLICY_PUBLIC,
+        PhabricatorPolicies::POLICY_USER,
+      ));
+      if ($is_private) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+}
