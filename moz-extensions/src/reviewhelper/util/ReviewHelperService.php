@@ -181,6 +181,11 @@ final class ReviewHelperService extends Phobject {
       }
     }
 
+    $allowed_repos = PhabricatorEnv::getEnvConfig('reviewhelper.repository-phids');
+    if ($allowed_repos && !in_array($revision->getRepositoryPHID(), $allowed_repos, true)) {
+      return false;
+    }
+
     return true;
   }
 }
