@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-final class ReviewHelperFeedbackController extends ReviewHelperController {
+final class ReviewHelperFeedbackController extends PhabricatorController {
 
   public function handleRequest(AphrontRequest $request) {
     $viewer = $request->getViewer();
@@ -72,7 +72,8 @@ final class ReviewHelperFeedbackController extends ReviewHelperController {
         pht('Unable to load revision for this comment.')
       );
     }
-    $acting_capacity = $this->determineActingCapacity($viewer, $revision);
+    $acting_capacity = ReviewHelperService::determineActingCapacity(
+      $viewer, $revision);
 
     $payload = array(
       'comment_id' => $comment_id,
@@ -82,6 +83,6 @@ final class ReviewHelperFeedbackController extends ReviewHelperController {
       'acting_capacity' => $acting_capacity,
     );
 
-    return $this->makeServiceRequest('/feedback', $payload);
+    return ReviewHelperService::makeServiceRequest('/feedback', $payload);
   }
 }
