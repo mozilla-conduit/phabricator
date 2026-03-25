@@ -3,9 +3,16 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-abstract class ReviewHelperController extends PhabricatorController {
+final class ReviewHelperService extends Phobject {
 
-  protected function determineActingCapacity(
+  /**
+   * Determine the acting capacity of a user for a revision.
+   *
+   * @param PhabricatorUser $viewer
+   * @param DifferentialRevision $revision Must have reviewers loaded.
+   * @return string|null
+   */
+  public static function determineActingCapacity(
     PhabricatorUser $viewer,
     DifferentialRevision $revision
   ) {
@@ -39,7 +46,7 @@ abstract class ReviewHelperController extends PhabricatorController {
    * @return array The parsed JSON response
    * @throws ReviewHelperServiceException
    */
-  protected function makeServiceRequest($endpoint, array $payload) {
+  public static function makeServiceRequest($endpoint, array $payload) {
     $service_url = PhabricatorEnv::getEnvConfig('reviewhelper.url');
     $auth_key = PhabricatorEnv::getEnvConfig('reviewhelper.auth-key');
     $timeout = PhabricatorEnv::getEnvConfig('reviewhelper.timeout');
@@ -115,4 +122,36 @@ abstract class ReviewHelperController extends PhabricatorController {
 
     return $data;
   }
-}
+
+  /**
+   * Request an AI review for a revision.
+   *
+   * @param PhabricatorUser $viewer
+   * @param DifferentialRevision $revision Must have diff IDs and reviewers loaded.
+   * @return array The parsed service response (contains 'message' key)
+   * @throws ReviewHelperServiceException
+   */
+  public static function requestReview(
+    PhabricatorUser $viewer,
+    DifferentialRevision $revision
+  ) {
+    $acting_capacity = self::determineActingCapacity($viewer, $revision);
+
+    $payload = array(
+      'revision_id' => $revision->getID(),
+      'diff_id' => max($revision->getDiffIDs()),
+      'user_id' => $viewer->getID(),
+      'user_name' => $viewer->getUsername(),
+      'acting_capacity' => $acting_capacity,
+    );
+
+    $data = self::makeServiceRequest('/request', $payload);
+
+    if (!array_key_exists('message', $data)) {
+      throw new ReviewHelperServiceException(
+        pht('The AI review service returned an unexpected or malformed response.')
+      );
+    }
+
+    return $data;
+  }

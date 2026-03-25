@@ -3,7 +3,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-final class ReviewHelperRequestController extends ReviewHelperController {
+final class ReviewHelperRequestController extends PhabricatorController {
 
   public function handleRequest(AphrontRequest $request) {
     $viewer = $request->getViewer();
@@ -40,7 +40,7 @@ final class ReviewHelperRequestController extends ReviewHelperController {
     }
 
     try {
-      $data = $this->requestReview($viewer, $revision);
+      $data = ReviewHelperService::requestReview($viewer, $revision);
     } catch (ReviewHelperServiceException $ex) {
       MozLogger::log(
         'Review Helper request failed',
@@ -60,31 +60,5 @@ final class ReviewHelperRequestController extends ReviewHelperController {
       ->setTitle(pht('Review Helper'))
       ->appendParagraph($data['message'])
       ->addCancelButton($revision_uri, pht('Okay'));
-  }
-
-  private function requestReview(
-    PhabricatorUser $viewer,
-    DifferentialRevision $revision
-  ) {
-    $acting_capacity = $this->determineActingCapacity($viewer, $revision);
-
-    $payload = array(
-      'revision_id' => $revision->getID(),
-      'diff_id' => max($revision->getDiffIDs()),
-      'user_id' => $viewer->getID(),
-      'user_name' => $viewer->getUsername(),
-      'acting_capacity' => $acting_capacity,
-    );
-
-    $data = $this->makeServiceRequest('/request', $payload);
-
-    // Additional validation specific to this endpoint
-    if (!array_key_exists('message', $data)) {
-      throw new ReviewHelperServiceException(
-        pht('The AI review service returned an unexpected or malformed response.')
-      );
-    }
-
-    return $data;
   }
 }
