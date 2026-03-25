@@ -135,6 +135,12 @@ final class ReviewHelperService extends Phobject {
     PhabricatorUser $viewer,
     DifferentialRevision $revision
   ) {
+    if (!self::isEligibleForReview($revision)) {
+      throw new ReviewHelperIneligibleRevisionException(
+        pht('This revision is not eligible for AI review.')
+      );
+    }
+
     $acting_capacity = self::determineActingCapacity($viewer, $revision);
 
     $payload = array(
