@@ -53,11 +53,11 @@ extends PhabricatorApplicationConfigOptions {
           'When disabled, the "Request AI Review" button and AI feedback controls are hidden on private revisions.')),
       $this->newOption(
         'reviewhelper.repository-phids',
-        'custom:PhabricatorRepositoryCallsignConfigType',
+        'custom:PhabricatorRepositoryListConfigType',
         array()
       )
-        ->setDescription(pht('Repository callsigns where the AI review button ' .
-          'should be shown. Enter one callsign per line. ' .
+        ->setDescription(pht('Repositories where the AI review button ' .
+          'should be shown. ' .
           'If empty, the button will be shown on all repositories.')),
       $this->newOption(
         'reviewhelper.bot-username',
