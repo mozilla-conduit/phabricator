@@ -52,6 +52,14 @@ extends PhabricatorApplicationConfigOptions {
         ->setDescription(pht('Allow AI review requests for private (secure) revisions. ' .
           'When disabled, the "Request AI Review" button and AI feedback controls are hidden on private revisions.')),
       $this->newOption(
+        'reviewhelper.repository-phids',
+        'custom:PhabricatorRepositoryListConfigType',
+        array()
+      )
+        ->setDescription(pht('Repositories where the AI review button ' .
+          'should be shown. ' .
+          'If empty, the button will be shown on all repositories.')),
+      $this->newOption(
         'reviewhelper.bot-username',
         'string',
         ''
