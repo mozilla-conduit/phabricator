@@ -26,7 +26,10 @@ extends PhabricatorConfigOptionType {
     PhabricatorConfigEntry $entry,
     $value
   ) {
-    return $value;
+    if (!is_array($value) || !$value) {
+      return '';
+    }
+    return implode("\n", $value);
   }
 
   public function renderControl(
@@ -34,11 +37,17 @@ extends PhabricatorConfigOptionType {
     $display_value,
     $e_value
   ) {
+    if (is_string($display_value) && strlen($display_value)) {
+      $phids = explode("\n", $display_value);
+    } else {
+      $phids = array();
+    }
+
     return id(new AphrontFormTokenizerControl())
       ->setName('value')
       ->setLabel(pht('Repositories'))
       ->setDatasource(new DiffusionRepositoryDatasource())
-      ->setValue($display_value)
+      ->setValue($phids)
       ->setError($e_value);
   }
 }
