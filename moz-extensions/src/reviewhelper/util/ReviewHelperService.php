@@ -6,6 +6,13 @@
 final class ReviewHelperService extends Phobject {
 
   /**
+   * Maximum age (in seconds) of a revision for it to be considered as
+   * having pending visibility. Revisions older than this are assumed to
+   * have already been processed by phab-bot.
+   */
+  const PENDING_VISIBILITY_WINDOW = 300; // 5 minutes
+
+  /**
    * Determine the acting capacity of a user for a revision.
    *
    * @param PhabricatorUser $viewer
@@ -135,7 +142,8 @@ final class ReviewHelperService extends Phobject {
     PhabricatorUser $viewer,
     DifferentialRevision $revision
   ) {
-    if (!self::isEligibleForReview($revision)) {
+    $allow_pending_visibility = ($viewer->getPHID() === $revision->getAuthorPHID());
+    if (!self::isEligibleForReview($revision, $allow_pending_visibility)) {
       throw new ReviewHelperIneligibleRevisionException(
         pht('This revision is not eligible for AI review.')
       );
@@ -149,6 +157,7 @@ final class ReviewHelperService extends Phobject {
       'user_id' => $viewer->getID(),
       'user_name' => $viewer->getUsername(),
       'acting_capacity' => $acting_capacity,
+      'revision_created_at' => date('c', $revision->getDateCreated()),
     );
 
     $data = self::makeServiceRequest('/request', $payload);
@@ -165,10 +174,15 @@ final class ReviewHelperService extends Phobject {
   /**
    * Check if a revision is eligible for AI review.
    *
-   * @param DifferentialRevision $revision
+   * @param DifferentialRevision $revision When $allow_pending_visibility is
+   *   true, must have diff IDs attached (loaded with needDiffIDs(true)).
+   * @param bool $allow_pending_visibility Allow new private revisions through.
    * @return bool
    */
-  public static function isEligibleForReview(DifferentialRevision $revision) {
+  public static function isEligibleForReview(
+    DifferentialRevision $revision,
+    $allow_pending_visibility = false
+  ) {
     $allow_private = PhabricatorEnv::getEnvConfig('reviewhelper.allow-private-revisions');
     if (!$allow_private) {
       $view_policy = $revision->getViewPolicy();
@@ -177,12 +191,45 @@ final class ReviewHelperService extends Phobject {
         PhabricatorPolicies::POLICY_USER,
       ));
       if ($is_private) {
-        return false;
+        // Allow new private revisions through since phab-bot may not
+        // have finalized visibility yet.
+        $pending_visibility_exception = $allow_pending_visibility && self::hasPotentialPendingVisibility($revision);
+        if (!$pending_visibility_exception) {
+          return false;
+        }
       }
     }
 
     $allowed_repos = PhabricatorEnv::getEnvConfig('reviewhelper.repository-phids');
     if ($allowed_repos && !in_array($revision->getRepositoryPHID(), $allowed_repos, true)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if a private revision's visibility may not yet be finalized.
+   *
+   * Returns true for new revisions (first diff, created recently) where
+   * phab-bot likely hasn't processed the visibility yet.
+   *
+   * @param DifferentialRevision $revision Must have diff IDs attached
+   *   (loaded with needDiffIDs(true)).
+   * @return bool
+   */
+  public static function hasPotentialPendingVisibility(
+    DifferentialRevision $revision
+  ) {
+    $diff_ids = $revision->getDiffIDs();
+    $is_first_diff = (count($diff_ids) === 1);
+    if (!$is_first_diff) {
+      return false;
+    }
+
+    $age = PhabricatorTime::getNow() - $revision->getDateCreated();
+    $is_recent = $age < self::PENDING_VISIBILITY_WINDOW;
+    if (!$is_recent) {
       return false;
     }
 
