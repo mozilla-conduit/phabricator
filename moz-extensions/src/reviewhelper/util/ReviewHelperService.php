@@ -193,10 +193,8 @@ final class ReviewHelperService extends Phobject {
       if ($is_private) {
         // Allow new private revisions through since phab-bot may not
         // have finalized visibility yet.
-        if (
-          !$allow_pending_visibility
-          || !self::hasPotentialPendingVisibility($revision)
-        ) {
+        $pending_visibility_exception = $allow_pending_visibility && self::hasPotentialPendingVisibility($revision);
+        if (!$pending_visibility_exception) {
           return false;
         }
       }
