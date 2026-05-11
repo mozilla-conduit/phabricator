@@ -84,6 +84,23 @@ final class DifferentialDiffExtractionEngine extends Phobject {
       $changes = array();
     }
 
+    $parents = DiffusionQuery::callConduitWithDiffusionRequest(
+      $viewer,
+      $drequest,
+      'diffusion.commitparentsquery',
+      array(
+        'commit' => $identifier,
+      ));
+    $parent_identifier = $parents ? head($parents) : null;
+
+    // Unified diffs don't carry binary bytes. Populate `*:binary-phid` here,
+    // before `newFromRawChanges()` copies metadata onto the changesets.
+    $this->attachBinaryFilesToChanges(
+      $repository,
+      $changes,
+      $identifier,
+      $parent_identifier);
+
     $diff = DifferentialDiff::newFromRawChanges($viewer, $changes)
       ->setRepositoryPHID($repository->getPHID())
       ->setCommitPHID($commit->getPHID())
@@ -99,21 +116,13 @@ final class DifferentialDiffExtractionEngine extends Phobject {
       $diff->setAuthorPHID($author_phid);
     }
 
-    $parents = DiffusionQuery::callConduitWithDiffusionRequest(
-      $viewer,
-      $drequest,
-      'diffusion.commitparentsquery',
-      array(
-        'commit' => $identifier,
-      ));
-
-    if ($parents) {
-      $diff->setSourceControlBaseRevision(head($parents));
+    if ($parent_identifier !== null) {
+      $diff->setSourceControlBaseRevision($parent_identifier);
     }
 
-    // TODO: Attach binary files.
-
     $diff->save();
+
+    $this->attachBinaryFilesToDiff($diff);
 
     $commit_data = $commit->getCommitData();
     $message = $commit_data->getCommitMessage();
@@ -157,6 +166,124 @@ final class DifferentialDiffExtractionEngine extends Phobject {
     }
 
     return $diff;
+  }
+
+  private function attachBinaryFilesToChanges(
+    PhabricatorRepository $repository,
+    array $changes,
+    $current_identifier,
+    $parent_identifier) {
+
+    assert_instances_of($changes, 'ArcanistDiffChange');
+
+    foreach ($changes as $change) {
+      $file_type = $change->getFileType();
+      $is_binary =
+        ($file_type === DifferentialChangeType::FILE_BINARY) ||
+        ($file_type === DifferentialChangeType::FILE_IMAGE);
+      if (!$is_binary) {
+        continue;
+      }
+
+      $change_type = $change->getType();
+
+      // Skip when there is no new content at this path (delete, move-away,
+      // multicopy).
+      if (!ArcanistDiffChangeType::isDeleteChangeType($change_type)) {
+        $current_path = $change->getCurrentPath();
+        if (strlen($current_path)) {
+          $this->fetchBinaryFileAndAttachMetadata(
+            $repository,
+            $change,
+            $current_path,
+            $current_identifier,
+            'new:binary-phid',
+            'new:file:size',
+            'new:file:mime-type');
+        }
+      }
+
+      // Skip pure adds and root commits. Move-here / copy-here fall through:
+      // their old content lives at `getOldPath()` in the parent.
+      if ($change_type !== ArcanistDiffChangeType::TYPE_ADD &&
+          $parent_identifier !== null) {
+        $old_path = $change->getOldPath();
+        if (strlen($old_path)) {
+          $this->fetchBinaryFileAndAttachMetadata(
+            $repository,
+            $change,
+            $old_path,
+            $parent_identifier,
+            'old:binary-phid',
+            'old:file:size',
+            'old:file:mime-type');
+        }
+      }
+    }
+  }
+
+  private function fetchBinaryFileAndAttachMetadata(
+    PhabricatorRepository $repository,
+    ArcanistDiffChange $change,
+    $path,
+    $commit_identifier,
+    $phid_key,
+    $size_key,
+    $mime_type_key) {
+
+    // In-process; avoids the HTTP hop in `callConduitWithDiffusionRequest()`.
+    $file_request = DiffusionRequest::newFromDictionary(
+      array(
+        'user'       => $this->getViewer(),
+        'repository' => $repository,
+        'commit'     => $commit_identifier,
+        'path'       => $path,
+      ));
+
+    $file = DiffusionFileContentQuery::newFromDiffusionRequest($file_request)
+      ->execute();
+    if (!$file) {
+      throw new Exception(
+        pht(
+          'Failed to load binary content for "%s" at commit "%s" from '.
+          'the repository.',
+          $path,
+          $commit_identifier));
+    }
+
+    $change->setMetadata($phid_key, $file->getPHID());
+    $change->setMetadata($size_key, (int)$file->getByteSize());
+    $change->setMetadata($mime_type_key, $file->getMimeType());
+  }
+
+  private function attachBinaryFilesToDiff(DifferentialDiff $diff) {
+    $file_phids = array();
+    foreach ($diff->getChangesets() as $changeset) {
+      $new_phid = $changeset->getNewFileObjectPHID();
+      if ($new_phid !== null) {
+        $file_phids[$new_phid] = $new_phid;
+      }
+      $old_phid = $changeset->getOldFileObjectPHID();
+      if ($old_phid !== null) {
+        $file_phids[$old_phid] = $old_phid;
+      }
+    }
+
+    if (!$file_phids) {
+      return;
+    }
+
+    // Files are created with `POLICY_NOONE` and have no attachments yet, so
+    // a non-omnipotent viewer can't load them by PHID.
+    $files = id(new PhabricatorFileQuery())
+      ->setViewer(PhabricatorUser::getOmnipotentUser())
+      ->withPHIDs($file_phids)
+      ->execute();
+
+    $diff_phid = $diff->getPHID();
+    foreach ($files as $file) {
+      $file->attachToObject($diff_phid);
+    }
   }
 
   public function isDiffChangedBeforeCommit(
