@@ -122,6 +122,8 @@ final class DifferentialDiffExtractionEngine extends Phobject {
 
     $diff->save();
 
+    $this->attachBinaryFilesToDiff($diff);
+
     $commit_data = $commit->getCommitData();
     $message = $commit_data->getCommitMessage();
 
@@ -249,11 +251,39 @@ final class DifferentialDiffExtractionEngine extends Phobject {
           $commit_identifier));
     }
 
-    $file->attachToObject($repository->getPHID());
-
     $change->setMetadata($phid_key, $file->getPHID());
     $change->setMetadata($size_key, (int)$file->getByteSize());
     $change->setMetadata($mime_type_key, $file->getMimeType());
+  }
+
+  private function attachBinaryFilesToDiff(DifferentialDiff $diff) {
+    $file_phids = array();
+    foreach ($diff->getChangesets() as $changeset) {
+      $new_phid = $changeset->getNewFileObjectPHID();
+      if ($new_phid !== null) {
+        $file_phids[$new_phid] = $new_phid;
+      }
+      $old_phid = $changeset->getOldFileObjectPHID();
+      if ($old_phid !== null) {
+        $file_phids[$old_phid] = $old_phid;
+      }
+    }
+
+    if (!$file_phids) {
+      return;
+    }
+
+    // Files are created with `POLICY_NOONE` and have no attachments yet, so
+    // a non-omnipotent viewer can't load them by PHID.
+    $files = id(new PhabricatorFileQuery())
+      ->setViewer(PhabricatorUser::getOmnipotentUser())
+      ->withPHIDs($file_phids)
+      ->execute();
+
+    $diff_phid = $diff->getPHID();
+    foreach ($files as $file) {
+      $file->attachToObject($diff_phid);
+    }
   }
 
   public function isDiffChangedBeforeCommit(
