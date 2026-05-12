@@ -46,13 +46,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install invoke
-        run: |
-          sudo apt-get update && \
-          sudo apt-get install -y python3-invoke
-      - name: Build Docker image
-        run: invoke build
+      - name: Build image
+        run: docker build --pull -t mozilla/phabricator --target production .
       - name: Build test image
-        run: invoke buildtest
-      - name: Run tests
-        run: invoke test
+        run: docker compose build test_phab
+      - name: Build test local image
+        run: docker compose build test_phab_local
+      - name: Test phabricator extensions
+        run: docker compose run test_phab
