@@ -30,22 +30,39 @@ jobs:
       - setup_local_docker
       - checkout
       - run:
-          name: Install invoke
-          command: |
-            sudo apt-get update && \
-            sudo apt-get install -y python3-pip && \
-            pip install invoke
-      - run:
           name: Create version.json
           command: |
-            invoke version > version.json && \
+            jq -n \
+            --arg sha "${CIRCLE_SHA1:-}" \
+            --arg src_user "${CIRCLE_PROJECT_USERNAME:-mozilla-conduit}" \
+            --arg src_repo "${CIRCLE_PROJECT_REPONAME:-phabricator}" \
+            --arg build "${CIRCLE_BUILD_URL:-}" \
+            '{
+            moz_phabricator_commit: (if $sha == "" then null else $sha end),
+            moz_phabricator_version: (if $sha == "" then null else $sha end),
+            moz_phabricator_source: ("https://github.com/\($src_user)/\($src_repo)"),
+            build: (if $build == "" then null else $build end)
+            }' > version.json
+      - run:
+          name: Copy version.json to artifacts
+          command: |
             mkdir /tmp/artifacts && \
             cp version.json /tmp/artifacts/version.json
-      - run: invoke build
-      - run: invoke buildtest
-      - run: invoke test
-      - run: docker inspect $(invoke imageid)
-      - run: invoke imageid | tee /tmp/artifacts/docker-image-shasum256.txt
+      - run:
+          name: Build Docker image
+          command: docker build --pull -t mozilla/phabricator --target production .
+      - run:
+          name: Build test image
+          command: docker compose build test_phab
+      - run:
+          name: Build test local image
+          command: docker compose build test_phab_local
+      - run:
+          name: Inspect Docker image ID
+          command: docker inspect $(docker inspect -f '{{.Id}}' mozilla/phabricator)
+      - run:
+          name: Copy imageid to artifacts
+          command: docker inspect -f '{{.Id}}' mozilla/phabricator | tee /tmp/artifacts/docker-image-shasum256.txt
       - store_artifacts:
           path: /tmp/artifacts
       - run:
