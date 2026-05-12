@@ -50,7 +50,7 @@ jobs:
             cp version.json /tmp/artifacts/version.json
       - run:
           name: Build Docker image
-          command: docker build --pull -t mozilla/phabricator --target production .
+          command: docker build --pull -t $DOCKERHUB_REPO --target production .
       - run:
           name: Build test image
           command: docker compose build test_phab
@@ -59,10 +59,10 @@ jobs:
           command: docker compose build test_phab_local
       - run:
           name: Inspect Docker image ID
-          command: docker inspect $(docker inspect -f '{{.Id}}' mozilla/phabricator)
+          command: docker inspect $(docker inspect -f '{{.Id}}' $DOCKERHUB_REPO)
       - run:
           name: Copy imageid to artifacts
-          command: docker inspect -f '{{.Id}}' mozilla/phabricator | tee /tmp/artifacts/docker-image-shasum256.txt
+          command: docker inspect -f '{{.Id}}' $DOCKERHUB_REPO | tee /tmp/artifacts/docker-image-shasum256.txt
       - store_artifacts:
           path: /tmp/artifacts
       - run:
