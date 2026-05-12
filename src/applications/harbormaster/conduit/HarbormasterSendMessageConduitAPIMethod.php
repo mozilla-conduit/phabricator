@@ -582,6 +582,21 @@ EOREMARKUP
     HarbormasterBuildTarget $build_target) {
     $viewer = $request->getViewer();
 
+    $build = $build_target->getBuild();
+
+    // Sending messages to a build target requires run capability on the
+    // build plan (CAN_VIEW for viewable-runnable plans, CAN_EDIT otherwise),
+    // to prevent unauthorized users from forging CI results. See T9614.
+    $plan = $build->getBuildPlan();
+    if (!$plan) {
+      throw new Exception(
+        pht(
+          'You can not send a message to this build target because the '.
+          'build plan could not be loaded.'));
+    }
+
+    $plan->assertHasRunCapability($viewer);
+
     $save = array();
 
     $lint_messages = $request->getValue('lint', array());
@@ -607,10 +622,6 @@ EOREMARKUP
       $object->save();
     }
     $build_target->saveTransaction();
-
-    // If the build has completely paused because all steps are blocked on
-    // waiting targets, this will resume it.
-    $build = $build_target->getBuild();
 
     PhabricatorWorker::scheduleTask(
       'HarbormasterBuildWorker',
