@@ -39,3 +39,20 @@ jobs:
             -name "*.json" \
             -print0 \
             | xargs -0 -I{} jq empty {}
+
+  phab-tests:
+    name: Phabricator Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install invoke
+        run: |
+          sudo apt-get update && \
+          sudo apt-get install -y python3-invoke
+      - name: Build Docker image
+        run: invoke build
+      - name: Build test image
+        run: invoke buildtest
+      - name: Run tests
+        run: invoke test
