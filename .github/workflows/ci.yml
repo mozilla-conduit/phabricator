@@ -19,7 +19,11 @@ jobs:
 
       - name: Check PHP syntax
         run: |
-          find moz-extensions/src src -name "*.php" -print0 \
+          find . \
+            -name "*.php" \
+            -not -path "./.git/*" \
+            -not -path "./externals/*" \
+            -print0 \
             | xargs -0 -n1 php -l
 
   json-lint:
