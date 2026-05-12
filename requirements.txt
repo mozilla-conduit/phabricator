@@ -4,11 +4,6 @@
 #
 #    pip-compile --generate-hashes requirements.in
 #
-invoke==0.13.0 \
-    --hash=sha256:1a1992fac5292b97448d1c85dc0793e309c4c376acbc39ff067056d71fdc241d \
-    --hash=sha256:1ffaaba734fb5419d2f58b3ccf6c51d6cbb0c0bc9ba24c69f6a8b8c3a93b323a \
-    --hash=sha256:ad6aaeb46bc17c3c0542935138b46b82c2486f65709eb27315ff8f4ab9b2b3e7
-    # via -r requirements.in
 mercurial==5.7.1 \
     --hash=sha256:4ddfd627dda382423e3cfb201b901e94deff984c5cae0b6f3891874b0ea34a9e \
     --hash=sha256:67fcf2a468f7cba954eb19996cae738015de93b8fb0927f2ff4fc531da89068e \

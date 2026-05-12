@@ -47,18 +47,22 @@ http://phabricator.test/auth/login/password:self/
 
 ## PHP Development:
 
-Install Python dependencies:
-
-`$ pip install -r requirements.txt`
-
 After adding, renaming, or moving classes, run `arc liberate` to rebuild the
 class map:
 
-`$ invoke liberate`
+`$ docker compose run --rm test_phab arc_liberate`
 
 To test changes in code:
 
-`$ invoke test`
+`$ docker compose run test_phab`
+
+To build the test image:
+
+`$ docker compose build test_phab`
+
+To build the production Docker image:
+
+`$ docker build --pull -t mozilla/phabricator --target production .`
 
 ### Attaching your debugger
 

@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  php-syntax:
+    name: PHP Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+
+      - name: Check PHP syntax
+        run: |
+          find . \
+            -name "*.php" \
+            -not -path "./.git/*" \
+            -not -path "./externals/*" \
+            -print0 \
+            | xargs -0 -n1 php -l
+
+  json-lint:
+    name: JSON Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON files
+        run: |
+          find . \
+            \( -path "./.git" -o -path "./externals" \) -prune -o \
+            -name "*.json" \
+            -print0 \
+            | xargs -0 -I{} jq empty {}
+
+  phab-tests:
+    name: Phabricator Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build --pull -t mozilla/phabricator --target production .
+      - name: Build test image
+        run: docker compose build test_phab
+      - name: Build test local image
+        run: docker compose build test_phab_local
+      - name: Test phabricator extensions
+        run: docker compose run test_phab
