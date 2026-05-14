@@ -196,6 +196,15 @@ final class HarbormasterTargetEngine extends Phobject {
         continue;
       }
 
+      // Require CAN_EDIT on the buildable before creating a new build.
+      // This ensures only the object's owner (e.g. the revision author) can
+      // become the build initiator, preventing other viewers from racing to
+      // call queryautotargets first and then forging results via sendmessage.
+      PhabricatorPolicyFilter::requireCapability(
+        $viewer,
+        $buildable,
+        PhabricatorPolicyCapability::CAN_EDIT);
+
       // NOTE: Normally, `applyPlan()` does not actually generate targets.
       // We need to apply the plan in-process to perform target generation.
       // This is fine as long as autotargets are empty containers that don't
