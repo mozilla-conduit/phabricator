@@ -46,7 +46,7 @@ final class PhabricatorPeopleUserPHIDType extends PhabricatorPHIDType {
         ->setURI('/p/'.$username.'/')
         ->setFullName($user->getFullName())
         ->setImageURI($user->getProfileImageURI())
-        ->setMailStampName('@'.$username);
+        ->setMailStampName('_@'.$username);
 
       if ($user->getIsMailingList()) {
         $handle->setIcon('fa-envelope-o');
