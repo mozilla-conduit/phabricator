@@ -152,6 +152,8 @@ final class PhabricatorConduitAPIController
           $response->addHeader('X-Conduit-Capabilities', $capabilities);
         }
 
+        $response->addHeader('Access-Control-Allow-Origin', '*');
+
         return $response;
     }
   }
