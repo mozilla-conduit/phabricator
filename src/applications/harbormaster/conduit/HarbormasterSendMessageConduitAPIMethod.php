@@ -595,7 +595,28 @@ EOREMARKUP
           'build plan could not be loaded.'));
     }
 
-    $plan->assertHasRunCapability($viewer);
+    if ($plan->isAutoplan()) {
+      // Autoplans lock edit to POLICY_NOONE so assertHasRunCapability would
+      // fail for everyone. Instead, restrict to the user who initiated the
+      // build (i.e. the arcanist user), preventing any other authenticated
+      // user from forging results for autoplan build targets.
+      $initiator_phid = $build->getInitiatorPHID();
+      if (!$initiator_phid) {
+        throw new PhabricatorPolicyException(
+          pht(
+            'You can not send a message to this build target. This autoplan '.
+            'build has no recorded initiator.'));
+      }
+      if ($viewer->getPHID() !== $initiator_phid) {
+        throw new PhabricatorPolicyException(
+          pht(
+            'You can not send a message to this build target. Only the '.
+            'user who initiated the build may report results for autoplan '.
+            'build targets.'));
+      }
+    } else {
+      $plan->assertHasRunCapability($viewer);
+    }
 
     $save = array();
 
