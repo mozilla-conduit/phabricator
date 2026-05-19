@@ -601,7 +601,13 @@ EOREMARKUP
       // build (i.e. the arcanist user), preventing any other authenticated
       // user from forging results for autoplan build targets.
       $initiator_phid = $build->getInitiatorPHID();
-      if (!$initiator_phid || ($viewer->getPHID() !== $initiator_phid)) {
+      if (!$initiator_phid) {
+        throw new PhabricatorPolicyException(
+          pht(
+            'You can not send a message to this build target. This autoplan '.
+            'build has no recorded initiator.'));
+      }
+      if ($viewer->getPHID() !== $initiator_phid) {
         throw new PhabricatorPolicyException(
           pht(
             'You can not send a message to this build target. Only the '.
