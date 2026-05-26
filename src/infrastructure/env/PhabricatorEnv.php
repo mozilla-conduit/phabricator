@@ -851,6 +851,39 @@ final class PhabricatorEnv extends Phobject {
 
 
   /**
+   * Validate a remote URI and return a rebinding-safe ($fetch_uri, $fetch_host)
+   * pair for use with HTTPSFuture.
+   *
+   * For HTTP, returns the pre-resolved IP URI plus the original domain as the
+   * Host header value, eliminating DNS re-resolution at request time. For
+   * HTTPS, returns the original URI and null (cURL cannot verify SSL certs
+   * against bare IPs, but rebinding is not practical without a valid cert).
+   *
+   * @param string URI to fetch.
+   * @param list<string> Allowed protocols.
+   * @return pair<wild, string|null> Fetch URI and optional Host header value.
+   * @task uri
+   */
+  public static function requireSafeRemoteURIForFetch(
+    $raw_uri,
+    array $protocols) {
+
+    list($resolved_uri, $domain) = self::requireValidRemoteURIForFetch(
+      $raw_uri,
+      $protocols);
+
+    $uri = new PhutilURI($raw_uri);
+    if ($uri->getProtocol() === 'http') {
+      $port = $uri->getPort();
+      $host = $port ? $domain.':'.$port : $domain;
+      return array($resolved_uri, $host);
+    }
+
+    return array($raw_uri, null);
+  }
+
+
+  /**
    * Determine if an IP address is in the outbound address blacklist.
    *
    * @param string IP address.
