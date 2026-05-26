@@ -60,21 +60,26 @@ final class HarbormasterHTTPRequestBuildStepImplementation
     $method = nonempty(idx($settings, 'method'), 'POST');
 
     try {
-      PhabricatorEnv::requireValidRemoteURIForFetch(
-        $uri,
-        array(
-          'http',
-          'https',
-        ));
+      list($fetch_uri, $fetch_host) =
+        PhabricatorEnv::requireSafeRemoteURIForFetch(
+          $uri,
+          array(
+            'http',
+            'https',
+          ));
     } catch (Exception $ex) {
       $this->logSilencedCall($build, $build_target, pht('HTTP Request: Invalid URI'));
       throw new HarbormasterBuildFailureException();
     }
 
-    $future = id(new HTTPSFuture($uri))
+    $future = id(new HTTPSFuture($fetch_uri))
       ->setMethod($method)
       ->setFollowLocation(false)
       ->setTimeout(60);
+
+    if ($fetch_host !== null) {
+      $future->addHeader('Host', $fetch_host);
+    }
 
     $content_type = $settings['content_type'];
     if ($content_type) {

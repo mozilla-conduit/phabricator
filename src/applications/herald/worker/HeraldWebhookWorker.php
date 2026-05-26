@@ -185,12 +185,33 @@ final class HeraldWebhookWorker
     $signature = PhabricatorHash::digestHMACSHA256($payload, $key);
     $uri = $hook->getWebhookURI();
 
-    $future = id(new HTTPSFuture($uri))
+    try {
+      list($fetch_uri, $fetch_host) =
+        PhabricatorEnv::requireSafeRemoteURIForFetch(
+          $uri,
+          array(
+            'http',
+            'https',
+          ));
+    } catch (Exception $ex) {
+      $this->failRequest(
+        $request,
+        HeraldWebhookRequest::ERRORTYPE_HOOK,
+        HeraldWebhookRequest::ERROR_URI);
+      throw new PhabricatorWorkerPermanentFailureException(
+        $ex->getMessage());
+    }
+
+    $future = id(new HTTPSFuture($fetch_uri))
       ->setMethod('POST')
       ->addHeader('Content-Type', 'application/json')
       ->addHeader('X-Phabricator-Webhook-Signature', $signature)
       ->setTimeout(15)
       ->setData($payload);
+
+    if ($fetch_host !== null) {
+      $future->addHeader('Host', $fetch_host);
+    }
 
     list($status) = $future->resolve();
 
