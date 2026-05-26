@@ -19,11 +19,11 @@ final class DifferentialParseCacheGarbageCollector
 
     queryfx(
       $conn_w,
-      'DELETE FROM %T WHERE dateCreated < %d LIMIT 100',
+      'DELETE FROM %T WHERE dateCreated < %d LIMIT 5000',
       DifferentialChangeset::TABLE_CACHE,
       $this->getGarbageEpoch());
 
-    return ($conn_w->getAffectedRows() == 100);
+    return ($conn_w->getAffectedRows() == 5000);
   }
 
 }
