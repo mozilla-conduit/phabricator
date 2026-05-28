@@ -102,7 +102,7 @@ final class RevisionMergeConflictEngine extends Phobject {
 
     $status = $this->runMerge($base, $target_tip, $revision_tree, $index_path);
 
-    return $this->newResult($status, pht('Merge check completed.'));
+    return $this->newResult($status, pht('Merge check completed.'), $target_tip);
   }
 
 /* -(  Inputs  )------------------------------------------------------------- */
@@ -293,10 +293,11 @@ final class RevisionMergeConflictEngine extends Phobject {
 
 /* -(  Results  )------------------------------------------------------------ */
 
-  private function newResult($status, $reason) {
+  private function newResult($status, $reason, $target_commit = null) {
     return array(
       'status' => $status,
       'reason' => $reason,
+      'targetCommit' => $target_commit,
     );
   }
 
