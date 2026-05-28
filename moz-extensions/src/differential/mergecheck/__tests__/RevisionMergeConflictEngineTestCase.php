@@ -23,16 +23,20 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
   }
 
   public function testModernMergeTreeVersionThreshold() {
-    // The modern `--write-tree` form requires git >= 2.38; anything older must
+    // The modern path uses `--write-tree` (git >= 2.38) with `--merge-base`
+    // (git >= 2.40), so it's only selected for git >= 2.40; anything older must
     // use the legacy path.
     $modern = RevisionMergeConflictEngine::MODERN_MERGE_TREE_VERSION;
 
     $this->assertTrue(
-      version_compare('2.38.0', $modern, '>='),
-      pht('git 2.38.0 should use the modern merge-tree form.'));
+      version_compare('2.40.0', $modern, '>='),
+      pht('git 2.40.0 should use the modern merge-tree form.'));
     $this->assertTrue(
       version_compare('2.45.1', $modern, '>='),
       pht('git 2.45.1 should use the modern merge-tree form.'));
+    $this->assertFalse(
+      version_compare('2.39.5', $modern, '>='),
+      pht('git 2.39.5 should fall back to the legacy merge-tree form.'));
     $this->assertFalse(
       version_compare('2.30.2', $modern, '>='),
       pht('git 2.30.2 should fall back to the legacy merge-tree form.'));

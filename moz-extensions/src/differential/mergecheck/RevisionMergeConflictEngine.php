@@ -20,10 +20,11 @@
  */
 final class RevisionMergeConflictEngine extends Phobject {
 
-  // `git merge-tree --write-tree` (exit-code-based conflict detection) requires
-  // git >= 2.38. Older git uses the legacy tree-based form, which is parsed for
-  // conflict markers.
-  const MODERN_MERGE_TREE_VERSION = '2.38.0';
+  // The modern merge path uses `git merge-tree --write-tree` (exit-code-based
+  // conflict detection, git >= 2.38) together with `--merge-base` (git >= 2.40).
+  // Anything older uses the legacy tree-based form, which is parsed for conflict
+  // markers and works on the widest range of git versions.
+  const MODERN_MERGE_TREE_VERSION = '2.40.0';
 
   private $viewer;
   private $revision;
@@ -193,10 +194,9 @@ final class RevisionMergeConflictEngine extends Phobject {
     $revision_commit = trim($commit_stdout);
 
     // Use an explicit merge base so rebased/uplifted revisions are merged
-    // against the intended base rather than an auto-computed ancestor.
-    // TODO(merge-check): `--merge-base` requires git >= 2.40; on 2.38/2.39 this
-    // falls back to the auto-computed merge base. Confirm the base-image git
-    // version via the Docker build step.
+    // against the intended base rather than an auto-computed ancestor. This
+    // path is only selected for git >= 2.40 (see `MODERN_MERGE_TREE_VERSION`);
+    // older git uses the legacy form instead.
     $merge_future = $this->repository->getLocalCommandFuture(
       'merge-tree --write-tree --merge-base=%s --name-only %s %s',
       $base,
