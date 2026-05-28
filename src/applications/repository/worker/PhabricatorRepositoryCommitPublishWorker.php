@@ -78,6 +78,65 @@ final class PhabricatorRepositoryCommitPublishWorker
     $this->closeTasks($viewer, $commit);
 
     $this->applyTransactions($viewer, $repository, $commit);
+
+    $this->queueMergeConflictRechecks($viewer, $repository, $commit);
+  }
+
+  /**
+   * Now that a commit has landed and advanced the branch, recheck the
+   * merge-conflict status of open revisions that touch the same files. A
+   * landed commit can only introduce a conflict in files it changed, so
+   * limiting candidates by affected path is lossless.
+   */
+  private function queueMergeConflictRechecks(
+    PhabricatorUser $viewer,
+    PhabricatorRepository $repository,
+    PhabricatorRepositoryCommit $commit) {
+
+    if (!$repository->isGit()) {
+      return;
+    }
+
+    $drequest = DiffusionRequest::newFromDictionary(
+      array(
+        'user' => $viewer,
+        'repository' => $repository,
+        'commit' => $commit->getCommitIdentifier(),
+      ));
+
+    $changes = DiffusionPathChangeQuery::newFromDiffusionRequest($drequest)
+      ->loadChanges();
+    $paths = mpull($changes, 'getPath');
+    if (!$paths) {
+      return;
+    }
+
+    $revisions = id(new DifferentialRevisionQuery())
+      ->setViewer($viewer)
+      ->withRepositoryPHIDs(array($repository->getPHID()))
+      ->withPaths($paths)
+      ->withIsOpen(true)
+      ->needActiveDiffs(true)
+      ->execute();
+
+    foreach ($revisions as $revision) {
+      $active_diff = $revision->getActiveDiff();
+      if (!$active_diff) {
+        continue;
+      }
+
+      PhabricatorWorker::scheduleTask(
+        'RevisionMergeConflictWorker',
+        array(
+          'revisionPHID' => $revision->getPHID(),
+          'diffPHID' => $active_diff->getPHID(),
+          'triggerCommit' => $commit->getCommitIdentifier(),
+        ),
+        array(
+          'objectPHID' => $revision->getPHID(),
+          'priority' => PhabricatorWorker::PRIORITY_DEFAULT,
+        ));
+    }
   }
 
   private function applyTransactions(

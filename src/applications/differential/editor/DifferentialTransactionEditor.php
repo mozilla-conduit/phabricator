@@ -391,6 +391,21 @@ final class DifferentialTransactionEditor
       if ($has_new_diff) {
         $this->ownersDiff = $new_diff;
         $this->ownersChangesets = $new_diff->getChangesets();
+
+        // Recompute the merge-conflict status against the target branch for the
+        // new diff. Scheduling a worker (rather than applying a transaction)
+        // keeps this off the editor's transaction path, so it doesn't generate
+        // feed/mail or re-enter the editor.
+        PhabricatorWorker::scheduleTask(
+          'RevisionMergeConflictWorker',
+          array(
+            'revisionPHID' => $object->getPHID(),
+            'diffPHID' => $new_diff->getPHID(),
+          ),
+          array(
+            'objectPHID' => $object->getPHID(),
+            'priority' => PhabricatorWorker::PRIORITY_DEFAULT,
+          ));
       }
     }
 
