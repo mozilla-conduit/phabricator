@@ -101,7 +101,7 @@ final class RevisionMergeConflictEngine extends Phobject {
 
     $revision_tree = $this->synthesizeRevisionTree($base, $index_path, $patch);
 
-    $status = $this->runMerge($base, $target_tip, $revision_tree, $index_path);
+    $status = $this->runMerge($base, $target_tip, $revision_tree);
 
     return $this->newResult($status, pht('Merge check completed.'), $target_tip);
   }
@@ -173,7 +173,7 @@ final class RevisionMergeConflictEngine extends Phobject {
     return trim($stdout);
   }
 
-  private function runMerge($base, $target_tip, $revision_tree, $index_path) {
+  private function runMerge($base, $target_tip, $revision_tree) {
     if ($this->supportsWriteTreeMerge()) {
       return $this->runModernMerge($base, $target_tip, $revision_tree);
     }
