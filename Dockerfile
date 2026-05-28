@@ -17,6 +17,13 @@ ENV TMPDIR=/tmp
 USER root
 
 # Runtime dependencies
+#
+# NOTE: On this base image (Alpine 3.13) `apk add git` installs git 2.30.x. The
+# merge-conflict detection engine (RevisionMergeConflictEngine) prefers
+# `git merge-tree --write-tree`, which requires git >= 2.38; on older git it
+# automatically falls back to the legacy `git merge-tree` form (still a real
+# 3-way merge, but with weaker rename detection). Bump git here if the modern
+# form is desired.
 RUN apk --no-cache --update add \
     composer \
     curl \
