@@ -142,7 +142,7 @@ final class RevisionMergeConflictEngine extends Phobject {
       ->buildPatch();
   }
 
-  private function resolveTargetTip() {
+  public function resolveTargetTip() {
     $branch = $this->repository->getDefaultBranch();
     if (!phutil_nonempty_string($branch)) {
       throw new Exception(pht('Repository has no default branch.'));

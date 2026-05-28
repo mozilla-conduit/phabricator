@@ -61,14 +61,67 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
       return;
     }
 
-    $result = id(new RevisionMergeConflictEngine())
+    $engine = id(new RevisionMergeConflictEngine())
       ->setViewer($viewer)
       ->setRevision($revision)
       ->setDiff($active_diff)
-      ->setRepository($repository)
-      ->executeCheck();
+      ->setRepository($repository);
+
+    // Avoid recomputing a result we already have. A burst of landings on a
+    // branch can queue many tasks for the same revision; since each task
+    // resolves the branch tip live, they would otherwise all recompute the
+    // same answer.
+    if ($this->isResultCurrent($revision, $active_diff, $engine)) {
+      return;
+    }
+
+    $result = $engine->executeCheck();
 
     $this->writeResult($revision, $active_diff, $result);
+  }
+
+  /**
+   * Returns true if the stored status is already definitive for the revision's
+   * current active diff and the current target-branch tip, so recomputing would
+   * produce an identical result.
+   *
+   * Only definitive (`clean`/`conflict`) results record a target commit, so an
+   * `unknown` result never short-circuits a retry.
+   */
+  private function isResultCurrent(
+    DifferentialRevision $revision,
+    DifferentialDiff $diff,
+    RevisionMergeConflictEngine $engine) {
+
+    $stored = id(new DifferentialMergeConflictStatusField())
+      ->readStoredValueForObject($revision->getPHID());
+    if (!is_array($stored)) {
+      return false;
+    }
+
+    $stored_diff_phid = idx(
+      $stored,
+      DifferentialMergeConflictStatusField::KEY_DIFF_PHID);
+    if ($stored_diff_phid !== $diff->getPHID()) {
+      return false;
+    }
+
+    $stored_tip = idx(
+      $stored,
+      DifferentialMergeConflictStatusField::KEY_TARGET_COMMIT);
+    if (!$stored_tip) {
+      return false;
+    }
+
+    try {
+      $current_tip = $engine->resolveTargetTip();
+    } catch (Exception $ex) {
+      // If we can't resolve the tip cheaply, don't skip; let the full check
+      // run and record an `unknown`.
+      return false;
+    }
+
+    return ($stored_tip === $current_tip);
   }
 
   private function loadRepository(

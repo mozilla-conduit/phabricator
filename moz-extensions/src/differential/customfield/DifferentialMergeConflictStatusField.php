@@ -115,6 +115,33 @@ final class DifferentialMergeConflictStatusField
     return $this;
   }
 
+  /**
+   * Reads the currently-stored status payload for a revision directly from
+   * field storage, returning the decoded array or `null` if nothing is stored
+   * (or the stored value can't be decoded). Used to decide whether a recompute
+   * would be redundant.
+   */
+  public function readStoredValueForObject($object_phid) {
+    $table = $this->newStorageObject();
+
+    $row = queryfx_one(
+      $table->establishConnection('r'),
+      'SELECT fieldValue FROM %T WHERE objectPHID = %s AND fieldIndex = %s',
+      $table->getTableName(),
+      $object_phid,
+      $this->getFieldIndex());
+
+    if (!$row) {
+      return null;
+    }
+
+    try {
+      return phutil_json_decode($row['fieldValue']);
+    } catch (PhutilJSONParserException $ex) {
+      return null;
+    }
+  }
+
 /* -(  Property View  )------------------------------------------------------ */
 
   public function shouldAppearInPropertyView() {
