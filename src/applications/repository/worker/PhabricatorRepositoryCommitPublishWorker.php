@@ -134,7 +134,9 @@ final class PhabricatorRepositoryCommitPublishWorker
         ),
         array(
           'objectPHID' => $revision->getPHID(),
-          'priority' => PhabricatorWorker::PRIORITY_DEFAULT,
+          // Run at bulk priority so a wide fan-out (a commit touching a
+          // popular file) doesn't starve more important queued work.
+          'priority' => PhabricatorWorker::PRIORITY_BULK,
         ));
     }
   }

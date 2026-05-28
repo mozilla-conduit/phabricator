@@ -404,7 +404,9 @@ final class DifferentialTransactionEditor
           ),
           array(
             'objectPHID' => $object->getPHID(),
-            'priority' => PhabricatorWorker::PRIORITY_DEFAULT,
+            // Run at bulk priority so merge checks yield to more important
+            // queued work (mail, commit import, Herald).
+            'priority' => PhabricatorWorker::PRIORITY_BULK,
           ));
       }
     }
