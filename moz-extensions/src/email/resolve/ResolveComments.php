@@ -143,10 +143,14 @@ class ResolveComments {
         $context = new EmailCodeContext($diffLines);
       }
 
+      $contentState = $comment->newInlineCommentObject()->getContentState();
+      $hasSuggestion = $contentState->getContentHasSuggestion();
+      $suggestionText = $contentState->getContentSuggestionText();
+
       $commentLineNumber = $comment->getLineNumber();
       $rawMessage = $rawTransaction->getComment()->getContent();
       $message = self::renderCommentMarkup($rawMessage);
-      $inlineComment = new EmailInlineComment("$filename:$commentLineNumber", $link, $message, $contextKind, $context);
+      $inlineComment = new EmailInlineComment("$filename:$commentLineNumber", $link, $message, $contextKind, $context, $hasSuggestion, $suggestionText);
       foreach (self::findPingedUsers($rawMessage) as $user) {
         $pings->fromInlineComment($user, $inlineComment);
       }

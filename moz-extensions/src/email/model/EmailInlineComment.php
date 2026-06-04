@@ -9,12 +9,16 @@ class EmailInlineComment {
   public string $contextKind;
   /** @var EmailReplyContext|EmailCodeContext */
   public $context;
+  public bool $hasSuggestion;
+  public string $suggestionText;
 
-  public function __construct(string $fileContext, string $link, EmailCommentMessage $message, string $contextKind, $context) {
+  public function __construct(string $fileContext, string $link, EmailCommentMessage $message, string $contextKind, $context, bool $hasSuggestion = false, string $suggestionText = '') {
     $this->fileContext = $fileContext;
     $this->link = $link;
     $this->message = $message;
     $this->contextKind = $contextKind;
     $this->context = $context;
+    $this->hasSuggestion = $hasSuggestion;
+    $this->suggestionText = $suggestionText;
   }
 }
