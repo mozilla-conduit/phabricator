@@ -8,7 +8,7 @@ final class PhabricatorBugzillaLinkRule extends PhutilRemarkupRule {
 
   public function apply($text) {
     return preg_replace_callback(
-      '/bug\s*#?\s*(\d+)(\s*comment\s*\#?\s*(\d+))?/i',
+      '/\bbug\s*#?\s*(\d+)(\s*comment\s*\#?\s*(\d+))?\b/i',
       array($this, 'markupBugzillaLink'),
       $text
     );
