@@ -441,6 +441,10 @@ final class DifferentialChangesetParser extends Phobject {
       return false;
     }
 
+    if ($this->viewer && !$this->viewer->isLoggedIn()) {
+      return false;
+    }
+
     if ($this->highlightErrors) {
       return false;
     }
