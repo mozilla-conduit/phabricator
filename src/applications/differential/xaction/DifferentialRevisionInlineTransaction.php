@@ -18,8 +18,11 @@ final class DifferentialRevisionInlineTransaction
     $viewer = $this->getViewer();
 
     $changeset_ids = array();
+    $comment_map = array();
     foreach ($xactions as $xaction) {
-      $changeset_ids[] = $xaction->getComment()->getChangesetID();
+      $comment = $xaction->getComment();
+      $changeset_ids[] = $comment->getChangesetID();
+      $comment_map[$comment->getID()] = $comment;
     }
 
     $changesets = id(new DifferentialChangesetQuery())
@@ -28,6 +31,25 @@ final class DifferentialRevisionInlineTransaction
       ->execute();
 
     $changesets = mpull($changesets, null, 'getID');
+
+    // Load inline contexts using the same infrastructure as the web UI.
+    // This handles changeset+hunk loading, simple-hunk checks, corpus
+    // extraction, and caching internally.
+    $inlines = id(new DifferentialDiffInlineCommentQuery())
+      ->setViewer($viewer)
+      ->withIDs(array_keys($comment_map))
+      ->needInlineContext(true)
+      ->execute();
+    $inlines = mpull($inlines, null, 'getID');
+
+    foreach ($comment_map as $id => $comment) {
+      $inline = idx($inlines, $id);
+      if ($inline) {
+        $comment->attachInlineContext($inline->getInlineContext());
+      } else {
+        $comment->attachInlineContext(null);
+      }
+    }
 
     return $changesets;
   }
@@ -46,6 +68,19 @@ final class DifferentialRevisionInlineTransaction
         break;
     }
 
+    $inline = $comment->newInlineCommentObject();
+    $content_state = $inline->getContentState();
+    $has_suggestion = $content_state->getContentHasSuggestion();
+
+    $suggestion_original = null;
+    if ($has_suggestion) {
+      $context = $comment->getInlineContext();
+      if ($context) {
+        $body_lines = $context->getBodyLines();
+        $suggestion_original = implode('', $body_lines);
+      }
+    }
+
     return array(
       'diff' => array(
         'id' => (int)$diff->getID(),
@@ -56,6 +91,11 @@ final class DifferentialRevisionInlineTransaction
       'length' => (int)($comment->getLineLength() + 1),
       'replyToCommentPHID' => $comment->getReplyToCommentPHID(),
       'isDone' => $is_done,
+      'hasSuggestion' => $has_suggestion,
+      'suggestionText' => $has_suggestion
+        ? $content_state->getContentSuggestionText()
+        : null,
+      'suggestionOriginal' => $suggestion_original,
     );
   }
 
