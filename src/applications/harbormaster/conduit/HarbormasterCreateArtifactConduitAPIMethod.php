@@ -115,6 +115,38 @@ final class HarbormasterCreateArtifactConduitAPIMethod
           $build_target_phid));
     }
 
+    $build = $build_target->getBuild();
+    $plan = $build->getBuildPlan();
+    if (!$plan) {
+      throw new Exception(
+        pht(
+          'You can not create an artifact for this build target because the '.
+          'build plan could not be loaded.'));
+    }
+
+    if ($plan->isAutoplan()) {
+      // Autoplans lock edit to POLICY_NOONE so assertHasRunCapability would
+      // fail for everyone. Instead, restrict to the user who initiated the
+      // build (i.e. the arcanist user), preventing any other authenticated
+      // user from forging artifacts for autoplan build targets.
+      $initiator_phid = $build->getInitiatorPHID();
+      if (!$initiator_phid) {
+        throw new PhabricatorPolicyException(
+          pht(
+            'You can not create an artifact for this build target. This '.
+            'autoplan build has no recorded initiator.'));
+      }
+      if ($viewer->getPHID() !== $initiator_phid) {
+        throw new PhabricatorPolicyException(
+          pht(
+            'You can not create an artifact for this build target. Only the '.
+            'user who initiated the build may create artifacts for autoplan '.
+            'build targets.'));
+      }
+    } else {
+      $plan->assertHasRunCapability($viewer);
+    }
+
     $artifact_type = $request->getValue('artifactType');
 
     // Cast "artifactData" parameters to acceptable types if this request
