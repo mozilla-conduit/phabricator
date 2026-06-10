@@ -66,6 +66,13 @@ final class PhabricatorFileImageProxyController
             'You must specify the URI of a valid image file.'));
       }
 
+      // Overwrite the attacker-supplied filename with a safe name derived
+      // solely from the detected MIME type. Without this, a polyglot file
+      // (e.g. GIF89a + HTA payload) served via a URL like
+      // "image.bin#evil.hta" would land on the CDN with a ".hta" extension
+      // and be executed by mshta.exe when a Windows user opens the download.
+      $file->setName(self::safeImageName($file->getMimeType()));
+
       $file->save();
 
       $external_request
@@ -107,6 +114,18 @@ final class PhabricatorFileImageProxyController
 
 
     return $this->getExternalResponse($external_request);
+  }
+
+  private static function safeImageName($mime_type) {
+    $extensions = array(
+      'image/gif'     => 'gif',
+      'image/jpeg'    => 'jpg',
+      'image/png'     => 'png',
+      'image/webp'    => 'webp',
+      'image/svg+xml' => 'svg',
+    );
+    $ext = idx($extensions, $mime_type, 'img');
+    return 'image.'.$ext;
   }
 
   private function getExternalResponse(
