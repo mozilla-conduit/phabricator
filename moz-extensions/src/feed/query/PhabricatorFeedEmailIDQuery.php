@@ -56,6 +56,15 @@ final class PhabricatorFeedEmailIDQuery extends PhabricatorFeedQuery {
     );
   }
 
+  protected function willExecute() {
+    parent::willExecute();
+
+    // getLastRawID() describes one execution. Without this, reusing the query
+    // object would leave the previous run's id visible whenever the new run
+    // examines no rows at all.
+    $this->lastRawID = null;
+  }
+
   protected function buildWhereClauseParts(AphrontDatabaseConnection $conn) {
     $where = parent::buildWhereClauseParts($conn);
 
