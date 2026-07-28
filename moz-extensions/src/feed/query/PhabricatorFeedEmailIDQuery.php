@@ -5,9 +5,10 @@
  *
  * Unlike PhabricatorFeedQuery (and PhabricatorFeedIDQuery), this query does not
  * use an external cursor. Paging with an external cursor requires the cursor
- * value to identify a story that is still loadable: PhabricatorCursorPagedPolicy
- * AwareQuery::newInternalCursorFromExternalCursor() re-runs the query against
- * the cursor value alone and throws PhabricatorInvalidQueryCursorException when
+ * value to identify a story that is still loadable:
+ * PhabricatorCursorPagedPolicyAwareQuery::newInternalCursorFromExternalCursor()
+ * re-runs the query against the cursor value alone and throws
+ * PhabricatorInvalidQueryCursorException when
  * nothing comes back. That happens whenever the story at the cursor has no
  * feed_storyreference row, references an object that has since been deleted, or
  * has a story type whose class no longer exists -- and it leaves the caller with
