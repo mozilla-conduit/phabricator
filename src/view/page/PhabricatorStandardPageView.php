@@ -183,7 +183,7 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       $prefix = $this->getGlyph();
     } else {
       $application_name = $this->getApplicationName();
-      if (strlen($application_name)) {
+      if (phutil_nonempty_string($application_name)) {
         $prefix = '['.$application_name.']';
       }
     }
