@@ -49,8 +49,14 @@ jobs:
             mkdir /tmp/artifacts && \
             cp version.json /tmp/artifacts/version.json
       - run:
+          name: Set image name
+          # `DOCKERHUB_REPO` is not exposed to builds from forked pull requests,
+          # so fall back to a local-only name to keep the build working there.
+          command: |
+            echo "export IMAGE_NAME=\"${DOCKERHUB_REPO:-mozilla/phabricator}\"" >> "$BASH_ENV"
+      - run:
           name: Build Docker image
-          command: docker build --pull -t $DOCKERHUB_REPO --target production .
+          command: docker build --pull -t "$IMAGE_NAME" --target production .
       - run:
           name: Build test image
           command: docker compose build test_phab
@@ -59,10 +65,10 @@ jobs:
           command: docker compose build test_phab_local
       - run:
           name: Inspect Docker image ID
-          command: docker inspect $(docker inspect -f '{{.Id}}' $DOCKERHUB_REPO)
+          command: docker inspect "$(docker inspect -f '{{.Id}}' "$IMAGE_NAME")"
       - run:
           name: Copy imageid to artifacts
-          command: docker inspect -f '{{.Id}}' $DOCKERHUB_REPO | tee /tmp/artifacts/docker-image-shasum256.txt
+          command: docker inspect -f '{{.Id}}' "$IMAGE_NAME" | tee /tmp/artifacts/docker-image-shasum256.txt
       - store_artifacts:
           path: /tmp/artifacts
       - run:
@@ -70,14 +76,14 @@ jobs:
           command: |
             [[ -n "$DOCKERHUB_REPO" && -n "$DOCKER_USER" && -n "$DOCKER_PASS" ]] || exit 0
             echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
-            docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$CIRCLE_SHA1"
+            docker tag "$IMAGE_NAME" "$DOCKERHUB_REPO:$CIRCLE_SHA1"
             docker push "$DOCKERHUB_REPO:$CIRCLE_SHA1"
             if [[ "$CIRCLE_BRANCH" == "master" ]]; then
               docker push "$DOCKERHUB_REPO:latest"
             else
               # Replace forward slashes with hyphens in branch name for Docker tag
               SAFE_BRANCH_NAME=$(echo "$CIRCLE_BRANCH" | tr '/' '-')
-              docker tag "$DOCKERHUB_REPO" "$DOCKERHUB_REPO:$SAFE_BRANCH_NAME"
+              docker tag "$IMAGE_NAME" "$DOCKERHUB_REPO:$SAFE_BRANCH_NAME"
               docker push "$DOCKERHUB_REPO:$SAFE_BRANCH_NAME"
             fi
 
