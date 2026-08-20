@@ -29,8 +29,19 @@ final class PhabricatorFlagAddFlagHeraldAction
       ->setObjectPHID($phid)
       ->setReasonPHID($rule->getPHID())
       ->setColor($effect->getTarget())
-      ->setNote('')
-      ->save();
+      ->setNote('');
+
+    // The loadUserFlag() check above is not atomic. When several transactions
+    // are applied to one object at once, each runs Herald and can pass the
+    // check before any insert lands, so the inserts race on the
+    // (ownerPHID, objectPHID) unique key. Treat a duplicate as an
+    // already-flagged no-op rather than letting it abort the transaction edit.
+    try {
+      $flag->save();
+    } catch (AphrontDuplicateKeyQueryException $ex) {
+      $this->logEffect(self::DO_IGNORE, $effect->getTarget());
+      return;
+    }
 
     $this->logEffect(self::DO_FLAG, $flag->getColor());
   }
