@@ -41,7 +41,7 @@ final class DiffusionBrowseQueryConduitAPIMethod
       $path = null;
     }
 
-    $commit = $request->getValue('commit');
+    $commit = $request->getValue('commit', '');
     $offset = (int)$request->getValue('offset');
     $limit = (int)$request->getValue('limit');
     $result = $this->getEmptyResultSet();
