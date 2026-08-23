@@ -134,6 +134,26 @@ final class DifferentialTransactionComment
     return DifferentialInlineComment::newFromModernComment($this);
   }
 
+  /**
+   * Read the "Suggest Edit" replacement text from the stored content state.
+   *
+   * Returns null if the comment carries no suggestion. An empty string is a
+   * suggestion which deletes the commented lines.
+   */
+  public function getSuggestionText() {
+    $content_state = $this->getAttribute('inline.state');
+
+    if (!is_array($content_state)) {
+      return null;
+    }
+
+    if (!idx($content_state, 'hasSuggestion', false)) {
+      return null;
+    }
+
+    return (string)idx($content_state, 'suggestionText', '');
+  }
+
   public function getInlineContext() {
     return $this->assertAttached($this->inlineContext);
   }

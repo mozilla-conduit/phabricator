@@ -46,6 +46,14 @@ final class DifferentialRevisionInlineTransaction
         break;
     }
 
+    // A removed comment has its content withheld (see
+    // "TransactionSearchConduitAPIMethod"), so withhold any suggestion too.
+    if ($comment->getIsDeleted()) {
+      $suggestion_text = null;
+    } else {
+      $suggestion_text = $comment->getSuggestionText();
+    }
+
     return array(
       'diff' => array(
         'id' => (int)$diff->getID(),
@@ -56,6 +64,8 @@ final class DifferentialRevisionInlineTransaction
       'length' => (int)($comment->getLineLength() + 1),
       'replyToCommentPHID' => $comment->getReplyToCommentPHID(),
       'isDone' => $is_done,
+      'hasSuggestion' => ($suggestion_text !== null),
+      'suggestionText' => (string)$suggestion_text,
     );
   }
 
