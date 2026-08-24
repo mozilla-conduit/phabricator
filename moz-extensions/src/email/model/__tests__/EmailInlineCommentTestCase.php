@@ -56,6 +56,22 @@ final class EmailInlineCommentTestCase extends PhabricatorTestCase {
     $this->assertEqual('', $comment->suggestionText);
   }
 
+  public function testSuggestionSurvivesContentStateRoundTrip() {
+    $state = id(new PhabricatorDiffInlineCommentContentState())
+      ->setContentText('change this')
+      ->setContentHasSuggestion(true)
+      ->setContentSuggestionText('return $x + 1;');
+
+    $map = $state->newStorageMap();
+    $map = json_decode(json_encode($map), true);
+
+    $loaded = id(new PhabricatorDiffInlineCommentContentState())
+      ->readStorageMap($map);
+
+    $this->assertTrue($loaded->getContentHasSuggestion());
+    $this->assertEqual('return $x + 1;', $loaded->getContentSuggestionText());
+  }
+
   public function testFileContextAndLinkStored() {
     $comment = new EmailInlineComment(
       '/src/bar.php:42',
