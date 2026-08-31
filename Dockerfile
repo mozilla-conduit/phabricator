@@ -1,4 +1,4 @@
-FROM php:7.4.19-fpm-alpine AS base
+FROM php:7.4.33-fpm-alpine AS base
 
 LABEL maintainer="dkl@mozilla.com"
 
@@ -14,12 +14,15 @@ CMD ["/app/entrypoint.sh", "start"]
 ENV REPOSITORY_LOCAL_PATH=/repo
 ENV TMPDIR=/tmp
 
+ARG GIT_VERSION=2.49.0
+
 USER root
 
 # Runtime dependencies
 RUN apk --no-cache --update add \
     composer \
     curl \
+    expat \
     freetype \
     g++ \
     git \
@@ -30,35 +33,54 @@ RUN apk --no-cache --update add \
     mariadb-client \
     ncurses \
     oniguruma-dev \
+    openssl \
     patch \
+    pcre2 \
+    perl \
     procps \
     py3-pip \
     py3-pygments \
-    python3-dev
+    python3-dev \
+    zlib
 
-# Build PHP extensions
+# Build PHP extensions and latest version of Git
 RUN apk --no-cache add --virtual build-dependencies \
         $PHPIZE_DEPS \
+        asciidoc \
+        build-base \
         curl-dev \
+        expat-dev \
         freetype-dev \
+        gettext \
         libjpeg-turbo-dev \
         libpng-dev \
         libzip-dev \
         mariadb-dev \
+        openssl-dev \
+        perl \
+        tar \
+        wget \
+        xmlto \
+        zlib-dev \
     && docker-php-ext-configure gd \
         --with-freetype \
         --with-jpeg \
     && docker-php-ext-install -j "$(nproc)" \
-        curl \
         gd \
-        iconv \
-        mbstring \
         mysqli \
         pcntl \
     && pecl install apcu-5.1.17 \
     && docker-php-ext-enable apcu \
     && pecl install zip-1.15.5 \
     && docker-php-ext-enable zip \
+    && wget https://mirrors.edge.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.gz \
+    && tar -xzf git-${GIT_VERSION}.tar.gz \
+    && cd git-${GIT_VERSION} \
+    && make configure \
+    && ./configure --prefix=/usr \
+    && make -j$(nproc) \
+    && make install \
+    && cd .. && rm -rf git-${GIT_VERSION} \
     && apk del build-dependencies
 
 RUN wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.1/dumb-init_1.2.1_amd64 \
