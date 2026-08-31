@@ -175,8 +175,8 @@ final class DifferentialRevisionUpdateHistoryView extends AphrontView {
         $base,
         $desc,
         $age,
-        $lint,
-        $unit,
+        //$lint,
+        //$unit,
         $old,
         $new,
       );
@@ -205,8 +205,8 @@ final class DifferentialRevisionUpdateHistoryView extends AphrontView {
         pht('Base'),
         pht('Description'),
         pht('Created'),
-        pht('Lint'),
-        pht('Unit'),
+        //pht('Lint'),
+        //pht('Unit'),
         '',
         '',
       ));
@@ -217,8 +217,8 @@ final class DifferentialRevisionUpdateHistoryView extends AphrontView {
         '',
         'wide',
         'date',
-        'center',
-        'center',
+        //'center',
+        //'center',
         'center differential-update-history-old',
         'center differential-update-history-new',
       ));
@@ -230,8 +230,8 @@ final class DifferentialRevisionUpdateHistoryView extends AphrontView {
         false,
         true,
         false,
-        false,
-        false,
+        //false,
+        //false,
         true,
         true,
       ));
