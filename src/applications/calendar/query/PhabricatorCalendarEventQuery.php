@@ -110,7 +110,15 @@ final class PhabricatorCalendarEventQuery
     return $this;
   }
 
+  /**
+   * @param array<string|null> $phids User PHIDs
+   */
   public function needRSVPs(array $phids) {
+    foreach ($phids as $key => $phid) {
+      if ($phid === null) {
+        unset($phids[$key]);
+      }
+    }
     $this->needRSVPs = $phids;
     return $this;
   }

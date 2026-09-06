@@ -1151,6 +1151,9 @@ final class PhabricatorCalendarEvent extends PhabricatorCalendarDAO
   }
 
   public function getRSVPStatus($phid) {
+    if ($phid === null) {
+      return PhabricatorCalendarEventInvitee::STATUS_UNINVITED;
+    }
     // Check for an individual invitee record first.
     $invitees = $this->invitees;
     $invitees = mpull($invitees, null, 'getInviteePHID');
