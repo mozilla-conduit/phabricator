@@ -37,6 +37,7 @@ final class DifferentialCreateDiffConduitAPIMethod
       'sourceControlSystem'       => 'required '.$vcs_const,
       'sourceControlPath'         => 'required string',
       'sourceControlBaseRevision' => 'required string',
+      'firstPublicParent'        => 'optional string',
       'creationMethod'            => 'optional string',
       'lintStatus'                => 'required '.$status_const,
       'unitStatus'                => 'required '.$status_const,
@@ -135,6 +136,7 @@ final class DifferentialCreateDiffConduitAPIMethod
       'sourceControlPath' => $request->getValue('sourceControlPath'),
       'sourceControlBaseRevision' =>
         $request->getValue('sourceControlBaseRevision'),
+      'firstPublicParent' => $request->getValue('firstPublicParent'),
       'lintStatus' => $lint_status,
       'unitStatus' => $unit_status,
     );

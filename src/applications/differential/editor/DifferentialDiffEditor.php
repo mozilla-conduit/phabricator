@@ -221,6 +221,7 @@ final class DifferentialDiffEditor
       ->setSourceControlSystem(idx($dict, 'sourceControlSystem'))
       ->setSourceControlPath(idx($dict, 'sourceControlPath'))
       ->setSourceControlBaseRevision(idx($dict, 'sourceControlBaseRevision'))
+      ->setFirstPublicParent(idx($dict, 'firstPublicParent'))
       ->setLintStatus(idx($dict, 'lintStatus'))
       ->setUnitStatus(idx($dict, 'unitStatus'));
 

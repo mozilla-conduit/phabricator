@@ -22,6 +22,7 @@ final class DifferentialDiff
 
   protected $sourceControlSystem;
   protected $sourceControlBaseRevision;
+  protected $firstPublicParent;
   protected $sourceControlPath;
 
   protected $lintStatus;
@@ -58,6 +59,7 @@ final class DifferentialDiff
         'sourcePath' => 'text255?',
         'sourceControlSystem' => 'text64?',
         'sourceControlBaseRevision' => 'text255?',
+        'firstPublicParent' => 'text255?',
         'sourceControlPath' => 'text255?',
         'lintStatus' => 'uint32',
         'unitStatus' => 'uint32',
@@ -797,10 +799,17 @@ final class DifferentialDiff
 
     $base = $this->getSourceControlBaseRevision();
     if (strlen($base)) {
-      $refs[] = array(
+      $base_ref= array(
         'type' => 'base',
         'identifier' => $base,
       );
+
+      $public_parent = $this->getFirstPublicParent();
+      if (strlen($public_parent)) {
+        $base_ref['publicParent'] = $public_parent;
+      }
+
+      $refs[] = $base_ref;
     }
 
     $bookmark = $this->getBookmark();

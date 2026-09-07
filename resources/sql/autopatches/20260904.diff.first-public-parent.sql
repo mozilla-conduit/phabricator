@@ -1,0 +1,2 @@
+ALTER TABLE {$NAMESPACE}_differential.differential_diff
+    ADD firstPublicParent VARCHAR(255) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} DEFAULT NULL;
