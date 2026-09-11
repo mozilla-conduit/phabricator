@@ -29,6 +29,11 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
   /**
    * Whether merge conflict detection is turned on for a repository.
    *
+   * Every repository has to be named explicitly: an empty list checks nothing,
+   * so turning the feature on can never start checking a repository nobody
+   * asked about. The merge is a real `git` 3-way merge, so a repository using
+   * another version control system is never checked either.
+   *
    * Checked both when scheduling work and again when running it, so disabling
    * the feature stops new checks and discards anything already queued.
    */
@@ -41,10 +46,14 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
       return false;
     }
 
+    if (!$repository->isGit()) {
+      return false;
+    }
+
     $allowed_phids = PhabricatorEnv::getEnvConfig(
       MergeConflictConfigOptions::OPTION_REPOSITORIES);
     if (!$allowed_phids) {
-      return true;
+      return false;
     }
 
     return in_array($repository->getPHID(), $allowed_phids, true);

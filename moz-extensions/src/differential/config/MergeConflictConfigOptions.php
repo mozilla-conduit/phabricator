@@ -42,12 +42,15 @@ final class MergeConflictConfigOptions
         self::OPTION_REPOSITORIES,
         'custom:PhabricatorRepositoryListConfigType',
         array())
-        ->setSummary(pht('Limit merge conflict detection to these repositories.'))
+        ->setSummary(pht('Check merge conflicts on these repositories.'))
         ->setDescription(
           pht(
-            'Repositories to check. Leave empty to check every repository. '.
+            'Repositories to check. Nothing is checked while this is empty, '.
+            'so a repository is only ever checked once it is named here. '.
             'Has no effect unless `%s` is also on, so a staged rollout means '.
-            'enabling that option with a single repository selected here.',
+            'enabling that option with a single repository selected here. '.
+            'Only Git repositories are checked, since the check performs a '.
+            'real `git` merge.',
             self::OPTION_ENABLED)),
     );
   }

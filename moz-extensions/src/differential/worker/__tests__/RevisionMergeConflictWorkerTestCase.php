@@ -6,57 +6,66 @@
 final class RevisionMergeConflictWorkerTestCase extends PhabricatorTestCase {
 
   public function testDisabledGloballyChecksNothing() {
-    $env = $this->configure(false, array());
+    $repository = $this->newRepo();
+    $env = $this->configure(false, array($repository->getPHID()));
 
     $this->assertFalse(
-      RevisionMergeConflictWorker::isEnabledForRepository($this->newRepo()),
+      RevisionMergeConflictWorker::isEnabledForRepository($repository),
       pht('Nothing should be checked while the feature is off.'));
   }
 
-  public function testDisabledGloballyOverridesTheRepositoryList() {
-    $env = $this->configure(false, array('PHID-REPO-testrepo'));
-
-    $this->assertFalse(
-      RevisionMergeConflictWorker::isEnabledForRepository($this->newRepo()),
-      pht(
-        'The repository list should have no effect while the feature is off, '.
-        'so the global switch is always a complete stop.'));
-  }
-
-  public function testEnabledWithAnEmptyListChecksEverything() {
+  public function testEnabledWithAnEmptyListChecksNothing() {
+    $repository = $this->newRepo();
     $env = $this->configure(true, array());
 
-    $this->assertTrue(
-      RevisionMergeConflictWorker::isEnabledForRepository($this->newRepo()),
-      pht('An empty repository list should mean every repository.'));
+    $this->assertFalse(
+      RevisionMergeConflictWorker::isEnabledForRepository($repository),
+      pht(
+        'An empty repository list should check nothing, so turning the '.
+        'feature on never starts checking a repository nobody asked about.'));
   }
 
   public function testRepositoryMatchesByPHID() {
-    $env = $this->configure(true, array('PHID-REPO-testrepo'));
+    $repository = $this->newRepo();
+    $env = $this->configure(true, array($repository->getPHID()));
 
     $this->assertTrue(
-      RevisionMergeConflictWorker::isEnabledForRepository($this->newRepo()),
+      RevisionMergeConflictWorker::isEnabledForRepository($repository),
       pht('A PHID in the list should enable that repository.'));
   }
 
   public function testRepositoryIsNotMatchedByCallsign() {
-    $env = $this->configure(true, array('TESTREPO'));
+    $repository = $this->newRepo();
+    $env = $this->configure(true, array($repository->getCallsign()));
 
     $this->assertFalse(
-      RevisionMergeConflictWorker::isEnabledForRepository($this->newRepo()),
+      RevisionMergeConflictWorker::isEnabledForRepository($repository),
       pht(
         'The list holds PHIDs, so a callsign should not enable a repository '.
         'and cannot be mistaken for one.'));
   }
 
   public function testRepositoryNotInTheListIsSkipped() {
+    $repository = $this->newRepo();
     $env = $this->configure(true, array('PHID-REPO-someotherrepo'));
 
     $this->assertFalse(
-      RevisionMergeConflictWorker::isEnabledForRepository($this->newRepo()),
+      RevisionMergeConflictWorker::isEnabledForRepository($repository),
       pht(
         'A repository absent from a non-empty list should not be checked, so '.
         'a staged rollout stays limited to the repositories named.'));
+  }
+
+  public function testNonGitRepositoryIsSkipped() {
+    $repository = $this->newRepo(
+      PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL);
+    $env = $this->configure(true, array($repository->getPHID()));
+
+    $this->assertFalse(
+      RevisionMergeConflictWorker::isEnabledForRepository($repository),
+      pht(
+        'The check performs a real `git` merge, so naming a repository using '.
+        'another version control system should not enable it.'));
   }
 
   /**
@@ -78,11 +87,15 @@ final class RevisionMergeConflictWorkerTestCase extends PhabricatorTestCase {
     return $env;
   }
 
-  private function newRepo(): PhabricatorRepository {
+  private function newRepo(
+    string $version_control_system =
+      PhabricatorRepositoryType::REPOSITORY_TYPE_GIT): PhabricatorRepository {
+
     return id(new PhabricatorRepository())
       ->setID(49)
       ->setPHID('PHID-REPO-testrepo')
-      ->setCallsign('TESTREPO');
+      ->setCallsign('TESTREPO')
+      ->setVersionControlSystem($version_control_system);
   }
 
 }
