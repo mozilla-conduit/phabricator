@@ -144,7 +144,8 @@ final class DifferentialMergeConflictStatusField
       self::KEY_TARGET_COMMIT => idx($result, 'targetCommit'),
       self::KEY_BASE_COMMIT => idx($result, 'baseCommit'),
       self::KEY_DIFF_PHID => $diff->getPHID(),
-      // Cast so the payload carries a JSON number; Lisk hands back a string.
+      // Cast so the payload carries a JSON number; `LiskDAO` hands the ID
+      // back as a string.
       self::KEY_DIFF_ID => (int)$diff->getID(),
       self::KEY_STACK_DIFF_PHIDS => $stack_diff_phids,
       self::KEY_EPOCH => $epoch,

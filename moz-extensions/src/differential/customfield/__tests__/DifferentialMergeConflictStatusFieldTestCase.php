@@ -21,7 +21,7 @@ final class DifferentialMergeConflictStatusFieldTestCase
       idx($value, DifferentialMergeConflictStatusField::KEY_DIFF_ID),
       pht(
         'The diff ID should be recorded as an integer, so the payload '.
-        'carries a JSON number rather than the string Lisk hands back.'));
+        'carries a JSON number rather than the string `LiskDAO` hands back.'));
   }
 
   public function testStatusValueRecordsWhenTheCheckRan() {
