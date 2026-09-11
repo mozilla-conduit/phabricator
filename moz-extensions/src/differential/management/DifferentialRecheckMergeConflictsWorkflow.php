@@ -62,6 +62,17 @@ final class DifferentialRecheckMergeConflictsWorkflow
           MergeConflictConfigOptions::OPTION_ENABLED));
     }
 
+    // Checks are only written for repositories named in the list, so an empty
+    // one would leave this workflow reporting work it silently discards.
+    if (!PhabricatorEnv::getEnvConfig(
+        MergeConflictConfigOptions::OPTION_REPOSITORIES)) {
+      throw new PhutilArgumentUsageException(
+        pht(
+          'No repositories are configured for merge conflict detection. '.
+          'Select them in the `%s` setting.',
+          MergeConflictConfigOptions::OPTION_REPOSITORIES));
+    }
+
     $revisions = $this->loadRevisions($args);
     if (!$revisions) {
       throw new PhutilArgumentUsageException(
