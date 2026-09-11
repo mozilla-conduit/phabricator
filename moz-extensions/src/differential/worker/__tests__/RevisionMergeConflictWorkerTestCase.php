@@ -68,6 +68,123 @@ final class RevisionMergeConflictWorkerTestCase extends PhabricatorTestCase {
         'another version control system should not enable it.'));
   }
 
+  public function testTaskDataPinsTheCheckToADiff() {
+    $data = RevisionMergeConflictWorker::newTaskData(
+      'PHID-DREV-1',
+      'PHID-DIFF-1');
+
+    $this->assertEqual(
+      'PHID-DREV-1',
+      idx($data, 'revisionPHID'),
+      pht('The task should name the revision to check.'));
+
+    $this->assertEqual(
+      'PHID-DIFF-1',
+      idx($data, 'diffPHID'),
+      pht(
+        'The task should name the diff it was queued for, so it can be '.
+        'dropped once a newer diff is attached.'));
+
+    $this->assertFalse(
+      array_key_exists('triggerCommit', $data),
+      pht(
+        'A check queued without a triggering commit should not carry an '.
+        'empty one.'));
+  }
+
+  public function testTaskDataRecordsTheTriggeringCommit() {
+    $data = RevisionMergeConflictWorker::newTaskData(
+      'PHID-DREV-1',
+      'PHID-DIFF-1',
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+
+    $this->assertEqual(
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      idx($data, 'triggerCommit'),
+      pht(
+        'A check queued by a landing should record the commit that triggered '.
+        'it, so the daemon log says why the check ran.'));
+  }
+
+  public function testStoredResultIsCurrentForUnchangedInputs() {
+    $this->assertTrue(
+      RevisionMergeConflictWorker::isStoredResultCurrent(
+        $this->newStoredResult(),
+        'PHID-DIFF-active',
+        array('PHID-DIFF-parent', 'PHID-DIFF-active'),
+        'ffffffffffffffffffffffffffffffffffffffff'),
+      pht(
+        'A stored result computed from the current diff, stack and branch tip '.
+        'should not be recomputed.'));
+  }
+
+  public function testStoredResultForAnotherDiffIsNotCurrent() {
+    $this->assertFalse(
+      RevisionMergeConflictWorker::isStoredResultCurrent(
+        $this->newStoredResult(),
+        'PHID-DIFF-newer',
+        array('PHID-DIFF-parent', 'PHID-DIFF-newer'),
+        'ffffffffffffffffffffffffffffffffffffffff'),
+      pht('A result stored for an older diff should be recomputed.'));
+  }
+
+  public function testStoredResultIsNotCurrentWhenTheStackChanges() {
+    $this->assertFalse(
+      RevisionMergeConflictWorker::isStoredResultCurrent(
+        $this->newStoredResult(),
+        'PHID-DIFF-active',
+        array('PHID-DIFF-newer-parent', 'PHID-DIFF-active'),
+        'ffffffffffffffffffffffffffffffffffffffff'),
+      pht(
+        'A revision below this one receiving a new diff changes what this '.
+        'revision would land on, so the answer should be recomputed.'));
+  }
+
+  public function testStoredResultIsNotCurrentWhenTheBranchMoves() {
+    $this->assertFalse(
+      RevisionMergeConflictWorker::isStoredResultCurrent(
+        $this->newStoredResult(),
+        'PHID-DIFF-active',
+        array('PHID-DIFF-parent', 'PHID-DIFF-active'),
+        'cccccccccccccccccccccccccccccccccccccccc'),
+      pht(
+        'A result computed against an older branch tip should be recomputed.'));
+  }
+
+  public function testStoredUnknownResultIsNeverCurrent() {
+    $stored = $this->newStoredResult();
+    $stored[DifferentialMergeConflictStatusField::KEY_STATUS] =
+      DifferentialMergeConflictStatusField::STATUS_UNKNOWN;
+    $stored[DifferentialMergeConflictStatusField::KEY_TARGET_COMMIT] = null;
+
+    $this->assertFalse(
+      RevisionMergeConflictWorker::isStoredResultCurrent(
+        $stored,
+        'PHID-DIFF-active',
+        array('PHID-DIFF-parent', 'PHID-DIFF-active'),
+        'ffffffffffffffffffffffffffffffffffffffff'),
+      pht(
+        'Only a definitive result records a target commit, so an `unknown` '.
+        'result should never stop a retry.'));
+  }
+
+  /**
+   * A stored `clean` verdict for diff `PHID-DIFF-active`, sitting on one parent
+   * revision, computed against branch tip `ffff...`.
+   */
+  private function newStoredResult(): array {
+    return array(
+      DifferentialMergeConflictStatusField::KEY_STATUS =>
+        DifferentialMergeConflictStatusField::STATUS_CLEAN,
+      DifferentialMergeConflictStatusField::KEY_DIFF_PHID =>
+        'PHID-DIFF-active',
+      DifferentialMergeConflictStatusField::KEY_TARGET_COMMIT =>
+        'ffffffffffffffffffffffffffffffffffffffff',
+      DifferentialMergeConflictStatusField::KEY_STACK_DIFF_PHIDS =>
+        array('PHID-DIFF-parent', 'PHID-DIFF-active'),
+    );
+  }
+
   /**
    * Returns the scoped environment, which the caller has to hold in a local so
    * the override survives until the test method returns.

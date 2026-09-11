@@ -141,6 +141,29 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
     string $diff_phid,
     ?string $trigger_commit = null): void {
 
+    self::scheduleTask(
+      'RevisionMergeConflictWorker',
+      self::newTaskData($revision_phid, $diff_phid, $trigger_commit),
+      array(
+        'objectPHID' => $revision_phid,
+        // Run at bulk priority so a wide fan-out (a commit touching a popular
+        // file, or a tall stack) doesn't starve more important queued work
+        // like mail, commit import and Herald.
+        'priority' => self::PRIORITY_BULK,
+      ));
+  }
+
+  /**
+   * Builds the task data a queued check runs from. The diff is recorded so a
+   * task that has been overtaken by a newer diff can be dropped instead of
+   * writing an outdated result, and the triggering commit is only recorded
+   * when there is one, since it exists for logging alone.
+   */
+  public static function newTaskData(
+    string $revision_phid,
+    string $diff_phid,
+    ?string $trigger_commit = null): array {
+
     $data = array(
       'revisionPHID' => $revision_phid,
       'diffPHID' => $diff_phid,
@@ -150,16 +173,7 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
       $data['triggerCommit'] = $trigger_commit;
     }
 
-    self::scheduleTask(
-      'RevisionMergeConflictWorker',
-      $data,
-      array(
-        'objectPHID' => $revision_phid,
-        // Run at bulk priority so a wide fan-out (a commit touching a popular
-        // file, or a tall stack) doesn't starve more important queued work
-        // like mail, commit import and Herald.
-        'priority' => self::PRIORITY_BULK,
-      ));
+    return $data;
   }
 
 /* -(  Execution  )---------------------------------------------------------- */
@@ -229,13 +243,8 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
   }
 
   /**
-   * Returns true if the stored status is already definitive for the same
-   * inputs: the revision's active diff, the diffs of every revision below it in
-   * the stack, and the current target-branch tip. Recomputing in that case
-   * would produce an identical result.
-   *
-   * Only definitive (`clean`/`conflict`) results record a target commit, so an
-   * `unknown` result never short-circuits a retry.
+   * Returns true if the revision's stored status was computed from the inputs a
+   * fresh check would use, so recomputing it would produce an identical result.
    */
   private function isResultCurrent(
     DifferentialRevision $revision,
@@ -248,10 +257,40 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
       return false;
     }
 
+    try {
+      $current_stack = $engine->getStackDiffPHIDs();
+      $current_tip = $engine->resolveTargetTip();
+    } catch (Exception $ex) {
+      // If we can't cheaply establish the current inputs, don't skip; let the
+      // full check run and record an `unknown`.
+      return false;
+    }
+
+    return self::isStoredResultCurrent(
+      $stored,
+      $diff->getPHID(),
+      $current_stack,
+      $current_tip);
+  }
+
+  /**
+   * Whether a stored status is already definitive for the given inputs: the
+   * revision's active diff, the diffs of every revision below it in the stack,
+   * and the current target-branch tip.
+   *
+   * Only definitive (`clean`/`conflict`) results record a target commit, so an
+   * `unknown` result never short-circuits a retry.
+   */
+  public static function isStoredResultCurrent(
+    array $stored,
+    string $diff_phid,
+    array $current_stack,
+    string $current_tip): bool {
+
     $stored_diff_phid = idx(
       $stored,
       DifferentialMergeConflictStatusField::KEY_DIFF_PHID);
-    if ($stored_diff_phid !== $diff->getPHID()) {
+    if ($stored_diff_phid !== $diff_phid) {
       return false;
     }
 
@@ -265,16 +304,6 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
     $stored_stack = idx(
       $stored,
       DifferentialMergeConflictStatusField::KEY_STACK_DIFF_PHIDS);
-
-    try {
-      $current_stack = $engine->getStackDiffPHIDs();
-      $current_tip = $engine->resolveTargetTip();
-    } catch (Exception $ex) {
-      // If we can't cheaply establish the current inputs, don't skip; let the
-      // full check run and record an `unknown`.
-      return false;
-    }
-
     if ($stored_stack !== $current_stack) {
       return false;
     }
