@@ -147,11 +147,11 @@ RUN \
     echo custom/moz-extensions > /app/phabricator/conf/local/ENVIRONMENT
 COPY moz-extensions.conf.php /app/phabricator/conf/custom/
 
-COPY --chown=app entrypoint.sh LICENSE update_version_json.py wait-for-mysql.php ./
+COPY --chown=app assert-git.sh entrypoint.sh LICENSE update_version_json.py wait-for-mysql.php ./
 COPY --chown=app nginx/ nginx/
 
 # Update version.json
-RUN chmod +x /app/update_version_json.py /app/entrypoint.sh /app/wait-for-mysql.php \
+RUN chmod +x /app/assert-git.sh /app/update_version_json.py /app/entrypoint.sh /app/wait-for-mysql.php \
     && /app/update_version_json.py
 
 RUN { \
@@ -162,13 +162,6 @@ RUN { \
     } | tee /app/phabricator/webroot/rsrc/js/MozillaRiskAnalysis.js
 RUN curl -fsSL https://raw.githubusercontent.com/marco-c/risk-analysis-addon/${RISK_ANALYSIS_VERSION}/risk_analysis.js \
     >> /app/phabricator/webroot/rsrc/js/MozillaRiskAnalysis.js
-
-# Fail the build rather than shipping an image where the merge-conflict engine
-# would silently fall back to the rename-blind legacy path, or where git cannot
-# run at all against the musl present in the final image.
-RUN git --version \
-    && git merge-tree -h 2>&1 | grep -q 'write-tree' \
-    && git merge-tree -h 2>&1 | grep -q 'merge-base'
 
 FROM base AS production
 
@@ -193,6 +186,8 @@ COPY --chown=app version.json* ./
 COPY --chown=app moz-extensions moz-extensions
 RUN chmod +x /app/moz-extensions/bin/*
 
+RUN /app/assert-git.sh
+
 FROM base AS development
 
 USER root
@@ -215,6 +210,8 @@ RUN { \
 
 USER app
 
+RUN /app/assert-git.sh
+
 FROM base AS test
 
 USER root
@@ -230,3 +227,5 @@ COPY --chown=app .arcunit .arcunit
 COPY --chown=app test-arcconfig .arcconfig
 COPY --chown=app moz-extensions moz-extensions
 RUN chmod +x /app/moz-extensions/bin/*
+
+RUN /app/assert-git.sh
