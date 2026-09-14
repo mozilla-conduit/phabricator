@@ -372,6 +372,14 @@ final class DifferentialMergeConflictStatusField
       return null;
     }
 
+    // A revision that will never land has no useful mergeability, and closing
+    // one attaches a new commit-derived diff that would leave the stored
+    // status looking permanently stale. The property view hides it for the
+    // same reason.
+    if ($this->isRevisionClosed()) {
+      return null;
+    }
+
     $value = $this->getValue();
     if (!is_array($value)) {
       return null;
