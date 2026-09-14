@@ -79,6 +79,9 @@ final class RevisionMergeConflictEngine extends Phobject {
   private ?DifferentialDiff $diff = null;
   private ?PhabricatorRepository $repository = null;
 
+  private ?string $scratchObjectDirectory = null;
+  private ?string $repositoryObjectDirectory = null;
+
   private ?RevisionMergeConflictStackQuery $stackQuery = null;
   private ?array $stackRevisions = null;
   private ?array $stackDiffs = null;
@@ -175,15 +178,85 @@ final class RevisionMergeConflictEngine extends Phobject {
     // recreate it.
     Filesystem::remove($index_path);
 
-    $revision_tree = $this->synthesizeStackTree($base, $index_path, $stack);
+    $this->openScratchObjectDirectory();
+    try {
+      $revision_tree = $this->synthesizeStackTree($base, $index_path, $stack);
 
-    $status = $this->runMerge($base, $target_tip, $revision_tree);
+      $status = $this->runMerge($base, $target_tip, $revision_tree);
+    } finally {
+      $this->closeScratchObjectDirectory();
+    }
 
     return $this->newResult(
       $status,
       $this->newVerdictReason($status, $base, $target_tip),
       $base,
       $target_tip);
+  }
+
+/* -(  Scratch objects  )---------------------------------------------------- */
+
+  /**
+   * Points git's object writes at a temporary directory for the rest of the
+   * check, with the repository's own object store as an alternate so reads
+   * still resolve.
+   *
+   * The blobs, trees and commits this check writes are never referenced by
+   * anything. Left in the live repository they accumulate as loose objects,
+   * reclaimed only once `git gc` runs there and the prune window has passed,
+   * and this runs for every open revision touching a landed path.
+   */
+  private function openScratchObjectDirectory(): void {
+    // Resolve the real object store first. The lookup is itself a git command,
+    // and it must not be routed through the scratch directory.
+    $this->getRepositoryObjectDirectory();
+
+    $this->scratchObjectDirectory = Filesystem::createTemporaryDirectory(
+      'merge-check-objects');
+  }
+
+  /**
+   * Discards everything the check wrote. Objects the repository already had
+   * are untouched, since they live in the alternate rather than here.
+   */
+  private function closeScratchObjectDirectory(): void {
+    $directory = $this->scratchObjectDirectory;
+    if ($directory === null) {
+      return;
+    }
+
+    // Stop routing writes there before removing it, so a later command in a
+    // reused engine cannot write into a directory that is gone.
+    $this->scratchObjectDirectory = null;
+
+    try {
+      Filesystem::remove($directory);
+    } catch (Exception $ex) {
+      phlog($ex);
+    }
+  }
+
+  /**
+   * The repository's real object store, which the scratch directory is backed
+   * by. Asking git rather than assembling a path keeps this correct for both
+   * bare and non-bare working copies.
+   */
+  private function getRepositoryObjectDirectory(): string {
+    if ($this->repositoryObjectDirectory === null) {
+      list($stdout) = $this->newGitFuture('rev-parse --git-path objects')
+        ->resolvex();
+
+      $path = trim($stdout);
+
+      // `--git-path` answers relative to the working copy for a non-bare
+      // repository, and git resolves the environment variable relative to the
+      // process's directory instead.
+      $this->repositoryObjectDirectory = Filesystem::resolvePath(
+        $path,
+        $this->repository->getLocalPath());
+    }
+
+    return $this->repositoryObjectDirectory;
   }
 
 /* -(  Stack  )-------------------------------------------------------------- */
@@ -567,6 +640,15 @@ final class RevisionMergeConflictEngine extends Phobject {
       array($this->repository, 'getLocalCommandFuture'),
       $args);
     $future->setTimeout(self::GIT_TIMEOUT_SECONDS);
+
+    if ($this->scratchObjectDirectory !== null) {
+      $future
+        ->updateEnv('GIT_OBJECT_DIRECTORY', $this->scratchObjectDirectory)
+        ->updateEnv(
+          'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+          $this->repositoryObjectDirectory);
+    }
+
     return $future;
   }
 
