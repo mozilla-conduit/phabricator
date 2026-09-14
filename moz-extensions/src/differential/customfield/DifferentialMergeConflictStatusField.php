@@ -241,8 +241,9 @@ final class DifferentialMergeConflictStatusField
         ->setTarget(pht('Recomputing for the latest diff'))
         ->setNote(
           pht(
-            'The result below was computed for an earlier diff and may no '.
-            'longer apply.'));
+            'The last result was computed for an earlier diff, or for an '.
+            'earlier version of a revision below this one, so it is not '.
+            'shown.'));
     }
 
     switch ($value[self::KEY_STATUS]) {
