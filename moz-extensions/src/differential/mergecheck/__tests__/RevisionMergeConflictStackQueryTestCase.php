@@ -62,7 +62,7 @@ final class RevisionMergeConflictStackQueryTestCase
       'PHID-REPO-other');
 
     $this->assertExceptionMessage(
-      'Exception',
+      'RevisionMergeConflictReasonException',
       'belongs to a different repository',
       function () use ($revision, $parent) {
         RevisionMergeConflictStackQuery::newParentStopReason(
@@ -80,7 +80,7 @@ final class RevisionMergeConflictStackQueryTestCase
       false);
 
     $this->assertExceptionMessage(
-      'Exception',
+      'RevisionMergeConflictReasonException',
       'has no active diff',
       function () use ($revision, $parent) {
         RevisionMergeConflictStackQuery::newParentStopReason(

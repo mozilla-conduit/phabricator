@@ -64,7 +64,7 @@ final class RevisionMergeConflictStackQuery extends Phobject {
       }
 
       if (isset($seen[$parent->getPHID()])) {
-        throw new Exception(
+        throw new RevisionMergeConflictReasonException(
           pht(
             'Stack contains a dependency cycle at %s.',
             $parent->getMonogram()));
@@ -75,7 +75,7 @@ final class RevisionMergeConflictStackQuery extends Phobject {
       $cursor = $parent;
     }
 
-    throw new Exception(
+    throw new RevisionMergeConflictReasonException(
       pht(
         'Stack is more than %s revisions deep.',
         new PhutilNumber(self::MAX_ANCESTOR_DEPTH)));
@@ -110,7 +110,7 @@ final class RevisionMergeConflictStackQuery extends Phobject {
     }
 
     if (count($parent_phids) > 1) {
-      throw new Exception(
+      throw new RevisionMergeConflictReasonException(
         pht(
           '%s has %s parent revisions; merge checks require a linear stack.',
           $revision->getMonogram(),
@@ -124,7 +124,7 @@ final class RevisionMergeConflictStackQuery extends Phobject {
       ->executeOne();
 
     if (!$parent) {
-      throw new Exception(
+      throw new RevisionMergeConflictReasonException(
         pht(
           'Failed to load the parent revision of %s.',
           $revision->getMonogram()));
@@ -168,14 +168,14 @@ final class RevisionMergeConflictStackQuery extends Phobject {
     }
 
     if ($parent->getRepositoryPHID() !== $revision->getRepositoryPHID()) {
-      throw new Exception(
+      throw new RevisionMergeConflictReasonException(
         pht(
           'Parent revision %s belongs to a different repository.',
           $parent->getMonogram()));
     }
 
     if (!$parent->getActiveDiff()) {
-      throw new Exception(
+      throw new RevisionMergeConflictReasonException(
         pht(
           'Parent revision %s has no active diff.',
           $parent->getMonogram()));
