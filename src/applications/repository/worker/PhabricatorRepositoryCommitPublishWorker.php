@@ -79,7 +79,17 @@ final class PhabricatorRepositoryCommitPublishWorker
 
     $this->applyTransactions($viewer, $repository, $commit);
 
-    $this->queueMergeConflictRechecks($viewer, $repository, $commit);
+    // Everything above this point has already taken effect, and the import
+    // status flag is only written once `publishCommit` returns. A failure
+    // while fanning out rechecks must not send us around again: the retry
+    // would re-close revisions, re-evaluate Herald and send duplicate mail.
+    // A missed recheck is recoverable with
+    // `bin/differential recheck-merge-conflicts`.
+    try {
+      $this->queueMergeConflictRechecks($viewer, $repository, $commit);
+    } catch (Exception $ex) {
+      phlog($ex);
+    }
   }
 
   /**
@@ -90,6 +100,13 @@ final class PhabricatorRepositoryCommitPublishWorker
    *
    * `queueChecks` also fans out to the revisions stacked above each candidate,
    * which land on top of it and therefore inherit its conflicts.
+   *
+   * Only reached for a commit that is actually published. While publishing is
+   * held for a repository, and during its initial import, the default branch
+   * can advance without anything being rechecked: fanning out per commit there
+   * would mean a full recheck for every commit of the import. Verdicts go
+   * stale across such a window, and `bin/differential recheck-merge-conflicts`
+   * is the way back.
    */
   private function queueMergeConflictRechecks(
     PhabricatorUser $viewer,
