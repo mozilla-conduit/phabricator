@@ -174,6 +174,51 @@ final class DifferentialMergeConflictStatusFieldTestCase
         'so its verdict should be reported as fresh.'));
   }
 
+  public function testCheckedStackStaleness() {
+    $checked = array('PHID-DIFF-parent', 'PHID-DIFF-active');
+
+    $this->assertFalse(
+      DifferentialMergeConflictStatusField::isCheckedStackStaleForDiffs(
+        $checked,
+        array(
+          'PHID-DIFF-parent' => 'PHID-DIFF-parent',
+          'PHID-DIFF-active' => 'PHID-DIFF-active',
+        )),
+      pht(
+        'A verdict is current while every diff it was computed from is still '.
+        'its own revision\'s active diff.'));
+
+    $this->assertTrue(
+      DifferentialMergeConflictStatusField::isCheckedStackStaleForDiffs(
+        $checked,
+        array(
+          'PHID-DIFF-parent' => 'PHID-DIFF-newer-parent',
+          'PHID-DIFF-active' => 'PHID-DIFF-active',
+        )),
+      pht(
+        'A revision below this one receiving a new diff makes the verdict '.
+        'stale, since this revision would land on a different set of '.
+        'changes than the one that was checked.'));
+
+    $this->assertTrue(
+      DifferentialMergeConflictStatusField::isCheckedStackStaleForDiffs(
+        $checked,
+        array(
+          'PHID-DIFF-active' => 'PHID-DIFF-active',
+        )),
+      pht(
+        'A diff that could not be resolved to a revision leaves the verdict '.
+        'unprovable, which should read as stale rather than as current.'));
+
+    $this->assertFalse(
+      DifferentialMergeConflictStatusField::isCheckedStackStaleForDiffs(
+        array(),
+        array()),
+      pht(
+        'A payload recording no stack cannot be proven stale by this check, '.
+        'which is what the diff comparison is for.'));
+  }
+
   private function newStatusValue(): array {
     return DifferentialMergeConflictStatusField::newStatusValue(
       array(

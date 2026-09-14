@@ -439,9 +439,14 @@ final class DifferentialMergeConflictStatusField
   }
 
   /**
-   * Whether the stored verdict was computed against a diff other than the
-   * revision's current active diff, in which case a fresh check is already
-   * queued and this answer is only a best guess until it lands.
+   * Whether the stored verdict was computed against diffs that are no longer
+   * current, in which case a fresh check is already queued and this answer is
+   * only a best guess until it lands.
+   *
+   * The verdict covers the whole stack, so a revision below this one receiving
+   * a new diff invalidates it just as surely as this revision doing so. Lando
+   * lands from this payload, so missing that case would permit exactly the
+   * failure this field exists to prevent.
    */
   private function isStatusStale(array $value): bool {
     $object = $this->getObject();
@@ -451,9 +456,97 @@ final class DifferentialMergeConflictStatusField
 
     // Read the PHID column rather than the attached diff: this also runs over
     // Conduit, where the active diff is not necessarily loaded.
-    return self::isCheckedDiffStale(
+    $is_stale = self::isCheckedDiffStale(
       idx($value, self::KEY_DIFF_PHID),
       $object->getActiveDiffPHID());
+    if ($is_stale) {
+      return true;
+    }
+
+    return $this->isCheckedStackStale($value);
+  }
+
+  /**
+   * Whether any revision whose patch the verdict included has been updated
+   * since. Every stored stack diff has to still be its own revision's active
+   * diff for the verdict to describe what would land today.
+   *
+   * Costs two queries, so it only runs for a revision that was actually
+   * checked as part of a stack: a standalone revision's stored stack is just
+   * its own diff, which `isStatusStale` has already compared.
+   */
+  private function isCheckedStackStale(array $value): bool {
+    $checked_phids = idx($value, self::KEY_STACK_DIFF_PHIDS);
+    if (!is_array($checked_phids) || count($checked_phids) < 2) {
+      return false;
+    }
+
+    // Comparing PHIDs discloses nothing, and a verdict must not read as fresh
+    // just because the reader cannot see a revision below it.
+    $viewer = PhabricatorUser::getOmnipotentUser();
+
+    $checked_diffs = id(new DifferentialDiffQuery())
+      ->setViewer($viewer)
+      ->withPHIDs($checked_phids)
+      ->execute();
+    if (count($checked_diffs) !== count($checked_phids)) {
+      // A diff the verdict was computed from has gone away, so we cannot show
+      // that the verdict still holds.
+      return true;
+    }
+
+    $revision_ids = array_filter(mpull($checked_diffs, 'getRevisionID'));
+    if (count($revision_ids) !== count($checked_diffs)) {
+      // A diff the verdict was computed from is no longer attached to a
+      // revision, so there is nothing to compare it against.
+      return true;
+    }
+
+    $revisions = id(new DifferentialRevisionQuery())
+      ->setViewer($viewer)
+      ->withIDs($revision_ids)
+      ->needActiveDiffs(true)
+      ->execute();
+    $revisions = mpull($revisions, null, 'getID');
+
+    $current_diff_phids = array();
+    foreach ($checked_diffs as $checked_diff) {
+      $revision = idx($revisions, $checked_diff->getRevisionID());
+      if (!$revision) {
+        continue;
+      }
+
+      $current_diff_phids[$checked_diff->getPHID()] =
+        $revision->getActiveDiffPHID();
+    }
+
+    return self::isCheckedStackStaleForDiffs(
+      $checked_phids,
+      $current_diff_phids);
+  }
+
+  /**
+   * Compares the diffs a verdict was computed from against the current active
+   * diff of each of their revisions, given as a map from checked diff PHID to
+   * the current one. A diff missing from the map could not be resolved at all,
+   * which is reported as stale rather than assumed current.
+   */
+  public static function isCheckedStackStaleForDiffs(
+    array $checked_diff_phids,
+    array $current_diff_phids): bool {
+
+    foreach ($checked_diff_phids as $checked_phid) {
+      $current_phid = idx($current_diff_phids, $checked_phid);
+      if (!phutil_nonempty_string($current_phid)) {
+        return true;
+      }
+
+      if ($current_phid !== $checked_phid) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
