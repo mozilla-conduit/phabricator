@@ -24,8 +24,10 @@ final class RevisionMergeConflictStackQuery extends Phobject {
   // The deepest stacks seen in practice are around 50 revisions.
   const MAX_ANCESTOR_DEPTH = 50;
 
-  // Likewise, cap how many descendants a single change can fan out to.
-  const MAX_DESCENDANTS = 100;
+  // Likewise, cap how many descendants a single changed revision can fan out
+  // to. The budget for a call is this times the number of revisions passed in,
+  // so batching candidates together does not make each one's fan-out smaller.
+  const MAX_DESCENDANTS_PER_REVISION = 100;
 
   private ?PhabricatorUser $viewer = null;
   private ?DifferentialRevision $revision = null;
@@ -207,11 +209,13 @@ final class RevisionMergeConflictStackQuery extends Phobject {
   public static function loadDescendantPHIDs(array $revision_phids): array {
     $edge_type = DifferentialRevisionDependedOnByRevisionEdgeType::EDGECONST;
 
+    $limit = self::newDescendantLimit(count($revision_phids));
+
     $seen = array_fuse($revision_phids);
     $found = array();
     $queue = $revision_phids;
 
-    while ($queue && count($found) < self::MAX_DESCENDANTS) {
+    while ($queue && count($found) < $limit) {
       $children = id(new PhabricatorEdgeQuery())
         ->withSourcePHIDs($queue)
         ->withEdgeTypes(array($edge_type))
@@ -230,7 +234,31 @@ final class RevisionMergeConflictStackQuery extends Phobject {
       }
     }
 
+    // Hitting the budget means revisions above the ones we found keep a stale
+    // verdict with nothing to say so. Say so in the log, since the callers
+    // queue work and have nowhere to report it.
+    if (count($found) >= $limit) {
+      phlog(
+        pht(
+          'Merge check descendant walk stopped at its budget of %s for %s '.
+          'revision(s); revisions stacked above the ones found were not '.
+          'queued.',
+          new PhutilNumber($limit),
+          new PhutilNumber(count($revision_phids))));
+    }
+
     return array_values($found);
+  }
+
+  /**
+   * The number of descendants a call is allowed to find, which scales with the
+   * number of revisions it was asked about. A commit landing on a busy branch
+   * passes its whole candidate set in one call, and a flat budget there would
+   * spend the entire allowance on whichever candidates happened to be walked
+   * first.
+   */
+  public static function newDescendantLimit(int $revision_count): int {
+    return ($revision_count * self::MAX_DESCENDANTS_PER_REVISION);
   }
 
 }

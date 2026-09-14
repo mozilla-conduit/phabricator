@@ -119,6 +119,20 @@ final class RevisionMergeConflictStackQueryTestCase
         'instead of being used as the merge base.'));
   }
 
+  public function testDescendantBudgetScalesWithTheBatch() {
+    $this->assertEqual(
+      RevisionMergeConflictStackQuery::MAX_DESCENDANTS_PER_REVISION,
+      RevisionMergeConflictStackQuery::newDescendantLimit(1),
+      pht('A single revision should get the per-revision budget.'));
+
+    $this->assertEqual(
+      50 * RevisionMergeConflictStackQuery::MAX_DESCENDANTS_PER_REVISION,
+      RevisionMergeConflictStackQuery::newDescendantLimit(50),
+      pht(
+        'A landing that fans out to many candidates should get a budget for '.
+        'each of them, rather than sharing one flat allowance.'));
+  }
+
   private function newRevision(
     int $id,
     string $status,
