@@ -181,7 +181,7 @@ final class RevisionMergeConflictEngine extends Phobject {
 
     return $this->newResult(
       $status,
-      $this->newSuccessReason($base, $target_tip),
+      $this->newVerdictReason($status, $base, $target_tip),
       $base,
       $target_tip);
   }
@@ -645,10 +645,32 @@ final class RevisionMergeConflictEngine extends Phobject {
   }
 
   /**
-   * Explains what was merged, naming both commits so the answer can be
-   * reproduced by hand long after the branch has moved on.
+   * States the verdict the merge reached, and what it was reached from. The
+   * merge either succeeded or conflicted, so the same description has to be
+   * phrased both ways rather than assuming a clean result.
    */
-  private function newSuccessReason(string $base, string $target_tip): string {
+  private function newVerdictReason(
+    string $status,
+    string $base,
+    string $target_tip): string {
+
+    $description = $this->newMergeDescription($base, $target_tip);
+
+    if ($status === DifferentialMergeConflictStatusField::STATUS_CONFLICT) {
+      return pht('Conflicts when %s.', $description);
+    }
+
+    return pht('Merges cleanly when %s.', $description);
+  }
+
+  /**
+   * Describes what was merged and against what, naming both commits so the
+   * answer can be reproduced by hand long after the branch has moved on.
+   */
+  private function newMergeDescription(
+    string $base,
+    string $target_tip): string {
+
     $parent_count = count($this->getStackDiffs()) - 1;
     $base_name = $this->formatCommitName($base);
     $target_name = $this->formatCommitName($target_tip);
@@ -656,16 +678,16 @@ final class RevisionMergeConflictEngine extends Phobject {
     if ($this->baseFromLandedParent) {
       if (!$parent_count) {
         return pht(
-          'Merged against target branch tip %s, starting from %s, the commit '.
-          'that landed %s.',
+          'merged against target branch tip %s, starting from %s, the commit '.
+          'that landed %s',
           $target_name,
           $base_name,
           $this->baseFromLandedParent->getMonogram());
       }
 
       return pht(
-        'Merged against target branch tip %s, starting from %s, the commit '.
-        'that landed %s, with %s parent revision(s) applied first.',
+        'merged against target branch tip %s, starting from %s, the commit '.
+        'that landed %s, with %s parent revision(s) applied first',
         $target_name,
         $base_name,
         $this->baseFromLandedParent->getMonogram(),
@@ -674,14 +696,14 @@ final class RevisionMergeConflictEngine extends Phobject {
 
     if (!$parent_count) {
       return pht(
-        'Merged against target branch tip %s, starting from %s.',
+        'merged against target branch tip %s, starting from %s',
         $target_name,
         $base_name);
     }
 
     return pht(
-      'Merged against target branch tip %s, starting from %s, with %s parent '.
-      'revision(s) applied first.',
+      'merged against target branch tip %s, starting from %s, with %s parent '.
+      'revision(s) applied first',
       $target_name,
       $base_name,
       new PhutilNumber($parent_count));
