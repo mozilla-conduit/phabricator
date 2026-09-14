@@ -14,6 +14,9 @@ final class DifferentialTransactionEditor
   private $ownersDiff;
   private $ownersChangesets;
 
+  private $mergeCheckDiffPHID;
+  private $mergeCheckStackChanged = false;
+
   public function getEditorApplicationClass() {
     return 'PhabricatorDifferentialApplication';
   }
@@ -410,31 +413,15 @@ final class DifferentialTransactionEditor
         $this->ownersDiff = $new_diff;
         $this->ownersChangesets = $new_diff->getChangesets();
 
-        $merge_checks_enabled = $this->shouldCheckMergeConflicts($object);
-
-        // Recompute the merge-conflict status for the new diff and for anything
-        // stacked above it. Scheduling a worker rather than applying a
-        // transaction keeps this from generating feed/mail or re-entering here.
-        if ($merge_checks_enabled) {
-          RevisionMergeConflictWorker::queueCheck(
-            $object->getPHID(),
-            $new_diff->getPHID());
-
-          RevisionMergeConflictWorker::queueDescendantChecks(
-            PhabricatorUser::getOmnipotentUser(),
-            array($object->getPHID()));
-        }
+        // Only record what needs rechecking here. The tasks themselves are
+        // queued once the transaction has committed, in
+        // `queueMergeConflictChecks`.
+        $this->mergeCheckDiffPHID = $new_diff->getPHID();
       }
     }
 
-    // A new diff already queued this revision and its descendants above, so
-    // only queue here when nothing else did.
-    if ($stack_changed && !$has_new_diff) {
-      if ($this->shouldCheckMergeConflicts($object)) {
-        RevisionMergeConflictWorker::queueChecks(
-          PhabricatorUser::getOmnipotentUser(),
-          array($object->getPHID()));
-      }
+    if ($stack_changed) {
+      $this->mergeCheckStackChanged = true;
     }
 
     $xactions = $this->updateReviewStatus($object, $xactions);
@@ -1593,7 +1580,54 @@ final class DifferentialTransactionEditor
       }
     }
 
+    $this->queueMergeConflictChecks($object);
+
     return $xactions;
+  }
+
+  /**
+   * Queues merge conflict rechecks for whatever this edit changed.
+   *
+   * This runs here rather than in `applyFinalEffects` because that is still
+   * inside the open revision transaction, while `scheduleTask` writes to the
+   * worker database and is visible to taskmasters immediately. A taskmaster
+   * picking the task up before the revision commits would read the previous
+   * active diff, discard the task as stale and never re-queue it, leaving the
+   * revision on its pre-update verdict. Scheduling after the commit also keeps
+   * `setRunAllTasksInProcess` from running the merge itself while the revision
+   * is locked.
+   */
+  private function queueMergeConflictChecks(DifferentialRevision $revision) {
+    $diff_phid = $this->mergeCheckDiffPHID;
+    $stack_changed = $this->mergeCheckStackChanged;
+
+    if (!$diff_phid && !$stack_changed) {
+      return;
+    }
+
+    if (!$this->shouldCheckMergeConflicts($revision)) {
+      return;
+    }
+
+    $viewer = PhabricatorUser::getOmnipotentUser();
+
+    // A new diff pins this revision's own check to that diff, since we already
+    // know which one the edit attached, and fans out to everything above it.
+    if ($diff_phid) {
+      RevisionMergeConflictWorker::queueCheck(
+        $revision->getPHID(),
+        $diff_phid);
+
+      RevisionMergeConflictWorker::queueDescendantChecks(
+        $viewer,
+        array($revision->getPHID()));
+
+      return;
+    }
+
+    RevisionMergeConflictWorker::queueChecks(
+      $viewer,
+      array($revision->getPHID()));
   }
 
   private function loadCompletedBuildableStatus(
