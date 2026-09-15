@@ -82,24 +82,33 @@ final class DifferentialCustomRevisionVisibilityConduitAPIMethod
     }
 
     $view_policy = $revision->getViewPolicy();
-    $policy_projects = self::loadPolicyProjectPHIDs($view_policy);
-    $secure_phid = $policy_projects
-      ? self::loadSecureProjectPHID()
-      : null;
 
     return array(
       'revisionID' => $revision->getID(),
       'visibility' => self::classifyVisibility(
         $view_policy,
-        $policy_projects,
-        $secure_phid),
+        self::loadPolicyProjectPHIDs($view_policy),
+        self::loadSecureProjectPHID()),
     );
   }
 
   /**
+   * A revision is "unprocessed" while it still carries the default view
+   * policy, which grants access to members of #secure-revision.
+   *
+   * Once phab-bot has processed the revision it is either public, or carries
+   * a custom policy built from the "bmo-*" projects of the bug's Bugzilla
+   * groups. In that case #secure-revision survives only as a project tag on
+   * the revision, never as a policy rule (see PhabBugz Feed.pm
+   * process_revision_change() and Policy.pm create()). Granting access to
+   * #secure-revision is therefore the signature of the pre-processing
+   * default policy.
+   *
    * @param string $view_policy Revision view policy.
-   * @param list<phid> $policy_projects Projects named by the view policy.
-   * @param phid|null $secure_phid PHID of the #secure-revision project.
+   * @param list<phid> $policy_projects Projects granted access by the view
+   *   policy. Empty for policies that grant access to no project.
+   * @param phid|null $secure_phid PHID of the #secure-revision project, or
+   *   null if no such project exists.
    * @return string One of "unprocessed", "secure" or "public".
    */
   public static function classifyVisibility(
@@ -127,7 +136,13 @@ final class DifferentialCustomRevisionVisibilityConduitAPIMethod
   }
 
   /**
-   * Projects named by "members of any project" rules of a custom policy.
+   * Projects granted access by the "members of project" rules of a custom
+   * policy.
+   *
+   * Only ALLOW rules are collected: a DENY rule takes access away, so the
+   * projects it names are not granted anything by this policy. Both project
+   * rule classes are read because phab-bot uses them interchangeably (see
+   * PhabBugz Policy.pm _build_rule_projects()).
    */
   private static function loadPolicyProjectPHIDs($view_policy) {
     $is_custom = (phid_get_type($view_policy) ===
@@ -145,8 +160,33 @@ final class DifferentialCustomRevisionVisibilityConduitAPIMethod
       return array();
     }
 
-    return array_mergev(
-      $policy->getCustomRuleValues('PhabricatorProjectsPolicyRule'));
+    return self::filterPolicyProjectPHIDs($policy->getRules());
+  }
+
+  /**
+   * @param list<wild> $rules Rules of a custom policy.
+   * @return list<phid> Projects granted access by those rules.
+   */
+  public static function filterPolicyProjectPHIDs(array $rules) {
+    $project_rules = array(
+      'PhabricatorProjectsPolicyRule',
+      'PhabricatorProjectsAllPolicyRule',
+    );
+
+    $phids = array();
+    foreach ($rules as $rule) {
+      if (idx($rule, 'action') !== PhabricatorPolicy::ACTION_ALLOW) {
+        continue;
+      }
+      if (!in_array(idx($rule, 'rule'), $project_rules, true)) {
+        continue;
+      }
+      foreach ((array)idx($rule, 'value', array()) as $phid) {
+        $phids[] = $phid;
+      }
+    }
+
+    return $phids;
   }
 
   private static function loadSecureProjectPHID() {

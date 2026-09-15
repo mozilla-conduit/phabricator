@@ -37,4 +37,78 @@ final class DifferentialCustomRevisionVisibilityTestCase
       DifferentialCustomRevisionVisibilityConduitAPIMethod
         ::classifyVisibility($custom, array($secure), null));
   }
+
+  public function testFilterPolicyProjectPHIDs() {
+    $secure = 'PHID-PROJ-secure-revision';
+    $other = 'PHID-PROJ-bmo-core-security';
+
+    $cases = array(
+      'no rules' => array(array(), array()),
+      'allow, any project' => array(
+        array(
+          array(
+            'action' => 'allow',
+            'rule' => 'PhabricatorProjectsPolicyRule',
+            'value' => array($secure, $other),
+          ),
+        ),
+        array($secure, $other),
+      ),
+      'allow, all projects' => array(
+        array(
+          array(
+            'action' => 'allow',
+            'rule' => 'PhabricatorProjectsAllPolicyRule',
+            'value' => array($other),
+          ),
+        ),
+        array($other),
+      ),
+      // A deny rule takes access away, so it grants nothing.
+      'deny' => array(
+        array(
+          array(
+            'action' => 'deny',
+            'rule' => 'PhabricatorProjectsPolicyRule',
+            'value' => array($secure),
+          ),
+        ),
+        array(),
+      ),
+      'allow other rule classes are ignored' => array(
+        array(
+          array(
+            'action' => 'allow',
+            'rule' => 'PhabricatorDifferentialReviewersPolicyRule',
+            'value' => null,
+          ),
+        ),
+        array(),
+      ),
+      'allow and deny mixed' => array(
+        array(
+          array(
+            'action' => 'allow',
+            'rule' => 'PhabricatorProjectsPolicyRule',
+            'value' => array($other),
+          ),
+          array(
+            'action' => 'deny',
+            'rule' => 'PhabricatorProjectsPolicyRule',
+            'value' => array($secure),
+          ),
+        ),
+        array($other),
+      ),
+    );
+
+    foreach ($cases as $label => $case) {
+      list($rules, $expect) = $case;
+      $this->assertEqual(
+        $expect,
+        DifferentialCustomRevisionVisibilityConduitAPIMethod
+          ::filterPolicyProjectPHIDs($rules),
+        $label);
+    }
+  }
 }
