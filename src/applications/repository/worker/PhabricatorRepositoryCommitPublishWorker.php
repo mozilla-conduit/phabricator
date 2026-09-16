@@ -78,6 +78,140 @@ final class PhabricatorRepositoryCommitPublishWorker
     $this->closeTasks($viewer, $commit);
 
     $this->applyTransactions($viewer, $repository, $commit);
+
+    // Everything above this point has already taken effect, and the import
+    // status flag is only written once `publishCommit` returns. A failure
+    // while fanning out rechecks must not send us around again: the retry
+    // would re-close revisions, re-evaluate Herald and send duplicate mail.
+    // A missed recheck is recoverable with
+    // `bin/differential recheck-merge-conflicts`.
+    try {
+      $this->queueMergeConflictRechecks($viewer, $repository, $commit);
+    } catch (Exception $ex) {
+      phlog($ex);
+    }
+  }
+
+  /**
+   * Now that a commit has landed and advanced the branch, recheck the
+   * merge-conflict status of open revisions that touch the same files. A
+   * landed commit can only introduce a conflict in files it changed, so
+   * limiting candidates by affected path is lossless.
+   *
+   * `queueChecks` also fans out to the revisions stacked above each candidate,
+   * which land on top of it and therefore inherit its conflicts.
+   *
+   * Only reached for a commit that is actually published. While publishing is
+   * held for a repository, and during its initial import, the default branch
+   * can advance without anything being rechecked: fanning out per commit there
+   * would mean a full recheck for every commit of the import. Verdicts go
+   * stale across such a window, and `bin/differential recheck-merge-conflicts`
+   * is the way back.
+   */
+  private function queueMergeConflictRechecks(
+    PhabricatorUser $viewer,
+    PhabricatorRepository $repository,
+    PhabricatorRepositoryCommit $commit) {
+
+    if (!$repository->isGit()) {
+      return;
+    }
+
+    if (!RevisionMergeConflictWorker::isEnabledForRepository($repository)) {
+      return;
+    }
+
+    if (!$this->isCommitOnDefaultBranch($repository, $commit)) {
+      return;
+    }
+
+    $drequest = DiffusionRequest::newFromDictionary(
+      array(
+        'user' => $viewer,
+        'repository' => $repository,
+        'commit' => $commit->getCommitIdentifier(),
+      ));
+
+    $changes = DiffusionPathChangeQuery::newFromDiffusionRequest($drequest)
+      ->loadChanges();
+
+    $paths = $this->getChangedFilePaths($changes);
+    if (!$paths) {
+      return;
+    }
+
+    $revisions = id(new DifferentialRevisionQuery())
+      ->setViewer($viewer)
+      ->withRepositoryPHIDs(array($repository->getPHID()))
+      ->withPaths($paths)
+      ->withIsOpen(true)
+      ->execute();
+    if (!$revisions) {
+      return;
+    }
+
+    RevisionMergeConflictWorker::queueChecks(
+      $viewer,
+      mpull($revisions, 'getPHID'),
+      $commit->getCommitIdentifier());
+  }
+
+  /**
+   * Returns the files a commit changed, excluding directories.
+   *
+   * The affected-path index holds a row for every parent directory of every
+   * file a revision touches, so matching on a directory selects every revision
+   * beneath it. A landed directory change cannot conflict with a revision that
+   * merely has files under that directory, so filtering here keeps the fan-out
+   * proportional to the files actually changed.
+   *
+   * The synthesised change to "/" that every git commit carries is already
+   * excluded upstream by `DiffusionPathChangeQuery`, which selects only
+   * `isDirect = 1` rows.
+   */
+  private function getChangedFilePaths(array $changes) {
+    $paths = array();
+
+    foreach ($changes as $change) {
+      if ($change->getFileType() == DifferentialChangeType::FILE_DIRECTORY) {
+        continue;
+      }
+      $paths[] = $change->getPath();
+    }
+
+    return $paths;
+  }
+
+  /**
+   * Merge checks always merge against the repository's default branch, so a
+   * commit that did not advance that branch cannot change any answer.
+   */
+  private function isCommitOnDefaultBranch(
+    PhabricatorRepository $repository,
+    PhabricatorRepositoryCommit $commit) {
+
+    $branch = $repository->getDefaultBranch();
+    if (!phutil_nonempty_string($branch)) {
+      return false;
+    }
+
+    // A time limit, so a wedged git fails this check instead of holding the
+    // taskmaster for the four-hour lease this worker asks for and stalling
+    // commit import for the repository. Every git call in the engine carries
+    // one for the same reason.
+    $future = $repository->getLocalCommandFuture(
+      'merge-base --is-ancestor %s %s',
+      $commit->getCommitIdentifier(),
+      'refs/heads/'.$branch);
+    $future->setTimeout(RevisionMergeConflictEngine::GIT_TIMEOUT_SECONDS);
+
+    // Any non-zero exit means "not on the branch": a missing branch ref exits
+    // 128, and a command killed by the timeout exits on a signal. Neither is a
+    // reason to recheck anything, and there would be nothing to merge against
+    // in either case.
+    list($err) = $future->resolve();
+
+    return ($err === 0);
   }
 
   private function applyTransactions(

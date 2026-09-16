@@ -248,4 +248,38 @@ abstract class PhabricatorTestCase extends PhutilTestCase {
       PhabricatorUnitTestContentSource::SOURCECONST);
   }
 
+  /**
+   * Asserts that a callable throws, and that the exception explains why.
+   * `assertException` only checks the class, which says nothing about an
+   * `Exception` thrown for several different reasons.
+   */
+  final protected function assertExceptionMessage(
+    $expected_exception_class,
+    $expect_substring,
+    $callable) {
+
+    try {
+      $callable();
+    } catch (Exception $ex) {
+      if (!($ex instanceof $expected_exception_class)) {
+        throw $ex;
+      }
+
+      $this->assertTrue(
+        strpos($ex->getMessage(), $expect_substring) !== false,
+        pht(
+          'The exception should explain the problem with "%s": %s',
+          $expect_substring,
+          $ex->getMessage()));
+
+      return;
+    }
+
+    $this->assertFailure(
+      pht(
+        'Expected a "%s" mentioning "%s".',
+        $expected_exception_class,
+        $expect_substring));
+  }
+
 }

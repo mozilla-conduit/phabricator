@@ -1,3 +1,7 @@
+# Provides Alpine 3.21's package signing keys, so the repository used below can
+# be verified normally rather than with `--allow-untrusted`.
+FROM alpine:3.21 AS apk-keys
+
 FROM php:7.4.19-fpm-alpine AS base
 
 LABEL maintainer="dkl@mozilla.com"
@@ -15,6 +19,24 @@ ENV REPOSITORY_LOCAL_PATH=/repo
 ENV TMPDIR=/tmp
 
 USER root
+
+# Alpine 3.13 ships git 2.30, but the merge-conflict engine
+# (RevisionMergeConflictEngine) wants `git merge-tree --write-tree --merge-base`
+# (git >= 2.40), which is also the only path that follows renames. Take git from
+# Alpine 3.21, verified with 3.21's signing keys rather than `--allow-untrusted`.
+#
+# This has to run before the runtime dependencies below: once `g++` and friends
+# are installed, apk's solver can no longer satisfy 3.21's git and silently
+# leaves 2.30 in place.
+#
+# Later layers pull musl back to 3.13's 1.2.2, and that is fine -- git 2.47 uses
+# no symbol newer than that. It is a property of this git version rather than a
+# guarantee, so the final stage asserts the version actually present.
+COPY --from=apk-keys /etc/apk/keys/ /etc/apk/keys/
+RUN apk add --no-cache --upgrade \
+        --repository=https://dl-cdn.alpinelinux.org/alpine/v3.21/main \
+        musl \
+        git
 
 # Runtime dependencies
 RUN apk --no-cache --update add \
@@ -125,11 +147,11 @@ RUN \
     echo custom/moz-extensions > /app/phabricator/conf/local/ENVIRONMENT
 COPY moz-extensions.conf.php /app/phabricator/conf/custom/
 
-COPY --chown=app entrypoint.sh LICENSE update_version_json.py wait-for-mysql.php ./
+COPY --chown=app assert-git.sh entrypoint.sh LICENSE update_version_json.py wait-for-mysql.php ./
 COPY --chown=app nginx/ nginx/
 
 # Update version.json
-RUN chmod +x /app/update_version_json.py /app/entrypoint.sh /app/wait-for-mysql.php \
+RUN chmod +x /app/assert-git.sh /app/update_version_json.py /app/entrypoint.sh /app/wait-for-mysql.php \
     && /app/update_version_json.py
 
 RUN { \
@@ -164,6 +186,8 @@ COPY --chown=app version.json* ./
 COPY --chown=app moz-extensions moz-extensions
 RUN chmod +x /app/moz-extensions/bin/*
 
+RUN /app/assert-git.sh
+
 FROM base AS development
 
 USER root
@@ -186,6 +210,8 @@ RUN { \
 
 USER app
 
+RUN /app/assert-git.sh
+
 FROM base AS test
 
 USER root
@@ -201,3 +227,5 @@ COPY --chown=app .arcunit .arcunit
 COPY --chown=app test-arcconfig .arcconfig
 COPY --chown=app moz-extensions moz-extensions
 RUN chmod +x /app/moz-extensions/bin/*
+
+RUN /app/assert-git.sh
