@@ -195,13 +195,21 @@ final class PhabricatorRepositoryCommitPublishWorker
       return false;
     }
 
-    // Also treats a missing branch ref (exit code 128) as "not on the branch",
-    // which is right: there would be nothing to merge against anyway.
-    list($err) = $repository->getLocalCommandFuture(
+    // A time limit, so a wedged git fails this check instead of holding the
+    // taskmaster for the four-hour lease this worker asks for and stalling
+    // commit import for the repository. Every git call in the engine carries
+    // one for the same reason.
+    $future = $repository->getLocalCommandFuture(
       'merge-base --is-ancestor %s %s',
       $commit->getCommitIdentifier(),
-      'refs/heads/'.$branch)
-      ->resolve();
+      'refs/heads/'.$branch);
+    $future->setTimeout(RevisionMergeConflictEngine::GIT_TIMEOUT_SECONDS);
+
+    // Any non-zero exit means "not on the branch": a missing branch ref exits
+    // 128, and a command killed by the timeout exits on a signal. Neither is a
+    // reason to recheck anything, and there would be nothing to merge against
+    // in either case.
+    list($err) = $future->resolve();
 
     return ($err === 0);
   }
