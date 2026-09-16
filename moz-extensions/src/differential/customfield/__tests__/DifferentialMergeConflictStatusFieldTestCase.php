@@ -24,6 +24,39 @@ final class DifferentialMergeConflictStatusFieldTestCase
         'carries a JSON number rather than the string `LiskDAO` hands back.'));
   }
 
+  public function testStatusValueRecordsTheBaseRevision() {
+    $value = DifferentialMergeConflictStatusField::newStatusValue(
+      array(
+        'status' => DifferentialMergeConflictStatusField::STATUS_CLEAN,
+        'reason' => 'Merges cleanly when merged against target branch tip.',
+        'baseCommit' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'targetCommit' => 'ffffffffffffffffffffffffffffffffffffffff',
+        'baseRevisionPHID' => 'PHID-DREV-landedparent',
+      ),
+      $this->newDiff(),
+      array('PHID-DIFF-parent', 'PHID-DIFF-active'),
+      1757000000);
+
+    $this->assertEqual(
+      'PHID-DREV-landedparent',
+      idx(
+        $value,
+        DifferentialMergeConflictStatusField::KEY_BASE_REVISION_PHID),
+      pht(
+        'A verdict that merged from a landed parent should record which '.
+        'revision that was, since the reason names it and it sits outside '.
+        'the stack the check applied.'));
+
+    $this->assertEqual(
+      null,
+      idx(
+        $this->newStatusValue(),
+        DifferentialMergeConflictStatusField::KEY_BASE_REVISION_PHID),
+      pht(
+        'A verdict that used the stack\'s own recorded base should record no '.
+        'base revision.'));
+  }
+
   public function testStatusValueRecordsWhenTheCheckRan() {
     $value = $this->newStatusValue();
 

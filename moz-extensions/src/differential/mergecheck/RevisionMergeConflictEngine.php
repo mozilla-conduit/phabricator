@@ -723,7 +723,22 @@ final class RevisionMergeConflictEngine extends Phobject {
       'reason' => $reason,
       'baseCommit' => $base_commit,
       'targetCommit' => $target_commit,
+      'baseRevisionPHID' => $this->getBaseRevisionPHID(),
     );
+  }
+
+  /**
+   * The revision whose landing commit was used as the merge base, if the walk
+   * fell back to one. The reason names it, and it sits outside the stack the
+   * check applied, so a reader of the result has no other way to know which
+   * revision the answer depended on.
+   */
+  public function getBaseRevisionPHID(): ?string {
+    if (!$this->baseFromLandedParent) {
+      return null;
+    }
+
+    return $this->baseFromLandedParent->getPHID();
   }
 
   /**
