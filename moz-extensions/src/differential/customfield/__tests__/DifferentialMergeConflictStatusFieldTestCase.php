@@ -252,6 +252,58 @@ final class DifferentialMergeConflictStatusFieldTestCase
         'which is what the diff comparison is for.'));
   }
 
+  public function testCheckedDependenciesExcludeTheRevisionsOwnDiff() {
+    $dependencies =
+      DifferentialMergeConflictStatusField::newCheckedDependencyPHIDs(
+        $this->newStatusValue());
+
+    $this->assertEqual(
+      array('PHID-DIFF-parent'),
+      idx($dependencies, 'diffPHIDs'),
+      pht(
+        'Only the ancestors below this revision need checking; a reader '.
+        'being shown the verdict can already see this revision\'s own diff.'));
+
+    $this->assertEqual(
+      array(),
+      idx($dependencies, 'revisionPHIDs'),
+      pht(
+        'A verdict that used the stack\'s own recorded base depended on no '.
+        'revision outside the stack.'));
+  }
+
+  public function testCheckedDependenciesIncludeTheBaseRevision() {
+    $value = $this->newStatusValue();
+    $value[DifferentialMergeConflictStatusField::KEY_BASE_REVISION_PHID] =
+      'PHID-DREV-landedparent';
+
+    $dependencies =
+      DifferentialMergeConflictStatusField::newCheckedDependencyPHIDs($value);
+
+    $this->assertEqual(
+      array('PHID-DREV-landedparent'),
+      idx($dependencies, 'revisionPHIDs'),
+      pht(
+        'The reason names the revision whose landing commit was used as the '.
+        'merge base, so it has to be checked before the reason is shown.'));
+  }
+
+  public function testStandaloneRevisionHasNoCheckedDependencies() {
+    $value = $this->newStatusValue();
+    $value[DifferentialMergeConflictStatusField::KEY_STACK_DIFF_PHIDS] =
+      array('PHID-DIFF-active');
+
+    $dependencies =
+      DifferentialMergeConflictStatusField::newCheckedDependencyPHIDs($value);
+
+    $this->assertEqual(
+      array(),
+      idx($dependencies, 'diffPHIDs'),
+      pht(
+        'A standalone revision\'s verdict names nothing but itself, so it '.
+        'should cost no policy checks.'));
+  }
+
   private function newStatusValue(): array {
     return DifferentialMergeConflictStatusField::newStatusValue(
       array(

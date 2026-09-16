@@ -212,6 +212,8 @@ final class DifferentialMergeConflictStatusField
       return null;
     }
 
+    $value = $this->newViewerSafeValue($value);
+
     $list = id(new PHUIStatusListView())
       ->addItem($this->newVerdictItem($value));
 
@@ -393,7 +395,116 @@ final class DifferentialMergeConflictStatusField
     // the revision's current diff?
     $value[self::KEY_IS_STALE] = $this->isStatusStale($value);
 
+    $value = $this->newViewerSafeValue($value);
+
+    // The stack is an implementation detail of the currency check, and it
+    // names the ancestors' diffs. `isStale` above already answers the only
+    // question a caller has about it.
+    unset($value[self::KEY_STACK_DIFF_PHIDS]);
+
     return $value;
+  }
+
+/* -(  Policy  )------------------------------------------------------------- */
+
+  /**
+   * Replaces the verdict's reason when it describes revisions the reader is
+   * not allowed to see.
+   *
+   * The check runs as the omnipotent viewer, so the reason it wrote names the
+   * monograms of ancestors and of the revision whose landing commit it merged
+   * from. On a revision stacked on a restricted one, that hands every reader
+   * of this revision the restricted one's monogram. The verdict itself is
+   * still reported: it describes this revision's own landing, which the reader
+   * is entitled to know about.
+   */
+  private function newViewerSafeValue(array $value): array {
+    if ($this->isCheckedStackVisible($value)) {
+      return $value;
+    }
+
+    $value[self::KEY_REASON] = pht(
+      'This revision lands on top of revisions you do not have permission '.
+      'to see, so what the check ran against is not shown.');
+
+    return $value;
+  }
+
+  /**
+   * Whether the reader can see every revision the verdict depended on: the
+   * ancestors whose patches were applied, and the revision whose landing
+   * commit was used as the merge base.
+   *
+   * Loading them as the reader rather than as the omnipotent viewer is itself
+   * the policy check, since a restricted object does not come back.
+   */
+  private function isCheckedStackVisible(array $value): bool {
+    $viewer = $this->getViewer();
+    if (!$viewer) {
+      // With no viewer to check against, assume the strictest answer rather
+      // than disclosing something on the strength of a missing check.
+      return false;
+    }
+
+    $dependencies = self::newCheckedDependencyPHIDs($value);
+
+    // Loading as the reader is the policy check: a diff inherits its
+    // revision's view policy, so one belonging to a restricted revision does
+    // not come back.
+    $diff_phids = idx($dependencies, 'diffPHIDs');
+    if ($diff_phids) {
+      $visible_diffs = id(new DifferentialDiffQuery())
+        ->setViewer($viewer)
+        ->withPHIDs($diff_phids)
+        ->execute();
+
+      if (count($visible_diffs) !== count($diff_phids)) {
+        return false;
+      }
+    }
+
+    $revision_phids = idx($dependencies, 'revisionPHIDs');
+    if ($revision_phids) {
+      $visible_revisions = id(new DifferentialRevisionQuery())
+        ->setViewer($viewer)
+        ->withPHIDs($revision_phids)
+        ->execute();
+
+      if (count($visible_revisions) !== count($revision_phids)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * The objects a verdict's reason can name, as a map of `diffPHIDs` and
+   * `revisionPHIDs`: the diffs of the ancestors whose patches were applied,
+   * and the revision whose landing commit was used as the merge base.
+   *
+   * The revision's own diff is left out, since a reader who is being shown the
+   * verdict can already see that.
+   */
+  public static function newCheckedDependencyPHIDs(array $value): array {
+    $diff_phids = idx($value, self::KEY_STACK_DIFF_PHIDS);
+    if (!is_array($diff_phids)) {
+      $diff_phids = array();
+    }
+
+    $diff_phids = array_values(
+      array_diff($diff_phids, array(idx($value, self::KEY_DIFF_PHID))));
+
+    $revision_phids = array();
+    $base_revision_phid = idx($value, self::KEY_BASE_REVISION_PHID);
+    if (phutil_nonempty_string($base_revision_phid)) {
+      $revision_phids[] = $base_revision_phid;
+    }
+
+    return array(
+      'diffPHIDs' => $diff_phids,
+      'revisionPHIDs' => $revision_phids,
+    );
   }
 
 /* -(  Helpers  )------------------------------------------------------------ */
