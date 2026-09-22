@@ -23,6 +23,7 @@
 
 final class FeedForEmailQueryIDAPIMethod extends ConduitAPIMethod {
   private static int $DEFAULT_LIMIT = 100;
+  private static int $MAX_LIMIT = 1000;
 
   public function getAPIMethodName(): string
   {
@@ -37,7 +38,7 @@ final class FeedForEmailQueryIDAPIMethod extends ConduitAPIMethod {
   protected function defineParamTypes(): array
   {
     return array(
-      'storyLimit' => 'optional int (default ' . self::$DEFAULT_LIMIT . ')',
+      'storyLimit' => 'optional int (default ' . self::$DEFAULT_LIMIT . ', clamped to 1-' . self::$MAX_LIMIT . ')',
       'after' => 'optional int',
     );
   }
@@ -54,7 +55,14 @@ final class FeedForEmailQueryIDAPIMethod extends ConduitAPIMethod {
   protected function execute(ConduitAPIRequest $request) {
     EmailAPIAuthorization::assert($request->getUser());
 
-    $limit = $request->getValue('storyLimit') ?? self::$DEFAULT_LIMIT;
+    // Clamp before use. setLimit(0) makes PhabricatorOffsetPagedQuery emit no
+    // LIMIT clause at all, and leaves $need = 0 in
+    // PhabricatorPolicyAwareQuery::execute(), which also switches off the
+    // overheat guard -- so a storyLimit of 0 would scan the whole feed table
+    // and build a story for every row. feed.for_email.query gets this for free
+    // from AphrontCursorPagerView::setPageSize(), which does max(1, ...).
+    $limit = (int)($request->getValue('storyLimit') ?? self::$DEFAULT_LIMIT);
+    $limit = max(1, min($limit, self::$MAX_LIMIT));
     $after = $request->getValue('after');
     $storyErrors = 0;
 

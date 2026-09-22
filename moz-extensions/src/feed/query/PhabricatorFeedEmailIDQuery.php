@@ -77,13 +77,17 @@ final class PhabricatorFeedEmailIDQuery extends PhabricatorFeedQuery {
   }
 
   protected function willFilterPage(array $data) {
-    // Record raw ids before any filtering happens. PhabricatorPolicyAwareQuery
-    // ::execute() may loop over several internal pages to fill a single result
-    // page, and each of them passes through here.
-    foreach ($data as $row) {
-      $id = (int)$row['id'];
-      if ($this->lastRawID === null || $id > $this->lastRawID) {
-        $this->lastRawID = $id;
+    // Record raw ids before any filtering happens.
+    // PhabricatorPolicyAwareQuery::execute() may loop over several internal
+    // pages to fill a single result page, and each of them passes through here.
+    //
+    // Take the max rather than the last row: rows arrive in query order, and
+    // setOrder('newest') (used by feed.for_email.status_id) sorts id
+    // descending, so the last row is the *smallest* id on that page.
+    if ($data) {
+      $max = max(array_map('intval', ipull($data, 'id')));
+      if ($this->lastRawID === null || $max > $this->lastRawID) {
+        $this->lastRawID = $max;
       }
     }
 
