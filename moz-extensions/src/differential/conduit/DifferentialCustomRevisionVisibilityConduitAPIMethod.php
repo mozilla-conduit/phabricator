@@ -175,6 +175,11 @@ final class DifferentialCustomRevisionVisibilityConduitAPIMethod
 
     $phids = array();
     foreach ($rules as $rule) {
+      if (!is_array($rule)) {
+        // The policy filter rejects a policy with a malformed rule outright,
+        // so treat it as granting no project and fall back to "secure".
+        return array();
+      }
       if (idx($rule, 'action') !== PhabricatorPolicy::ACTION_ALLOW) {
         continue;
       }

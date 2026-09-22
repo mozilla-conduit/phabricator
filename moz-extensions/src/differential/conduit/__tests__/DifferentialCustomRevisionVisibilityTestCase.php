@@ -100,6 +100,18 @@ final class DifferentialCustomRevisionVisibilityTestCase
         ),
         array($other),
       ),
+      // A malformed rule invalidates the whole policy.
+      'malformed rule' => array(
+        array(
+          array(
+            'action' => 'allow',
+            'rule' => 'PhabricatorProjectsPolicyRule',
+            'value' => array($secure),
+          ),
+          'bogus',
+        ),
+        array(),
+      ),
     );
 
     foreach ($cases as $label => $case) {
