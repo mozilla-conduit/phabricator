@@ -7,14 +7,16 @@ class PhabricatorStory {
   public DifferentialRevision $revision;
   public PhabricatorUser $actor;
   public string $key;
+  public int $id;
   public int $timestamp;
 
-  public function __construct(EventKind $eventKind, TransactionList $transactions, DifferentialRevision $revision, PhabricatorUser $actor, string $key, int $timestamp) {
+  public function __construct(EventKind $eventKind, TransactionList $transactions, DifferentialRevision $revision, PhabricatorUser $actor, string $key, int $id, int $timestamp) {
     $this->eventKind = $eventKind;
     $this->transactions = $transactions;
     $this->revision = $revision;
     $this->actor = $actor;
     $this->key = $key;
+    $this->id = $id;
     $this->timestamp = $timestamp;
   }
 
@@ -44,6 +46,45 @@ class PhabricatorStory {
       $lastKey = $sinceKey;
     }
 
+    return new StoryQueryResult($lastKey, self::buildStories($userStore, $rawStories));
+  }
+
+  /**
+   * Same as queryStories(), but pages off the sequential feed_storydata.id
+   * instead of the chronologicalKey. See PhabricatorFeedEmailIDQuery for why:
+   * an id cursor cannot be wedged by a story that has become unloadable.
+   */
+  public static function queryStoriesByID(PhabricatorUserStore $userStore, int $limit, ?int $afterID): StoryIDQueryResult {
+    $query = (new PhabricatorFeedEmailIDQuery())
+      ->setOrder('oldest')
+      ->setViewer(PhabricatorUser::getOmnipotentUser())
+      ->setLimit($limit)
+      // A long enough run of unloadable stories would otherwise overheat and
+      // throw, which would put us back to being stuck on a fixed cursor. Taking
+      // a short page and advancing is always better here.
+      ->setReturnPartialResultsOnOverheat(true);
+
+    if ($afterID) {
+      $query->withMinID($afterID);
+    }
+
+    $rawStories = $query->execute();
+
+    // Advance past every row we examined, not just the ones that survived
+    // filtering, otherwise a fully-filtered page would not move the cursor.
+    $lastID = $query->getLastRawID();
+    if ($lastID === null) {
+      $lastID = $afterID ?? 0;
+    }
+
+    return new StoryIDQueryResult($lastID, self::buildStories($userStore, $rawStories));
+  }
+
+  /**
+   * @param PhabricatorFeedStory[] $rawStories
+   * @return PhabricatorStory[]
+   */
+  private static function buildStories(PhabricatorUserStore $userStore, array $rawStories): array {
     /** @var PhabricatorStoryBuilder[] $builders */
     $builders = [];
     $revisionPHIDs = [];
@@ -70,14 +111,14 @@ class PhabricatorStory {
         continue;
       }
 
-      $builder = new PhabricatorStoryBuilder($eventKind, $transactions, $storyData->getChronologicalKey(), $storyData->getDateCreated());
+      $builder = new PhabricatorStoryBuilder($eventKind, $transactions, $storyData->getChronologicalKey(), $storyData->getID(), $storyData->getDateCreated());
       $revisionPHIDs[] = $builder->revisionPHID;
       $builders[] = $builder;
     }
 
     if (!$builders) {
       // No stories were relevant
-      return new StoryQueryResult($lastKey, []);
+      return [];
     }
 
     $rawRevisions = (new DifferentialRevisionQuery())
@@ -109,7 +150,7 @@ class PhabricatorStory {
     });
     if (empty($builders)) {
       // All new stories were for "draft" revisions
-      return new StoryQueryResult($lastKey, []);
+      return [];
     }
 
     $rawUsers = $userStore->queryAll($actorPHIDs);
@@ -124,6 +165,6 @@ class PhabricatorStory {
       }
     }
 
-    return new StoryQueryResult($lastKey, $stories);
+    return $stories;
   }
 }
