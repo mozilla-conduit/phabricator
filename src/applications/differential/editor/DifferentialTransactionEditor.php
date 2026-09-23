@@ -14,6 +14,9 @@ final class DifferentialTransactionEditor
   private $ownersDiff;
   private $ownersChangesets;
 
+  private $mergeCheckDiffPHID;
+  private $mergeCheckStackChanged = false;
+
   public function getEditorApplicationClass() {
     return 'PhabricatorDifferentialApplication';
   }
@@ -351,6 +354,7 @@ final class DifferentialTransactionEditor
     $should_index_paths = false;
     $should_index_hashes = false;
     $need_changesets = false;
+    $stack_changed = false;
 
     foreach ($xactions as $xaction) {
       switch ($xaction->getTransactionType()) {
@@ -370,6 +374,23 @@ final class DifferentialTransactionEditor
           $need_changesets = true;
 
           $should_index_paths = true;
+          break;
+        case DifferentialRevisionCloseTransaction::TRANSACTIONTYPE:
+        case DifferentialRevisionAbandonTransaction::TRANSACTIONTYPE:
+        case DifferentialRevisionReopenTransaction::TRANSACTIONTYPE:
+          // Whether this revision will land at all just changed, so whatever
+          // is stacked above it is landing onto a different tree than before.
+          $stack_changed = true;
+          break;
+        case PhabricatorTransactions::TYPE_EDGE:
+          switch ($xaction->getMetadataValue('edge:type')) {
+            case DifferentialRevisionDependsOnRevisionEdgeType::EDGECONST:
+            case DifferentialRevisionDependedOnByRevisionEdgeType::EDGECONST:
+              // The stack was re-wired, so this revision (and everything above
+              // it) may now land on top of a different set of changes.
+              $stack_changed = true;
+              break;
+          }
           break;
       }
     }
@@ -391,7 +412,16 @@ final class DifferentialTransactionEditor
       if ($has_new_diff) {
         $this->ownersDiff = $new_diff;
         $this->ownersChangesets = $new_diff->getChangesets();
+
+        // Only record what needs rechecking here. The tasks themselves are
+        // queued once the transaction has committed, in
+        // `queueMergeConflictChecks`.
+        $this->mergeCheckDiffPHID = $new_diff->getPHID();
       }
+    }
+
+    if ($stack_changed) {
+      $this->mergeCheckStackChanged = true;
     }
 
     $xactions = $this->updateReviewStatus($object, $xactions);
@@ -1290,6 +1320,20 @@ final class DifferentialTransactionEditor
    * Update the table connecting revisions to DVCS local hashes, so we can
    * identify revisions by commit/tree hashes.
    */
+  /**
+   * Whether merge conflict detection is turned on for this revision's
+   * repository. A revision with no repository has no target branch to merge
+   * into.
+   */
+  private function shouldCheckMergeConflicts(DifferentialRevision $revision) {
+    $repository = $revision->getRepository();
+    if (!$repository) {
+      return false;
+    }
+
+    return RevisionMergeConflictWorker::isEnabledForRepository($repository);
+  }
+
   private function updateRevisionHashTable(
     DifferentialRevision $revision,
     DifferentialDiff $diff) {
@@ -1536,7 +1580,54 @@ final class DifferentialTransactionEditor
       }
     }
 
+    $this->queueMergeConflictChecks($object);
+
     return $xactions;
+  }
+
+  /**
+   * Queues merge conflict rechecks for whatever this edit changed.
+   *
+   * This runs here rather than in `applyFinalEffects` because that is still
+   * inside the open revision transaction, while `scheduleTask` writes to the
+   * worker database and is visible to taskmasters immediately. A taskmaster
+   * picking the task up before the revision commits would read the previous
+   * active diff, discard the task as stale and never re-queue it, leaving the
+   * revision on its pre-update verdict. Scheduling after the commit also keeps
+   * `setRunAllTasksInProcess` from running the merge itself while the revision
+   * is locked.
+   */
+  private function queueMergeConflictChecks(DifferentialRevision $revision) {
+    $diff_phid = $this->mergeCheckDiffPHID;
+    $stack_changed = $this->mergeCheckStackChanged;
+
+    if (!$diff_phid && !$stack_changed) {
+      return;
+    }
+
+    if (!$this->shouldCheckMergeConflicts($revision)) {
+      return;
+    }
+
+    $viewer = PhabricatorUser::getOmnipotentUser();
+
+    // A new diff pins this revision's own check to that diff, since we already
+    // know which one the edit attached, and fans out to everything above it.
+    if ($diff_phid) {
+      RevisionMergeConflictWorker::queueCheck(
+        $revision->getPHID(),
+        $diff_phid);
+
+      RevisionMergeConflictWorker::queueDescendantChecks(
+        $viewer,
+        array($revision->getPHID()));
+
+      return;
+    }
+
+    RevisionMergeConflictWorker::queueChecks(
+      $viewer,
+      array($revision->getPHID()));
   }
 
   private function loadCompletedBuildableStatus(
