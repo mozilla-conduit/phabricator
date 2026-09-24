@@ -34,20 +34,26 @@
  * parent was genuinely rebased and its tree differs, the patch fails to apply
  * and the result is inconclusive, so this can never invent a conflict.
  *
+ * Because the base is forced as the merge base, the merge is the one `git
+ * rebase` performs: the verdict says whether the stack would rebase cleanly
+ * onto the target branch. That holds whether or not the base is an ancestor of
+ * the target, so a stack written on another fetched branch (`main`, for a
+ * repository whose target is `autoland`) is checked too. A conflict it reports
+ * is one a rebase would hit.
+ *
  * The result is one of `clean`, `conflict`, or `unknown`. A `conflict` is only
  * ever returned when `git merge-tree` completed and reported one; every
- * ambiguous situation (missing base, a base that isn't on the target branch, a
- * patch that doesn't apply, a missing branch, a git failure) yields `unknown`.
+ * ambiguous situation (missing base, a base on no fetched branch, a patch that
+ * doesn't apply, a missing branch, a git failure) yields `unknown`.
  * We never report a false `conflict`. Command failures are logged rather than
  * having their output stored in a field shown to users.
  *
  * Two things the check refuses to answer rather than guess at:
  *
- *   - A base that is in the object store but not an ancestor of the target
- *     branch. It is forced as the merge base, so an off-branch base makes
- *     everything the branch gained since the real fork point read as a
- *     conflicting edit. Only a zero exit from `merge-base --is-ancestor`
- *     proves ancestry; a git error is treated the same as "not an ancestor".
+ *   - A base that is in the object store but on no branch the repository
+ *     fetches, such as a commit a force-push left behind. Nothing lands on top
+ *     of it, so there is no rebase to predict. A git error while checking is
+ *     treated the same as "on no branch".
  *   - A stack whose patch text exceeds a fixed budget. Every patch is
  *     materialized in memory before reaching git, and the budget spans the
  *     whole stack, since a tall stack of moderate diffs costs as much as one
@@ -165,7 +171,7 @@ final class RevisionMergeConflictEngine extends Phobject {
 
     $target_tip = $this->resolveTargetTip();
 
-    $this->requireBaseOnTargetBranch($base, $target_tip);
+    $this->requireBaseOnFetchedBranch($base, $target_tip);
 
     // Synthesize the stack's tree in a temporary index. The TempFile is held
     // until the method returns so it (and whatever git writes at its path) is
@@ -472,42 +478,72 @@ final class RevisionMergeConflictEngine extends Phobject {
   }
 
   /**
-   * Refuses to answer unless the base is on the target branch.
+   * Refuses to answer unless the base is on a branch this repository fetches.
    *
-   * `commitExists` only proves the object is in the store, and we then force it
-   * as the merge base. A base outside the target branch's history -- a revision
-   * written on another branch, or a commit that was force-pushed away -- makes
-   * everything the branch gained since the real fork point look like a
-   * conflicting edit, which is exactly the false `conflict` we promise never to
-   * report.
+   * The base is forced as the merge base, which is what `git rebase` does, so
+   * the verdict answers whether the stack would rebase cleanly onto the target
+   * branch whether or not the base is one of its ancestors. A stack written on
+   * `main` rather than `autoland` is checked the same way. What we still refuse
+   * is a base on no fetched branch at all, such as an object left behind by a
+   * force-push or an old fetch configuration, since nothing lands on top of it.
    */
-  private function requireBaseOnTargetBranch(
+  private function requireBaseOnFetchedBranch(
     string $base,
     string $target_tip): void {
 
-    $future = $this->newGitFuture(
+    // The common case, and cheaper than asking which branches contain the base.
+    $ancestor_future = $this->newGitFuture(
       'merge-base --is-ancestor %s %s',
       $base,
       $target_tip);
 
-    list($err) = $future->resolve();
+    list($err) = $ancestor_future->resolve();
 
     if (self::isAncestorExitCode($err)) {
       return;
     }
 
-    if ($future->getWasKilledByTimeout()) {
+    if ($ancestor_future->getWasKilledByTimeout()) {
       throw new RevisionMergeConflictReasonException(
         pht(
           '"git merge-base" did not finish within %s seconds.',
           new PhutilNumber(self::GIT_TIMEOUT_SECONDS)));
     }
 
+    // The working copy only holds the branches named by the repository's fetch
+    // rules, so any local branch containing the base is one we fetch.
+    $refs_future = $this->newGitFuture(
+      'for-each-ref --contains %s --format=%s %s',
+      $base,
+      '%(refname)',
+      'refs/heads/');
+
+    list($err, $stdout) = $refs_future->resolve();
+
+    if ($refs_future->getWasKilledByTimeout()) {
+      throw new RevisionMergeConflictReasonException(
+        pht(
+          '"git for-each-ref" did not finish within %s seconds.',
+          new PhutilNumber(self::GIT_TIMEOUT_SECONDS)));
+    }
+
+    if ($err === 0 && self::hasContainingBranch($stdout)) {
+      return;
+    }
+
     throw new RevisionMergeConflictReasonException(
       pht(
-        'The stack is based on commit "%s", which is not an ancestor of the '.
-        'target branch. Rebase onto the target branch to check it.',
+        'The stack is based on commit "%s", which is not on any branch this '.
+        'repository fetches.',
         $base));
+  }
+
+  /**
+   * Interprets the output of `git for-each-ref --contains`: one line per branch
+   * that contains the commit, and nothing at all when none does.
+   */
+  public static function hasContainingBranch(string $stdout): bool {
+    return (trim($stdout) !== '');
   }
 
   /**

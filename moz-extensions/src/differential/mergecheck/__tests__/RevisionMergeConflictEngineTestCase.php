@@ -44,6 +44,29 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
       pht('An unparseable version must be rejected rather than assumed good.'));
   }
 
+  public function testHasContainingBranch() {
+    $this->assertTrue(
+      RevisionMergeConflictEngine::hasContainingBranch("refs/heads/main\n"),
+      pht(
+        'A base on a fetched branch other than the target is checked, since '.
+        'the merge answers whether the stack rebases onto the target.'));
+
+    $this->assertTrue(
+      RevisionMergeConflictEngine::hasContainingBranch(
+        "refs/heads/autoland\nrefs/heads/main\n"),
+      pht('A base on several fetched branches is checked.'));
+
+    $this->assertFalse(
+      RevisionMergeConflictEngine::hasContainingBranch(''),
+      pht(
+        'A base on no fetched branch, such as a force-pushed commit, must '.
+        'not be checked.'));
+
+    $this->assertFalse(
+      RevisionMergeConflictEngine::hasContainingBranch("\n"),
+      pht('Blank output means no branch contains the base.'));
+  }
+
   public function testIsAncestorExitCode() {
     $this->assertTrue(
       RevisionMergeConflictEngine::isAncestorExitCode(0),
