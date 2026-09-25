@@ -35,8 +35,15 @@ final class RevisionMergeConflictStackQueryTestCase
       $parent);
 
     $this->assertTrue(
-      strpos($reason, 'D1') !== false,
-      pht('A landed parent should stop the walk and name itself: %s', $reason));
+      strpos($reason['message'], 'D1') !== false,
+      pht(
+        'A landed parent should stop the walk and name itself: %s',
+        $reason['message']));
+
+    $this->assertEqual(
+      RevisionMergeConflictReasonException::CODE_PARENT_LANDED,
+      $reason['code'],
+      pht('A landed parent is reported under its own reason code.'));
   }
 
   public function testAbandonedParentStopsTheWalk() {
@@ -48,10 +55,15 @@ final class RevisionMergeConflictStackQueryTestCase
       $parent);
 
     $this->assertTrue(
-      strpos($reason, 'abandoned') !== false,
+      strpos($reason['message'], 'abandoned') !== false,
       pht(
         'An abandoned parent should stop the walk and say so: %s',
-        $reason));
+        $reason['message']));
+
+    $this->assertEqual(
+      RevisionMergeConflictReasonException::CODE_PARENT_ABANDONED,
+      $reason['code'],
+      pht('An abandoned parent is reported under its own reason code.'));
   }
 
   public function testParentInAnotherRepositoryIsNotCheckable() {
@@ -87,6 +99,29 @@ final class RevisionMergeConflictStackQueryTestCase
           $revision,
           $parent);
       });
+  }
+
+  public function testThrownStopReasonsCarryACode() {
+    $revision = $this->newRevision(2, DifferentialRevisionStatus::NEEDS_REVIEW);
+    $parent = $this->newRevision(
+      1,
+      DifferentialRevisionStatus::NEEDS_REVIEW,
+      'PHID-REPO-other');
+
+    $code = null;
+    try {
+      RevisionMergeConflictStackQuery::newParentStopReason($revision, $parent);
+    } catch (RevisionMergeConflictReasonException $ex) {
+      $code = $ex->getReasonCode();
+    }
+
+    $this->assertEqual(
+      RevisionMergeConflictReasonException::CODE_PARENT_OTHER_REPOSITORY,
+      $code,
+      pht(
+        'A thrown stop reason must name its cause in code form, since the '.
+        'hint shown to the reader is selected from it rather than from the '.
+        'message.'));
   }
 
   public function testLandedParentCanBeUsedAsMergeBase() {

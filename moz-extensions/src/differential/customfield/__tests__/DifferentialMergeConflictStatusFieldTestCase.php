@@ -138,6 +138,111 @@ final class DifferentialMergeConflictStatusFieldTestCase
       pht('An `unknown` result may not have resolved a base commit.'));
   }
 
+  public function testMercurialToolingDetection() {
+    $cases = array(
+      // Declared Mercurial, whatever submitted it.
+      array('arc', 'hg', true),
+      array('phlay', 'hg', true),
+      // `moz-phab-hg` declares itself Git while recording Mercurial nodes, so
+      // the creation method has to be consulted too. This is the largest
+      // affected population in production.
+      array('moz-phab-hg', 'git', true),
+      array('moz-phab-git-cinnabar', 'git', true),
+      array('moz-phab-git-cinnabar-uplift', 'hg', true),
+      // Native Git tooling.
+      array('moz-phab-git', 'git', false),
+      array('moz-phab-jj', 'git', false),
+      array('moz-phab-git-uplift-lando', 'git', false),
+      array('commit', 'git', false),
+      // Nothing recorded at all.
+      array(null, null, false),
+    );
+
+    foreach ($cases as $case) {
+      list($method, $system, $expected) = $case;
+
+      $this->assertEqual(
+        $expected,
+        DifferentialMergeConflictStatusField::isMercurialTooling($method, $system),
+        pht('Tooling check for "%s" on "%s".', $method, $system));
+    }
+  }
+
+  public function testMissingBaseHintSplitsToolingFromFetchLag() {
+    $cinnabar = DifferentialMergeConflictStatusField::newHint(
+      RevisionMergeConflictReasonException::CODE_BASE_MISSING,
+      'moz-phab-git-cinnabar',
+      'hg');
+
+    $this->assertTrue(
+      strpos($cinnabar, 'native Git checkout') !== false,
+      pht('A Mercurial base is advised to submit from Git: %s', $cinnabar));
+
+    $native = DifferentialMergeConflictStatusField::newHint(
+      RevisionMergeConflictReasonException::CODE_BASE_MISSING,
+      'moz-phab-git',
+      'git');
+
+    $this->assertTrue(
+      strpos($native, 'resolves on its own') !== false,
+      pht(
+        'A Git base that has not been fetched yet must not be blamed on '.
+        'tooling, since the author is already submitting correctly: %s',
+        $native));
+
+    $this->assertTrue(
+      strpos($native, 'native Git checkout') === false,
+      pht('The fetch-lag hint must not advise a tooling change.'));
+  }
+
+  public function testHintNamesTheSubmittingTool() {
+    $hint = DifferentialMergeConflictStatusField::newHint(
+      RevisionMergeConflictReasonException::CODE_BASE_MISSING,
+      'moz-phab-hg',
+      'git');
+
+    $this->assertTrue(
+      strpos($hint, 'moz-phab-hg') !== false,
+      pht('The hint names the tool so the advice can be acted on: %s', $hint));
+  }
+
+  public function testDefinitiveVerdictsHaveNoHint() {
+    $this->assertEqual(
+      null,
+      DifferentialMergeConflictStatusField::newHint(null, 'moz-phab-git', 'git'),
+      pht(
+        'A clean or conflicting verdict records no reason code and needs no '.
+        'advice.'));
+
+    $this->assertEqual(
+      null,
+      DifferentialMergeConflictStatusField::newHint('some-future-code', 'moz-phab-git', 'git'),
+      pht('An unrecognised code yields no hint rather than raising.'));
+  }
+
+  public function testEveryHintedCodeIsReachable() {
+    $codes = array(
+      RevisionMergeConflictReasonException::CODE_BASE_NOT_ANCESTOR,
+      RevisionMergeConflictReasonException::CODE_PATCH_DOES_NOT_APPLY,
+      RevisionMergeConflictReasonException::CODE_PARENT_LANDED,
+      RevisionMergeConflictReasonException::CODE_PARENT_ABANDONED,
+      RevisionMergeConflictReasonException::CODE_PARENT_OTHER_REPOSITORY,
+      RevisionMergeConflictReasonException::CODE_STACK_NOT_LINEAR,
+      RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
+      RevisionMergeConflictReasonException::CODE_PATCH_TOO_LARGE,
+      RevisionMergeConflictReasonException::CODE_COMMAND_FAILED,
+      RevisionMergeConflictReasonException::CODE_INTERNAL_ERROR,
+    );
+
+    foreach ($codes as $code) {
+      $hint = DifferentialMergeConflictStatusField::newHint($code, 'moz-phab-git', 'git');
+
+      $this->assertTrue(
+        phutil_nonempty_string($hint),
+        pht('Reason code "%s" should offer a hint.', $code));
+    }
+  }
+
   public function testCheckedAgainstDescription() {
     $this->assertEqual(
       'Diff 456, based on aaaaaaaaaaaa',
