@@ -409,6 +409,60 @@ final class DifferentialMergeConflictStatusFieldTestCase
         'should cost no policy checks.'));
   }
 
+  public function testRestrictedStackRedactsEverythingAboutTheStack() {
+    $value = DifferentialMergeConflictStatusField::newStatusValue(
+      array(
+        'status' => DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
+        'reason' => 'Parent D123 is abandoned.',
+        'reasonCode' =>
+          RevisionMergeConflictReasonException::CODE_PARENT_ABANDONED,
+        'baseDiffCreationMethod' => 'moz-phab-hg',
+        'baseDiffSourceControlSystem' => 'git',
+      ),
+      $this->newDiff(),
+      array('PHID-DIFF-restricted', 'PHID-DIFF-active'),
+      1757000000);
+
+    $redacted = DifferentialMergeConflictStatusField::newRedactedValue($value);
+
+    $this->assertEqual(
+      DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
+      idx($redacted, DifferentialMergeConflictStatusField::KEY_STATUS),
+      pht('The verdict describes this revision, so it should still be shown.'));
+
+    $this->assertTrue(
+      strpos(
+        idx($redacted, DifferentialMergeConflictStatusField::KEY_REASON),
+        'D123') === false,
+      pht('The reason should not name the restricted ancestor.'));
+
+    $leaky_keys = array(
+      DifferentialMergeConflictStatusField::KEY_REASON_CODE,
+      DifferentialMergeConflictStatusField::KEY_BASE_DIFF_CREATION_METHOD,
+      DifferentialMergeConflictStatusField::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM,
+    );
+    foreach ($leaky_keys as $key) {
+      $this->assertEqual(
+        null,
+        idx($redacted, $key),
+        pht('`%s` describes the restricted stack, so it should be cleared.', $key));
+    }
+
+    $this->assertEqual(
+      null,
+      DifferentialMergeConflictStatusField::newHint(
+        idx($redacted, DifferentialMergeConflictStatusField::KEY_REASON_CODE),
+        idx(
+          $redacted,
+          DifferentialMergeConflictStatusField::KEY_BASE_DIFF_CREATION_METHOD),
+        idx(
+          $redacted,
+          DifferentialMergeConflictStatusField::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM)),
+      pht(
+        'A redacted value should yield no hint, since the hint would reveal '.
+        'the restricted ancestor\'s state.'));
+  }
+
   private function newStatusValue(): array {
     return DifferentialMergeConflictStatusField::newStatusValue(
       array(

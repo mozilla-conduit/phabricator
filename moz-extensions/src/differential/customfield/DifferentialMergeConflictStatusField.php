@@ -569,14 +569,16 @@ final class DifferentialMergeConflictStatusField
     // the revision's current diff?
     $value[self::KEY_IS_STALE] = $this->isStatusStale($value);
 
+    // Redact before deriving the hint, since the hint is built from fields
+    // that describe restricted ancestors.
+    $value = $this->newViewerSafeValue($value);
+
     // Lando shows its own warning, so hand it the same advice rather than
     // making it reimplement the mapping from reason code to remedy.
     $value[self::KEY_HINT] = self::newHint(
       idx($value, self::KEY_REASON_CODE),
       idx($value, self::KEY_BASE_DIFF_CREATION_METHOD),
       idx($value, self::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM));
-
-    $value = $this->newViewerSafeValue($value);
 
     // The stack is an implementation detail of the currency check, and it
     // names the ancestors' diffs. `isStale` above already answers the only
@@ -589,8 +591,8 @@ final class DifferentialMergeConflictStatusField
 /* -(  Policy  )------------------------------------------------------------- */
 
   /**
-   * Replaces the verdict's reason when it describes revisions the reader is
-   * not allowed to see.
+   * Redacts the verdict's explanation when it describes revisions the reader
+   * is not allowed to see.
    *
    * The check runs as the omnipotent viewer, so the reason it wrote names the
    * monograms of ancestors and of the revision whose landing commit it merged
@@ -604,9 +606,24 @@ final class DifferentialMergeConflictStatusField
       return $value;
     }
 
+    return self::newRedactedValue($value);
+  }
+
+  /**
+   * Strips everything that describes the checked stack rather than this
+   * revision's own landing.
+   *
+   * The reason code gives away an ancestor's state (landed, abandoned), and the
+   * base diff tooling describes the diff at the bottom of the stack, which may
+   * be restricted. Clearing them also clears the hint derived from them.
+   */
+  public static function newRedactedValue(array $value): array {
     $value[self::KEY_REASON] = pht(
       'This revision lands on top of revisions you do not have permission '.
       'to see, so what the check ran against is not shown.');
+    $value[self::KEY_REASON_CODE] = null;
+    $value[self::KEY_BASE_DIFF_CREATION_METHOD] = null;
+    $value[self::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM] = null;
 
     return $value;
   }
