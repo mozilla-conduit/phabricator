@@ -45,10 +45,6 @@ final class DifferentialTransactionView
     return $this->changesets;
   }
 
-  // TODO: There's a whole lot of code duplication between this and
-  // PholioTransactionView to handle inlines. Merge this into the core? Some of
-  // it can probably be shared, while other parts are trickier.
-
   protected function shouldGroupTransactions(
     PhabricatorApplicationTransaction $u,
     PhabricatorApplicationTransaction $v) {

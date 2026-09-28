@@ -20,10 +20,6 @@
   z-index: 2;
 }
 
-.pholio-new-inline-comment {
-  z-index: 2;
-}
-
 div.phui-calendar-day-event {
   z-index: 2;
 }
@@ -120,10 +116,6 @@ div.jx-typeahead-results {
 
 .jx-hovercard-container {
   z-index: 17;
-}
-
-.pholio-device-lightbox {
-  z-index: 20;
 }
 
 .phuix-autocomplete {

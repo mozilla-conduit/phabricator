@@ -14,7 +14,7 @@ final class PhabricatorAuditTransactionView
     return $this->pathMap;
   }
 
-  // TODO: This shares a lot of code with Differential and Pholio and should
+  // TODO: This shares a lot of code with Differential and should
   // probably be merged up.
 
   protected function shouldGroupTransactions(
