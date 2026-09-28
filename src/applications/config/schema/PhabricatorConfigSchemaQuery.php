@@ -76,6 +76,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
     return array(
       'chatlog' => true,
       'countdown' => true,
+      'fund' => true,
     );
   }
 
