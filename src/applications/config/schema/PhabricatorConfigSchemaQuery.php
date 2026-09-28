@@ -78,6 +78,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       'countdown' => true,
       'fund' => true,
       'phortune' => true,
+      'phame' => true,
     );
   }
 

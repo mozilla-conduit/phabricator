@@ -67,7 +67,6 @@ final class RemarkupProcessConduitAPIMethod extends ConduitAPIMethod {
       'phriction' => 'newPhrictionMarkupEngine',
       'maniphest' => 'newManiphestMarkupEngine',
       'differential' => 'newDifferentialMarkupEngine',
-      'phame' => 'newPhameMarkupEngine',
       'feed' => 'newFeedMarkupEngine',
       'diffusion' => 'newDiffusionMarkupEngine',
     );
