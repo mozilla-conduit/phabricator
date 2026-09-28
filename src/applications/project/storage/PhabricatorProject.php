@@ -11,10 +11,8 @@ final class PhabricatorProject extends PhabricatorProjectDAO
     PhabricatorFulltextInterface,
     PhabricatorFerretInterface,
     PhabricatorConduitResultInterface,
-    PhabricatorColumnProxyInterface,
     PhabricatorSpacesInterface,
-    PhabricatorEditEngineSubtypeInterface,
-    PhabricatorWorkboardInterface {
+    PhabricatorEditEngineSubtypeInterface {
 
   protected $name;
   protected $status = PhabricatorProjectStatus::STATUS_ACTIVE;
@@ -57,8 +55,6 @@ final class PhabricatorProject extends PhabricatorProjectDAO
 
   const ITEM_PICTURE = 'project.picture';
   const ITEM_PROFILE = 'project.profile';
-  const ITEM_POINTS = 'project.points';
-  const ITEM_WORKBOARD = 'project.workboard';
   const ITEM_MEMBERS = 'project.members';
   const ITEM_MANAGE = 'project.manage';
   const ITEM_MILESTONES = 'project.milestones';
@@ -393,10 +389,6 @@ final class PhabricatorProject extends PhabricatorProjectDAO
     return "/project/profile/{$id}/";
   }
 
-  public function getWorkboardURI() {
-    return urisprintf('/project/board/%d/', $this->getID());
-  }
-
   public function save() {
     if (!$this->getMailKey()) {
       $this->setMailKey(Filesystem::readRandomCharacters(20));
@@ -636,47 +628,6 @@ final class PhabricatorProject extends PhabricatorProjectDAO
     return $this;
   }
 
-  public function getDefaultWorkboardSort() {
-    return $this->getProperty('workboard.sort.default');
-  }
-
-  public function setDefaultWorkboardSort($sort) {
-    return $this->setProperty('workboard.sort.default', $sort);
-  }
-
-  public function getDefaultWorkboardFilter() {
-    return $this->getProperty('workboard.filter.default');
-  }
-
-  public function setDefaultWorkboardFilter($filter) {
-    return $this->setProperty('workboard.filter.default', $filter);
-  }
-
-  public function getWorkboardBackgroundColor() {
-    return $this->getProperty('workboard.background');
-  }
-
-  public function setWorkboardBackgroundColor($color) {
-    return $this->setProperty('workboard.background', $color);
-  }
-
-  public function getDisplayWorkboardBackgroundColor() {
-    $color = $this->getWorkboardBackgroundColor();
-
-    if ($color === null) {
-      $parent = $this->getParentProject();
-      if ($parent) {
-        return $parent->getDisplayWorkboardBackgroundColor();
-      }
-    }
-
-    if ($color === 'none') {
-      $color = null;
-    }
-
-    return $color;
-  }
-
 
 /* -(  PhabricatorCustomFieldInterface  )------------------------------------ */
 
@@ -730,12 +681,6 @@ final class PhabricatorProject extends PhabricatorProjectDAO
 
     $this->openTransaction();
       $this->delete();
-
-      $columns = id(new PhabricatorProjectColumn())
-        ->loadAllWhere('projectPHID = %s', $this->getPHID());
-      foreach ($columns as $column) {
-        $engine->destroyObject($column);
-      }
 
       $slugs = id(new PhabricatorProjectSlug())
         ->loadAllWhere('projectPHID = %s', $this->getPHID());
@@ -866,26 +811,6 @@ final class PhabricatorProject extends PhabricatorProjectDAO
       'phid' => $this->getPHID(),
       'name' => $this->getName(),
     );
-  }
-
-
-/* -(  PhabricatorColumnProxyInterface  )------------------------------------ */
-
-
-  public function getProxyColumnName() {
-    return $this->getName();
-  }
-
-  public function getProxyColumnIcon() {
-    return $this->getDisplayIconIcon();
-  }
-
-  public function getProxyColumnClass() {
-    if ($this->isMilestone()) {
-      return 'phui-workboard-column-milestone';
-    }
-
-    return null;
   }
 
 

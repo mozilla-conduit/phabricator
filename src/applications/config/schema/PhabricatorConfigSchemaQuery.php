@@ -102,6 +102,14 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
         'macro_transaction_comment',
       ),
       'fact' => true,
+      'project' => array(
+        'project_column',
+        'project_columnposition',
+        'project_columntransaction',
+        'project_trigger',
+        'project_triggertransaction',
+        'project_triggerusage',
+      ),
     );
   }
 

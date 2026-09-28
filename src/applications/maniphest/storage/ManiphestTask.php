@@ -496,10 +496,7 @@ final class ManiphestTask extends ManiphestDAO
   }
 
   public function getConduitSearchAttachments() {
-    return array(
-      id(new PhabricatorBoardColumnsSearchEngineAttachment())
-        ->setAttachmentKey('columns'),
-    );
+    return array();
   }
 
   public function newSubtypeObject() {

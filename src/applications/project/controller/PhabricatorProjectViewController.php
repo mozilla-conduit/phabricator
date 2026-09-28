@@ -29,9 +29,6 @@ final class PhabricatorProjectViewController
     }
 
     switch ($default_key) {
-      case PhabricatorProject::ITEM_WORKBOARD:
-        $controller_object = new PhabricatorProjectBoardViewController();
-        break;
       case PhabricatorProject::ITEM_PROFILE:
         $controller_object = new PhabricatorProjectProfileController();
         break;

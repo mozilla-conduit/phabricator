@@ -54,18 +54,6 @@ final class PhabricatorProjectTransaction
     return parent::shouldHide();
   }
 
-  public function shouldHideForMail(array $xactions) {
-    switch ($this->getTransactionType()) {
-      case PhabricatorProjectWorkboardTransaction::TRANSACTIONTYPE:
-      case PhabricatorProjectSortTransaction::TRANSACTIONTYPE:
-      case PhabricatorProjectFilterTransaction::TRANSACTIONTYPE:
-      case PhabricatorProjectWorkboardBackgroundTransaction::TRANSACTIONTYPE:
-        return true;
-    }
-
-    return parent::shouldHideForMail($xactions);
-  }
-
   public function getIcon() {
     switch ($this->getTransactionType()) {
       case self::TYPE_MEMBERS:
