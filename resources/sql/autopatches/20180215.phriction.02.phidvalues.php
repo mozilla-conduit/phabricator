@@ -1,17 +1,5 @@
 <?php
 
-$table = new PhrictionContent();
-$conn = $table->establishConnection('w');
-
-foreach (new LiskMigrationIterator($table) as $row) {
-  if (strlen($row->getPHID())) {
-    continue;
-  }
-
-  queryfx(
-    $conn,
-    'UPDATE %T SET phid = %s WHERE id = %d',
-    $table->getTableName(),
-    $table->generatePHID(),
-    $row->getID());
-}
+// This migration depended on the Phriction application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

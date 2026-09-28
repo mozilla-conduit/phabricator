@@ -360,16 +360,6 @@ final class PhabricatorMarkupEngine extends Phobject {
   /**
    * @task engine
    */
-  public static function newPhrictionMarkupEngine() {
-    return self::newMarkupEngine(array(
-      'header.generate-toc' => true,
-    ));
-  }
-
-
-  /**
-   * @task engine
-   */
   public static function newFeedMarkupEngine() {
     return self::newMarkupEngine(
       array(
