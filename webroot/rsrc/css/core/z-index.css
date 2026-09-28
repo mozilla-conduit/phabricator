@@ -24,17 +24,11 @@
   z-index: 2;
 }
 
-.slowvote-bar {
-  z-index: 2;
-}
 
 div.phui-calendar-day-event {
   z-index: 2;
 }
 
-.slowvote-above-the-bar {
-  z-index: 3;
-}
 
 .phui-timeline-icon-fill {
   z-index: 3;

@@ -80,6 +80,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       'phortune' => true,
       'phame' => true,
       'ponder' => true,
+      'slowvote' => true,
     );
   }
 
