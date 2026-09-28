@@ -214,18 +214,22 @@ final class DifferentialMergeConflictStatusField
 
     $value = $this->newViewerSafeValue($value);
 
-    $list = id(new PHUIStatusListView())
-      ->addItem($this->newVerdictItem($value));
+    require_celerity_resource('merge-conflict-status-css', 'moz-extensions');
 
     // What the verdict was computed from matters as much as the verdict: a
     // reader who can see the diff, the time and the base can decide for
     // themselves whether an inconvenient answer is still worth believing.
-    $checked_item = $this->newLastCheckedItem($value);
-    if ($checked_item) {
-      $list->addItem($checked_item);
-    }
+    $rows = array(
+      $this->newVerdictRow($value),
+      $this->newLastCheckedRow($value),
+    );
 
-    return $list;
+    return phutil_tag(
+      'div',
+      array(
+        'class' => 'merge-conflict-status',
+      ),
+      array_filter($rows));
   }
 
   /**
@@ -233,64 +237,56 @@ final class DifferentialMergeConflictStatusField
    * it in the stack, and the check merges that whole stack, so this is a
    * statement about the landing rather than about this revision's own patch.
    */
-  private function newVerdictItem(array $value): PHUIStatusItemView {
-    $item = new PHUIStatusItemView();
-
+  private function newVerdictRow(array $value) {
     if ($this->isStatusStale($value)) {
-      return $item
-        ->setIcon(
-          PHUIStatusItemView::ICON_CLOCK,
-          'blue',
-          pht('Recomputing'))
-        ->setTarget(pht('Recomputing for the latest diff'))
-        ->setNote(
-          pht(
-            'The last result was computed for an earlier diff, or for an '.
-            'earlier version of a revision below this one, so it is not '.
-            'shown.'));
-    }
-
-    switch ($value[self::KEY_STATUS]) {
-      case self::STATUS_CLEAN:
-        $item
-          ->setIcon(
-            PHUIStatusItemView::ICON_ACCEPT,
-            'green',
-            pht('Merges Cleanly'))
-          ->setTarget(pht('Landing merges cleanly into the target branch'));
-        break;
-      case self::STATUS_CONFLICT:
-        $item
-          ->setIcon(
-            PHUIStatusItemView::ICON_REJECT,
-            'red',
-            pht('Merge Conflict'))
-          ->setTarget(
-            pht(
-              'Landing may fail: this does not merge cleanly into the '.
-              'target branch'));
-        break;
-      case self::STATUS_UNKNOWN:
-      default:
-        $item
-          ->setIcon(
-            PHUIStatusItemView::ICON_QUESTION,
-            'grey',
-            pht('Unknown'))
-          ->setTarget(pht('Mergeability could not be determined'));
-        break;
+      return $this->newStatusRow(
+        PHUIStatusItemView::ICON_CLOCK,
+        'blue',
+        pht('Recomputing'),
+        pht('Recomputing for the latest diff'),
+        pht(
+          'The last result was computed for an earlier diff, or for an '.
+          'earlier version of a revision below this one, so it is not '.
+          'shown.'));
     }
 
     // The reason names the revision responsible and how much of the stack was
     // applied first, which is the actionable part of every verdict.
-    return $item->setNote(idx($value, self::KEY_REASON));
+    $reason = idx($value, self::KEY_REASON);
+
+    switch ($value[self::KEY_STATUS]) {
+      case self::STATUS_CLEAN:
+        return $this->newStatusRow(
+          PHUIStatusItemView::ICON_ACCEPT,
+          'green',
+          pht('Merges Cleanly'),
+          pht('Landing merges cleanly into the target branch'),
+          $reason);
+      case self::STATUS_CONFLICT:
+        return $this->newStatusRow(
+          PHUIStatusItemView::ICON_REJECT,
+          'red',
+          pht('Merge Conflict'),
+          pht(
+            'Landing may fail: this does not merge cleanly into the '.
+            'target branch'),
+          $reason);
+      case self::STATUS_UNKNOWN:
+      default:
+        return $this->newStatusRow(
+          PHUIStatusItemView::ICON_QUESTION,
+          'grey',
+          pht('Unknown'),
+          pht('Mergeability could not be determined'),
+          $reason);
+    }
   }
 
   /**
    * Renders when the stored verdict was computed and what it was computed
    * from, or `null` if the payload records neither.
    */
-  private function newLastCheckedItem(array $value): ?PHUIStatusItemView {
+  private function newLastCheckedRow(array $value) {
     $epoch = idx($value, self::KEY_EPOCH);
 
     $description = self::newCheckedAgainstDescription(
@@ -301,22 +297,82 @@ final class DifferentialMergeConflictStatusField
       return null;
     }
 
-    $item = new PHUIStatusItemView();
-
     if ($epoch) {
-      $item->setTarget(
-        pht(
-          'Last checked %s',
-          phabricator_datetime($epoch, $this->requireViewer())));
+      $target = pht(
+        'Last checked %s',
+        phabricator_datetime($epoch, $this->requireViewer()));
     } else {
-      $item->setTarget(pht('Last checked at an unrecorded time'));
+      $target = pht('Last checked at an unrecorded time');
     }
 
-    if ($description !== null) {
-      $item->setNote($description);
+    return $this->newStatusRow(null, null, null, $target, $description);
+  }
+
+  /**
+   * Renders one status as an icon beside its text, with the note on its own
+   * line underneath.
+   *
+   * `PHUIStatusListView` puts the note in a second column beside text that
+   * never wraps, which squeezes the note past the panel on a narrow or zoomed
+   * page. A row without an icon keeps the icon column empty so its text still
+   * lines up with the rows above it.
+   */
+  private function newStatusRow(
+    ?string $icon,
+    ?string $color,
+    ?string $label,
+    $target,
+    $note) {
+
+    $icon_view = null;
+    if ($icon !== null) {
+      $icon_view = id(new PHUIIconView())
+        ->setIcon($icon.' '.$color);
+
+      if ($label !== null) {
+        Javelin::initBehavior('phabricator-tooltips');
+        $icon_view
+          ->addSigil('has-tooltip')
+          ->setMetadata(
+            array(
+              'tip' => $label,
+              'size' => 240,
+            ));
+      }
     }
 
-    return $item;
+    $note_view = null;
+    if ($note !== null && $note !== '') {
+      $note_view = phutil_tag(
+        'div',
+        array(
+          'class' => 'merge-conflict-status-note',
+        ),
+        $note);
+    }
+
+    return phutil_tag(
+      'div',
+      array(
+        'class' => 'merge-conflict-status-row',
+      ),
+      array(
+        phutil_tag(
+          'div',
+          array(
+            'class' => 'merge-conflict-status-icon',
+          ),
+          $icon_view),
+        phutil_tag(
+          'div',
+          array(
+            'class' => 'merge-conflict-status-body',
+          ),
+          array(
+            phutil_tag('div', array(), $target),
+            $note_view,
+          )),
+      ));
   }
 
   /**
