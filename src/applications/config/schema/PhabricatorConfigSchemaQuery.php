@@ -82,6 +82,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       'ponder' => true,
       'slowvote' => true,
       'paste' => true,
+      'nuance' => true,
     );
   }
 
