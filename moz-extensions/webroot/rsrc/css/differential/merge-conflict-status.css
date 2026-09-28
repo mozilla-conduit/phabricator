@@ -32,7 +32,7 @@
 }
 
 .merge-conflict-status-note {
-  color: #74777D;
+  color: {$greytext};
   line-height: 16px;
   margin-top: 2px;
   overflow-wrap: anywhere;
