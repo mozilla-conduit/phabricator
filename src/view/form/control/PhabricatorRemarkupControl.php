@@ -107,8 +107,6 @@ final class PhabricatorRemarkupControl
           'autocomplete' => 1,
         ));
 
-    $phurl_datasource = new PhabricatorPhurlURLDatasource();
-
     Javelin::initBehavior(
       'phabricator-remarkup-assist',
       array(
@@ -154,16 +152,6 @@ final class PhabricatorRemarkupControl
               '-',
               '/',
             ),
-          ),
-          40 => array( // "("
-            'datasourceURI' => $phurl_datasource->getDatasourceURI(),
-            'headerIcon' => 'fa-compress',
-            'headerText' => pht('Find Phurl:'),
-            'hintText' => $phurl_datasource->getPlaceholderText(),
-            'cancel' => array(
-              ')',
-            ),
-            'prefix' => '^\\(',
           ),
         ),
       ));
