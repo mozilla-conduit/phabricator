@@ -17,7 +17,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
   private $pageObjects = array();
   private $applicationMenu;
   private $showFooter = true;
-  private $showDurableColumn = true;
   private $quicksandConfig = array();
   private $tabs;
   private $crumbs;
@@ -73,62 +72,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
   public function setPageObjectPHIDs(array $phids) {
     $this->pageObjects = $phids;
     return $this;
-  }
-
-  public function setShowDurableColumn($show) {
-    $this->showDurableColumn = $show;
-    return $this;
-  }
-
-  public function getShowDurableColumn() {
-    $request = $this->getRequest();
-    if (!$request) {
-      return false;
-    }
-
-    $viewer = $request->getUser();
-    if (!$viewer->isLoggedIn()) {
-      return false;
-    }
-
-    $conpherence_installed = PhabricatorApplication::isClassInstalledForViewer(
-      'PhabricatorConpherenceApplication',
-      $viewer);
-    if (!$conpherence_installed) {
-      return false;
-    }
-
-    if ($this->isQuicksandBlacklistURI()) {
-      return false;
-    }
-
-    return true;
-  }
-
-  private function isQuicksandBlacklistURI() {
-    $request = $this->getRequest();
-    if (!$request) {
-      return false;
-    }
-
-    $patterns = $this->getQuicksandURIPatternBlacklist();
-    $path = $request->getRequestURI()->getPath();
-    foreach ($patterns as $pattern) {
-      if (preg_match('(^'.$pattern.'$)', $path)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  public function getDurableColumnVisible() {
-    $column_key = PhabricatorConpherenceColumnVisibleSetting::SETTINGKEY;
-    return (bool)$this->getUserPreference($column_key, false);
-  }
-
-  public function getDurableColumnMinimize() {
-    $column_key = PhabricatorConpherenceColumnMinimizeSetting::SETTINGKEY;
-    return (bool)$this->getUserPreference($column_key, false);
   }
 
   public function addQuicksandConfig(array $config) {
@@ -231,7 +174,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     require_celerity_resource('phui-spacing-css');
     require_celerity_resource('phui-form-css');
     require_celerity_resource('phabricator-standard-page-view');
-    require_celerity_resource('conpherence-durable-column-view');
     require_celerity_resource('font-lato');
     require_celerity_resource('mozilla-motd-css');
 
@@ -441,12 +383,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
   }
 
   protected function getBody() {
-    $user = null;
-    $request = $this->getRequest();
-    if ($request) {
-      $user = $request->getUser();
-    }
-
     $header_chrome = null;
     if ($this->getShowChrome()) {
       $header_chrome = $this->menuContent;
@@ -486,36 +422,13 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
           $this->renderPageBodyContent()),
       ));
 
-    $durable_column = null;
-    if ($this->getShowDurableColumn()) {
-      $is_visible = $this->getDurableColumnVisible();
-      $is_minimize = $this->getDurableColumnMinimize();
-      $durable_column = id(new ConpherenceDurableColumnView())
-        ->setSelectedConpherence(null)
-        ->setUser($user)
-        ->setQuicksandConfig($this->buildQuicksandConfig())
-        ->setVisible($is_visible)
-        ->setMinimize($is_minimize)
-        ->setInitialLoad(true);
-      if ($is_minimize) {
-        $this->classes[] = 'minimize-column';
-      }
-    }
-
-    Javelin::initBehavior('quicksand-blacklist', array(
-      'patterns' => $this->getQuicksandURIPatternBlacklist(),
-    ));
-
     return phutil_tag(
       'div',
       array(
         'class' => implode(' ', $classes),
         'id' => 'main-page-frame',
       ),
-      array(
-        $main_page,
-        $durable_column,
-      ));
+      $main_page);
   }
 
   private function renderPageBodyContent() {
@@ -817,7 +730,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       'bodyClasses' => $this->getBodyClasses(),
       'aphlictDropdownData' => array(
         $dropdown_query->getNotificationData(),
-        $dropdown_query->getConpherenceData(),
       ),
       'globalDragAndDrop' => $upload_enabled,
       'hisecWarningConfig' => $hisec_warning_config,
@@ -837,28 +749,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       'pageObjects'   => array_fill_keys($this->pageObjects, true),
       'subscriptions' => $subscriptions,
     );
-  }
-
-  private function getQuicksandURIPatternBlacklist() {
-    $applications = PhabricatorApplication::getAllApplications();
-
-    $blacklist = array();
-    foreach ($applications as $application) {
-      $blacklist[] = $application->getQuicksandURIPatternBlacklist();
-    }
-
-    // See T4340. Currently, Auth requires pulling in external Javascript
-    // (for Recaptcha). This can put us in a position where the user loads a
-    // page with a restrictive Content-Security-Policy, then uses Quicksand to
-    // navigate to a page which needs to load external scripts. For now, just
-    // blacklist the entire application since we aren't giving up anything
-    // significant by doing so.
-
-    $blacklist[] = array(
-      '/auth/.*',
-    );
-
-    return array_mergev($blacklist);
   }
 
   private function getUserPreference($key, $default = null) {

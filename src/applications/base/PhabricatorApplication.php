@@ -247,10 +247,6 @@ abstract class PhabricatorApplication
     return array();
   }
 
-  public function getQuicksandURIPatternBlacklist() {
-    return array();
-  }
-
   public function getMailCommandObjects() {
     return array();
   }

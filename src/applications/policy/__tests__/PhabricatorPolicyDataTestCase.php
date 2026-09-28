@@ -165,41 +165,6 @@ final class PhabricatorPolicyDataTestCase extends PhabricatorTestCase {
         PhabricatorPolicyCapability::CAN_VIEW));
   }
 
-  public function testObjectPolicyRuleThreadMembers() {
-    $author = $this->generateNewTestUser();
-    $viewer = $this->generateNewTestUser();
-
-    $rule = new ConpherenceThreadMembersPolicyRule();
-
-    $thread = ConpherenceThread::initializeNewRoom($author);
-    $thread->setViewPolicy($rule->getObjectPolicyFullKey());
-    $thread->save();
-
-    $this->assertFalse(
-      PhabricatorPolicyFilter::hasCapability(
-        $author,
-        $thread,
-        PhabricatorPolicyCapability::CAN_VIEW));
-
-    $this->assertFalse(
-      PhabricatorPolicyFilter::hasCapability(
-        $viewer,
-        $thread,
-        PhabricatorPolicyCapability::CAN_VIEW));
-
-    $participant = id(new ConpherenceParticipant())
-      ->setParticipantPHID($viewer->getPHID())
-      ->setConpherencePHID($thread->getPHID());
-
-    $thread->attachParticipants(array($viewer->getPHID() => $participant));
-
-    $this->assertTrue(
-      PhabricatorPolicyFilter::hasCapability(
-        $viewer,
-        $thread,
-        PhabricatorPolicyCapability::CAN_VIEW));
-  }
-
   public function testObjectPolicyRuleSubscribers() {
     $author = $this->generateNewTestUser();
 

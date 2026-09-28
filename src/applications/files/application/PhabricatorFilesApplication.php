@@ -146,10 +146,4 @@ final class PhabricatorFilesApplication extends PhabricatorApplication {
     );
   }
 
-  public function getQuicksandURIPatternBlacklist() {
-    return array(
-      '/file/(data|download)/.*',
-    );
-  }
-
 }
