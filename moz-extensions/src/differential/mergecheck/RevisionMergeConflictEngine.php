@@ -52,8 +52,7 @@
  *
  *   - A base that is in the object store but on no branch the repository
  *     fetches, such as a commit a force-push left behind. Nothing lands on top
- *     of it, so there is no rebase to predict. A git error while checking is
- *     treated the same as "on no branch".
+ *     of it, so there is no rebase to predict.
  *   - A stack whose patch text exceeds a fixed budget. Every patch is
  *     materialized in memory before reaching git, and the budget spans the
  *     whole stack, since a tall stack of moderate diffs costs as much as one
@@ -518,7 +517,7 @@ final class RevisionMergeConflictEngine extends Phobject {
       '%(refname)',
       'refs/heads/');
 
-    list($err, $stdout) = $refs_future->resolve();
+    $refs_future->resolve();
 
     if ($refs_future->getWasKilledByTimeout()) {
       throw new RevisionMergeConflictReasonException(
@@ -527,7 +526,11 @@ final class RevisionMergeConflictEngine extends Phobject {
           new PhutilNumber(self::GIT_TIMEOUT_SECONDS)));
     }
 
-    if ($err === 0 && self::hasContainingBranch($stdout)) {
+    // A non-zero exit is a git failure rather than "on no branch", so raise it
+    // as a `CommandException`, which `executeCheck` logs.
+    list($stdout) = $refs_future->resolvex();
+
+    if (self::hasContainingBranch($stdout)) {
       return;
     }
 
