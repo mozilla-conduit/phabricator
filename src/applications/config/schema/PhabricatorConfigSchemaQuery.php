@@ -77,6 +77,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       'chatlog' => true,
       'countdown' => true,
       'fund' => true,
+      'phortune' => true,
     );
   }
 

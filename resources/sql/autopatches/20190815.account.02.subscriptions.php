@@ -1,10 +1,5 @@
 <?php
 
-$edge_type = PhortuneAccountHasMerchantEdgeType::EDGECONST;
-
-$table = new PhortuneSubscription();
-foreach (new LiskMigrationIterator($table) as $sub) {
-  id(new PhabricatorEdgeEditor())
-    ->addEdge($sub->getAccountPHID(), $edge_type, $sub->getMerchantPHID())
-    ->save();
-}
+// This migration depended on the Phortune application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.
