@@ -6,7 +6,6 @@ final class PhabricatorRepositoryCommit
     PhabricatorPolicyInterface,
     PhabricatorFlaggableInterface,
     PhabricatorProjectInterface,
-    PhabricatorTokenReceiverInterface,
     PhabricatorSubscribableInterface,
     PhabricatorMentionableInterface,
     HarbormasterBuildableInterface,
@@ -606,14 +605,6 @@ final class PhabricatorRepositoryCommit
       'Commits inherit the policies of the repository they belong to.');
   }
 
-
-/* -(  PhabricatorTokenReceiverInterface  )---------------------------------- */
-
-  public function getUsersToNotifyOfTokenGiven() {
-    return array(
-      $this->getAuthorPHID(),
-    );
-  }
 
 /* -( Stuff for serialization )---------------------------------------------- */
 

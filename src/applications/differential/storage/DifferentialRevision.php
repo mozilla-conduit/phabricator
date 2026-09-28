@@ -2,7 +2,6 @@
 
 final class DifferentialRevision extends DifferentialDAO
   implements
-    PhabricatorTokenReceiverInterface,
     PhabricatorPolicyInterface,
     PhabricatorExtendedPolicyInterface,
     PhabricatorFlaggableInterface,
@@ -540,15 +539,6 @@ final class DifferentialRevision extends DifferentialDAO
     return $extended;
   }
 
-
-/* -(  PhabricatorTokenReceiverInterface  )---------------------------------- */
-
-
-  public function getUsersToNotifyOfTokenGiven() {
-    return array(
-      $this->getAuthorPHID(),
-    );
-  }
 
   public function getReviewers() {
     return $this->assertAttached($this->reviewerStatus);

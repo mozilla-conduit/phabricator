@@ -9,7 +9,6 @@ final class PhabricatorCalendarEvent extends PhabricatorCalendarDAO
     PhabricatorMarkupInterface,
     PhabricatorApplicationTransactionInterface,
     PhabricatorSubscribableInterface,
-    PhabricatorTokenReceiverInterface,
     PhabricatorDestructibleInterface,
     PhabricatorMentionableInterface,
     PhabricatorFlaggableInterface,
@@ -1314,13 +1313,6 @@ final class PhabricatorCalendarEvent extends PhabricatorCalendarDAO
 
   public function isAutomaticallySubscribed($phid) {
     return ($phid == $this->getHostPHID());
-  }
-
-/* -(  PhabricatorTokenReceiverInterface  )---------------------------------- */
-
-
-  public function getUsersToNotifyOfTokenGiven() {
-    return array($this->getHostPHID());
   }
 
 /* -(  PhabricatorDestructibleInterface  )----------------------------------- */

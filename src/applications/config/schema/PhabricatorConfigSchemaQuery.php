@@ -95,6 +95,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       'legalpad' => true,
       'conpherence' => true,
       'pholio' => true,
+      'token' => true,
     );
   }
 

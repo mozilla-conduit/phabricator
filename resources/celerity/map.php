@@ -7,7 +7,7 @@
  */
 return array(
   'names' => array(
-    'core.pkg.css' => '4da3f098',
+    'core.pkg.css' => 'd76542e6',
     'core.pkg.js' => 'e6d9f016',
     'dark-console.pkg.js' => '187792c2',
     'differential.pkg.css' => 'd86d0880',
@@ -85,7 +85,6 @@ return array(
     'rsrc/css/application/project/project-view.css' => '2650c4c0',
     'rsrc/css/application/search/application-search-view.css' => '0f7c06d8',
     'rsrc/css/application/search/search-results.css' => '9ea70ace',
-    'rsrc/css/application/tokens/tokens.css' => 'ce5a50bd',
     'rsrc/css/core/core.css' => '17e68b4a',
     'rsrc/css/core/remarkup.css' => '43251e6b',
     'rsrc/css/core/syntax.css' => '548567f6',
@@ -829,7 +828,6 @@ return array(
     'sprite-tokens-css' => 'f1896dc5',
     'syntax-default-css' => '055fc231',
     'syntax-highlighting-css' => '548567f6',
-    'tokens-css' => 'ce5a50bd',
     'trigger-rule' => '41b7b4f6',
     'trigger-rule-control' => '5faf27b9',
     'trigger-rule-editor' => 'b49fd60c',
@@ -2057,7 +2055,6 @@ return array(
       'phui-curtain-view-css',
       'sprite-login-css',
       'sprite-tokens-css',
-      'tokens-css',
       'auth-css',
       'phui-status-list-view-css',
       'phui-feed-story-css',
