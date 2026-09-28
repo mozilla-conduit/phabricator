@@ -74,6 +74,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
    */
   private function getRetiredSchemata() {
     return array(
+      'chatlog' => true,
     );
   }
 
