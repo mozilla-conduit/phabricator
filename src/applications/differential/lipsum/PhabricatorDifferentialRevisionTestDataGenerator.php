@@ -47,13 +47,14 @@ final class PhabricatorDifferentialRevisionTestDataGenerator
   }
 
   public function generateDiff($author) {
-    $paste_generator = new PhabricatorPasteTestDataGenerator();
-    $languages = $paste_generator->getSupportedLanguages();
-    $language = array_rand($languages);
-    $spec = $languages[$language];
+    $generators = array(
+      'PhutilPHPCodeSnippetContextFreeGrammar',
+      'PhutilJavaCodeSnippetContextFreeGrammar',
+    );
+    $generator = newv($generators[array_rand($generators)], array());
 
-    $code = $paste_generator->generateContent($spec);
-    $altcode = $paste_generator->generateContent($spec);
+    $code = $generator->generateSeveral($this->roll(4, 12, 10));
+    $altcode = $generator->generateSeveral($this->roll(4, 12, 10));
     $newcode = $this->randomlyModify($code, $altcode);
     $diff = id(new PhabricatorDifferenceEngine())
       ->generateRawDiffFromFileContent($code, $newcode);
