@@ -29,9 +29,52 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
   private function getDatabaseNames(PhabricatorDatabaseRef $ref) {
     $api = $this->getAPI($ref);
     $patches = PhabricatorSQLPatchList::buildAllPatches();
-    return $api->getDatabaseList(
+    $databases = $api->getDatabaseList(
       $patches,
       $only_living = true);
+
+    $retired = array();
+    foreach ($this->getRetiredSchemata() as $database => $tables) {
+      if ($tables === true) {
+        $retired[] = $api->getDatabaseName($database);
+      }
+    }
+
+    return array_values(array_diff($databases, $retired));
+  }
+
+  private function isRetiredTable(
+    PhabricatorDatabaseRef $ref,
+    $database_name,
+    $table_name) {
+
+    $api = $this->getAPI($ref);
+    foreach ($this->getRetiredSchemata() as $database => $tables) {
+      if ($tables === true) {
+        continue;
+      }
+
+      if ($api->getDatabaseName($database) !== $database_name) {
+        continue;
+      }
+
+      if (in_array($table_name, $tables, true)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Databases (mapped to `true`) and tables (mapped to a list of table names)
+   * of applications which have been removed from the Mozilla fork. They are
+   * left in place rather than dropped, but no schema expects them anymore,
+   * so they should not be reported as surplus.
+   */
+  private function getRetiredSchemata() {
+    return array(
+    );
   }
 
   private function getAPI(PhabricatorDatabaseRef $ref) {
@@ -72,6 +115,16 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_SCHEMA IN (%Ls)',
       $databases);
+
+    foreach ($tables as $key => $table) {
+      $is_retired = $this->isRetiredTable(
+        $ref,
+        $table['TABLE_SCHEMA'],
+        $table['TABLE_NAME']);
+      if ($is_retired) {
+        unset($tables[$key]);
+      }
+    }
 
     $database_info = queryfx_all(
       $conn,
