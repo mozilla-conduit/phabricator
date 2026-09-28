@@ -568,36 +568,17 @@ final class DifferentialRevisionViewController
       ->setBackground(PHUIObjectBoxView::BLUE_PROPERTY)
       ->addTabGroup($tab_group);
 
-    $signatures = DifferentialRequiredSignaturesField::loadForRevision(
-      $revision);
-    $missing_signatures = false;
-    foreach ($signatures as $phid => $signed) {
-      if (!$signed) {
-        $missing_signatures = true;
-      }
-    }
+    $anchor = id(new PhabricatorAnchorView())
+      ->setAnchorName('toc')
+      ->setNavigationMarker(true);
 
     $footer = array();
-    $signature_message = null;
-    if ($missing_signatures) {
-      $signature_message = id(new PHUIInfoView())
-        ->setTitle(pht('Content Hidden'))
-        ->appendChild(
-          pht(
-            'The content of this revision is hidden until the author has '.
-            'signed all of the required legal agreements.'));
-    } else {
-      $anchor = id(new PhabricatorAnchorView())
-        ->setAnchorName('toc')
-        ->setNavigationMarker(true);
-
-      $footer[] = array(
-        $anchor,
-        $warnings,
-        $tab_view,
-        $changeset_view,
-      );
-    }
+    $footer[] = array(
+      $anchor,
+      $warnings,
+      $tab_view,
+      $changeset_view,
+    );
 
     $comment_view = id(new DifferentialRevisionEditEngine())
       ->setViewer($viewer)
@@ -645,7 +626,6 @@ final class DifferentialRevisionViewController
           $diff_detail_box,
           $unit_box,
           $timeline,
-          $signature_message,
         ))
       ->setFooter($footer);
 

@@ -92,6 +92,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       'badges' => true,
       'multimeter' => true,
       'diviner' => true,
+      'legalpad' => true,
     );
   }
 
