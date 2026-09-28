@@ -307,17 +307,7 @@ final class DifferentialMergeConflictStatusField
    * or `null` when there is nothing useful to say.
    */
   private function newHintItem(array $value): ?PHUIStatusItemView {
-    // A stale verdict is replaced by "Recomputing", so advice about it would
-    // describe something the reader cannot see.
-    if ($this->isStatusStale($value)) {
-      return null;
-    }
-
-    $hint = self::newHint(
-      idx($value, self::KEY_REASON_CODE),
-      idx($value, self::KEY_BASE_DIFF_CREATION_METHOD),
-      idx($value, self::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM));
-
+    $hint = self::newHintForValue($value, $this->isStatusStale($value));
     if ($hint === null) {
       return null;
     }
@@ -326,6 +316,23 @@ final class DifferentialMergeConflictStatusField
       ->setIcon(PHUIStatusItemView::ICON_INFO, 'blue')
       ->setTarget(pht('What to do'))
       ->setNote($hint);
+  }
+
+  /**
+   * Suggests what to do about a stored verdict, or `null` when it is stale.
+   *
+   * A stale verdict is about to be replaced, so advice about it would describe
+   * something that no longer applies.
+   */
+  public static function newHintForValue(array $value, bool $is_stale): ?string {
+    if ($is_stale) {
+      return null;
+    }
+
+    return self::newHint(
+      idx($value, self::KEY_REASON_CODE),
+      idx($value, self::KEY_BASE_DIFF_CREATION_METHOD),
+      idx($value, self::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM));
   }
 
   /**
@@ -575,10 +582,9 @@ final class DifferentialMergeConflictStatusField
 
     // Lando shows its own warning, so hand it the same advice rather than
     // making it reimplement the mapping from reason code to remedy.
-    $value[self::KEY_HINT] = self::newHint(
-      idx($value, self::KEY_REASON_CODE),
-      idx($value, self::KEY_BASE_DIFF_CREATION_METHOD),
-      idx($value, self::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM));
+    $value[self::KEY_HINT] = self::newHintForValue(
+      $value,
+      $value[self::KEY_IS_STALE]);
 
     // The stack is an implementation detail of the currency check, and it
     // names the ancestors' diffs. `isStale` above already answers the only

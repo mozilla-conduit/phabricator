@@ -220,6 +220,30 @@ final class DifferentialMergeConflictStatusFieldTestCase
       pht('An unrecognised code yields no hint rather than raising.'));
   }
 
+  public function testStaleVerdictHasNoHint() {
+    $value = DifferentialMergeConflictStatusField::newStatusValue(
+      array(
+        'status' => DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
+        'reasonCode' =>
+          RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
+      ),
+      $this->newDiff(),
+      array('PHID-DIFF-active'),
+      1757000000);
+
+    $this->assertTrue(
+      phutil_nonempty_string(
+        DifferentialMergeConflictStatusField::newHintForValue($value, false)),
+      pht('A current verdict with a reason code should offer a hint.'));
+
+    $this->assertEqual(
+      null,
+      DifferentialMergeConflictStatusField::newHintForValue($value, true),
+      pht(
+        'A stale verdict should offer no hint, so Lando does not show advice '.
+        'for an outdated result.'));
+  }
+
   public function testEveryHintedCodeIsReachable() {
     $codes = array(
       RevisionMergeConflictReasonException::CODE_BASE_NOT_ANCESTOR,
