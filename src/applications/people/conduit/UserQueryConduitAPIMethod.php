@@ -53,8 +53,7 @@ final class UserQueryConduitAPIMethod extends UserConduitAPIMethod {
 
     $query = id(new PhabricatorPeopleQuery())
       ->setViewer($request->getUser())
-      ->needProfileImage(true)
-      ->needAvailability(true);
+      ->needProfileImage(true);
 
     if ($usernames) {
       $query->withUsernames($usernames);
@@ -83,8 +82,7 @@ final class UserQueryConduitAPIMethod extends UserConduitAPIMethod {
     foreach ($users as $user) {
       $results[] = $this->buildUserInformationDictionary(
         $user,
-        $with_email = false,
-        $with_availability = true);
+        $with_email = false);
     }
     return $results;
   }

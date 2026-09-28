@@ -361,15 +361,6 @@ final class PhabricatorMarkupEngine extends Phobject {
   /**
    * @task engine
    */
-  public static function newCalendarMarkupEngine() {
-    return self::newMarkupEngine(array(
-    ));
-  }
-
-
-  /**
-   * @task engine
-   */
   public static function newDifferentialMarkupEngine(array $options = array()) {
     return self::newMarkupEngine(array(
       'differential.diff' => idx($options, 'differential.diff'),

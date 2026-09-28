@@ -111,6 +111,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
         'project_triggerusage',
       ),
       'maniphest' => true,
+      'calendar' => true,
     );
   }
 

@@ -1,7 +1,6 @@
 <?php
 
 /**
- * @task availability Availability
  * @task image-cache Profile Image Cache
  * @task factors Multi-Factor Authentication
  * @task handles Managing Handles
@@ -48,7 +47,6 @@ final class PhabricatorUser
   protected $accountSecret;
 
   private $profile = null;
-  private $availability = self::ATTACHABLE;
   private $preferences = null;
   private $omnipotent = false;
   private $customFields = self::ATTACHABLE;
@@ -657,110 +655,6 @@ final class PhabricatorUser
 
   public function getConduitClusterToken() {
     return $this->assertAttached($this->conduitClusterToken);
-  }
-
-
-/* -(  Availability  )------------------------------------------------------- */
-
-
-  /**
-   * @task availability
-   */
-  public function attachAvailability(array $availability) {
-    $this->availability = $availability;
-    return $this;
-  }
-
-
-  /**
-   * Get the timestamp the user is away until, if they are currently away.
-   *
-   * @return int|null Epoch timestamp, or `null` if the user is not away.
-   * @task availability
-   */
-  public function getAwayUntil() {
-    $availability = $this->availability;
-
-    $this->assertAttached($availability);
-    if (!$availability) {
-      return null;
-    }
-
-    return idx($availability, 'until');
-  }
-
-
-  public function getDisplayAvailability() {
-    $availability = $this->availability;
-
-    $this->assertAttached($availability);
-    if (!$availability) {
-      return null;
-    }
-
-    $busy = PhabricatorCalendarEventInvitee::AVAILABILITY_BUSY;
-
-    return idx($availability, 'availability', $busy);
-  }
-
-
-  public function getAvailabilityEventPHID() {
-    $availability = $this->availability;
-
-    $this->assertAttached($availability);
-    if (!$availability) {
-      return null;
-    }
-
-    return idx($availability, 'eventPHID');
-  }
-
-
-  /**
-   * Get cached availability, if present.
-   *
-   * @return wild|null Cache data, or null if no cache is available.
-   * @task availability
-   */
-  public function getAvailabilityCache() {
-    $now = PhabricatorTime::getNow();
-    if ($this->availabilityCacheTTL <= $now) {
-      return null;
-    }
-
-    try {
-      return phutil_json_decode($this->availabilityCache);
-    } catch (Exception $ex) {
-      return null;
-    }
-  }
-
-
-  /**
-   * Write to the availability cache.
-   *
-   * @param wild Availability cache data.
-   * @param int|null Cache TTL.
-   * @return this
-   * @task availability
-   */
-  public function writeAvailabilityCache(array $availability, $ttl) {
-    if (PhabricatorEnv::isReadOnly()) {
-      return $this;
-    }
-
-    $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
-    queryfx(
-      $this->establishConnection('w'),
-      'UPDATE %T SET availabilityCache = %s, availabilityCacheTTL = %nd
-        WHERE id = %d',
-      $this->getTableName(),
-      phutil_json_encode($availability),
-      $ttl,
-      $this->getID());
-    unset($unguarded);
-
-    return $this;
   }
 
 

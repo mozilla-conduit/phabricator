@@ -31,8 +31,7 @@ final class UserWhoAmIConduitAPIMethod extends UserConduitAPIMethod {
 
     return $this->buildUserInformationDictionary(
       $person,
-      $with_email = true,
-      $with_availability = false);
+      $with_email = true);
   }
 
 }

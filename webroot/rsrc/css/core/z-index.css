@@ -20,10 +20,6 @@
   z-index: 2;
 }
 
-div.phui-calendar-day-event {
-  z-index: 2;
-}
-
 .phui-timeline-icon-fill {
   z-index: 3;
 }
@@ -37,10 +33,6 @@ div.phui-calendar-day-event {
 }
 
 .dark-console {
-  z-index: 5;
-}
-
-.phui-calendar-date-number  {
   z-index: 5;
 }
 

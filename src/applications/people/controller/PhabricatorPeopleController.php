@@ -16,7 +16,6 @@ abstract class PhabricatorPeopleController extends PhabricatorController {
       if ($name) {
         $nav->setBaseURI(new PhutilURI('/p/'));
         $nav->addFilter("{$name}/", $name);
-        $nav->addFilter("{$name}/calendar/", pht('Calendar'));
       }
     }
 

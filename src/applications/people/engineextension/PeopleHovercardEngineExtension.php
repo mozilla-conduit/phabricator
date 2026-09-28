@@ -24,7 +24,6 @@ final class PeopleHovercardEngineExtension
     $users = id(new PhabricatorPeopleQuery())
       ->setViewer($viewer)
       ->withPHIDs($phids)
-      ->needAvailability(true)
       ->needProfileImage(true)
       ->needProfile(true)
       ->execute();

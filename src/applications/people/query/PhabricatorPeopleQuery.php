@@ -23,7 +23,6 @@ final class PhabricatorPeopleQuery
   private $needPrimaryEmail;
   private $needProfile;
   private $needProfileImage;
-  private $needAvailability;
   private $cacheKeys = array();
 
   public function withIDs(array $ids) {
@@ -128,11 +127,6 @@ final class PhabricatorPeopleQuery
     return $this;
   }
 
-  public function needAvailability($need) {
-    $this->needAvailability = $need;
-    return $this;
-  }
-
   public function needUserSettings($need) {
     $cache_key = PhabricatorUserPreferencesCacheType::KEY_PREFERENCES;
 
@@ -166,22 +160,6 @@ final class PhabricatorPeopleQuery
         }
 
         $user->attachUserProfile($profile);
-      }
-    }
-
-    if ($this->needAvailability) {
-      $rebuild = array();
-      foreach ($users as $user) {
-        $cache = $user->getAvailabilityCache();
-        if ($cache !== null) {
-          $user->attachAvailability($cache);
-        } else {
-          $rebuild[] = $user;
-        }
-      }
-
-      if ($rebuild) {
-        $this->rebuildAvailabilityCache($rebuild);
       }
     }
 
@@ -367,135 +345,6 @@ final class PhabricatorPeopleQuery
       'id' => (int)$object->getID(),
       'username' => $object->getUsername(),
     );
-  }
-
-  private function rebuildAvailabilityCache(array $rebuild) {
-    $rebuild = mpull($rebuild, null, 'getPHID');
-
-    // Limit the window we look at because far-future events are largely
-    // irrelevant and this makes the cache cheaper to build and allows it to
-    // self-heal over time.
-    $min_range = PhabricatorTime::getNow();
-    $max_range = $min_range + phutil_units('72 hours in seconds');
-
-    // NOTE: We don't need to generate ghosts here, because we only care if
-    // the user is attending, and you can't attend a ghost event: RSVP'ing
-    // to it creates a real event.
-
-    $events = id(new PhabricatorCalendarEventQuery())
-      ->setViewer(PhabricatorUser::getOmnipotentUser())
-      ->withInvitedPHIDs(array_keys($rebuild))
-      ->withIsCancelled(false)
-      ->withDateRange($min_range, $max_range)
-      ->execute();
-
-    // Group all the events by invited user. Only examine events that users
-    // are actually attending.
-    $map = array();
-    $invitee_map = array();
-    foreach ($events as $event) {
-      foreach ($event->getInvitees() as $invitee) {
-        if (!$invitee->isAttending()) {
-          continue;
-        }
-
-        // If the user is set to "Available" for this event, don't consider it
-        // when computing their away status.
-        if (!$invitee->getDisplayAvailability($event)) {
-          continue;
-        }
-
-        $invitee_phid = $invitee->getInviteePHID();
-        if (!isset($rebuild[$invitee_phid])) {
-          continue;
-        }
-
-        $map[$invitee_phid][] = $event;
-
-        $event_phid = $event->getPHID();
-        $invitee_map[$invitee_phid][$event_phid] = $invitee;
-      }
-    }
-
-    // We need to load these users' timezone settings to figure out their
-    // availability if they're attending all-day events.
-    $this->needUserSettings(true);
-    $this->fillUserCaches($rebuild);
-
-    foreach ($rebuild as $phid => $user) {
-      $events = idx($map, $phid, array());
-
-      // We loaded events with the omnipotent user, but want to shift them
-      // into the user's timezone before building the cache because they will
-      // be unavailable during their own local day.
-      foreach ($events as $event) {
-        $event->applyViewerTimezone($user);
-      }
-
-      $cursor = $min_range;
-      $next_event = null;
-      if ($events) {
-        // Find the next time when the user has no meetings. If we move forward
-        // because of an event, we check again for events after that one ends.
-        while (true) {
-          foreach ($events as $event) {
-            $from = $event->getStartDateTimeEpochForCache();
-            $to = $event->getEndDateTimeEpochForCache();
-            if (($from <= $cursor) && ($to > $cursor)) {
-              $cursor = $to;
-              if (!$next_event) {
-                $next_event = $event;
-              }
-              continue 2;
-            }
-          }
-          break;
-        }
-      }
-
-      if ($cursor > $min_range) {
-        $invitee = $invitee_map[$phid][$next_event->getPHID()];
-        $availability_type = $invitee->getDisplayAvailability($next_event);
-        $availability = array(
-          'until' => $cursor,
-          'eventPHID' => $next_event->getPHID(),
-          'availability' => $availability_type,
-        );
-
-        // We only cache this availability until the end of the current event,
-        // since the event PHID (and possibly the availability type) are only
-        // valid for that long.
-
-        // NOTE: This doesn't handle overlapping events with the greatest
-        // possible care. In theory, if you're attending multiple events
-        // simultaneously we should accommodate that. However, it's complex
-        // to compute, rare, and probably not confusing most of the time.
-
-        $availability_ttl = $next_event->getEndDateTimeEpochForCache();
-      } else {
-        $availability = array(
-          'until' => null,
-          'eventPHID' => null,
-          'availability' => null,
-        );
-
-        // Cache that the user is available until the next event they are
-        // invited to starts.
-        $availability_ttl = $max_range;
-        foreach ($events as $event) {
-          $from = $event->getStartDateTimeEpochForCache();
-          if ($from > $cursor) {
-            $availability_ttl = min($from, $availability_ttl);
-          }
-        }
-      }
-
-      // Never TTL the cache to longer than the maximum range we examined.
-      $availability_ttl = min($availability_ttl, $max_range);
-
-      $user->writeAvailabilityCache($availability, $availability_ttl);
-      $user->attachAvailability($availability);
-    }
   }
 
   private function fillUserCaches(array $users) {

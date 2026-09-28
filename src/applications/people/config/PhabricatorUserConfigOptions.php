@@ -27,7 +27,6 @@ final class PhabricatorUserConfigOptions
       id(new PhabricatorUserIconField())->getFieldKey() => true,
       id(new PhabricatorUserSinceField())->getFieldKey() => true,
       id(new PhabricatorUserRolesField())->getFieldKey() => true,
-      id(new PhabricatorUserStatusField())->getFieldKey() => true,
       id(new PhabricatorUserBlurbField())->getFieldKey() => true,
       id(new PhabricatorUserReviewQueueField())->getFieldKey() => true,
     );
