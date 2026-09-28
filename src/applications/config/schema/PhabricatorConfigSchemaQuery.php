@@ -84,6 +84,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       'paste' => true,
       'nuance' => true,
       'packages' => true,
+      'phlux' => true,
     );
   }
 
