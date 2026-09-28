@@ -101,6 +101,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
         'macro_transaction',
         'macro_transaction_comment',
       ),
+      'fact' => true,
     );
   }
 

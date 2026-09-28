@@ -59,7 +59,6 @@ final class PhabricatorProject extends PhabricatorProjectDAO
   const ITEM_PROFILE = 'project.profile';
   const ITEM_POINTS = 'project.points';
   const ITEM_WORKBOARD = 'project.workboard';
-  const ITEM_REPORTS = 'project.reports';
   const ITEM_MEMBERS = 'project.members';
   const ITEM_MANAGE = 'project.manage';
   const ITEM_MILESTONES = 'project.milestones';
@@ -396,10 +395,6 @@ final class PhabricatorProject extends PhabricatorProjectDAO
 
   public function getWorkboardURI() {
     return urisprintf('/project/board/%d/', $this->getID());
-  }
-
-  public function getReportsURI() {
-    return urisprintf('/project/reports/%d/', $this->getID());
   }
 
   public function save() {
