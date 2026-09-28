@@ -78,31 +78,6 @@ final class PhabricatorGuideQuickStartModule extends PhabricatorGuideModule {
     $guide_items->addItem($item);
 
 
-    $title = pht('Create a Task');
-    $task_check = id(new ManiphestTaskQuery())
-      ->setViewer($viewer)
-      ->execute();
-    $href = PhabricatorEnv::getURI('/maniphest/');
-    if ($task_check) {
-      $icon = 'fa-check';
-      $icon_bg = 'bg-green';
-      $description = pht(
-        "You've created at least one task.");
-    } else {
-      $icon = 'fa-anchor';
-      $icon_bg = 'bg-sky';
-      $description =
-        pht('Create some work for the interns in Maniphest.');
-    }
-
-    $item = id(new PhabricatorGuideItemView())
-      ->setTitle($title)
-      ->setHref($href)
-      ->setIcon($icon)
-      ->setIconBackground($icon_bg)
-      ->setDescription($description);
-    $guide_items->addItem($item);
-
     $title = pht('Personalize your Install');
     $wordmark = PhabricatorEnv::getEnvConfig('ui.logo');
     $href = PhabricatorEnv::getURI('/config/edit/ui.logo/');

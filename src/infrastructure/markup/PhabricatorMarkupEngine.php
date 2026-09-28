@@ -351,15 +351,6 @@ final class PhabricatorMarkupEngine extends Phobject {
   /**
    * @task engine
    */
-  public static function newManiphestMarkupEngine() {
-    return self::newMarkupEngine(array(
-    ));
-  }
-
-
-  /**
-   * @task engine
-   */
   public static function newFeedMarkupEngine() {
     return self::newMarkupEngine(
       array(

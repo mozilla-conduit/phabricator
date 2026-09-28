@@ -110,6 +110,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
         'project_triggertransaction',
         'project_triggerusage',
       ),
+      'maniphest' => true,
     );
   }
 

@@ -1,21 +1,5 @@
 <?php
 
-$table = new ManiphestTransaction();
-$conn_w = $table->establishConnection('w');
-
-echo pht(
-  "Converting Maniphest CC transactions to modern ".
-  "subscriber transactions...\n");
-foreach (new LiskMigrationIterator($table) as $txn) {
-  // ManiphestTransaction::TYPE_CCS
-  if ($txn->getTransactionType() == 'ccs') {
-    queryfx(
-      $conn_w,
-      'UPDATE %T SET transactionType = %s WHERE id = %d',
-      $table->getTableName(),
-      PhabricatorTransactions::TYPE_SUBSCRIBERS,
-      $txn->getID());
-  }
-}
-
-echo pht('Done.')."\n";
+// This migration depended on the Maniphest application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

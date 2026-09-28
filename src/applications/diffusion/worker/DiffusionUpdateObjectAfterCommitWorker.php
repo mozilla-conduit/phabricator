@@ -51,9 +51,7 @@ final class DiffusionUpdateObjectAfterCommitWorker
     $properties = idx($data, 'properties', array());
     $this->properties = $properties;
 
-    if ($object instanceof ManiphestTask) {
-      $this->updateTask($commit, $object);
-    } else if ($object instanceof DifferentialRevision) {
+    if ($object instanceof DifferentialRevision) {
       $this->updateRevision($commit, $object);
     }
   }
@@ -76,8 +74,7 @@ final class DiffusionUpdateObjectAfterCommitWorker
 
   protected function loadActingUser($acting_phid) {
     // If we we were able to identify an author or committer for the commit, we
-    // try to act as that user when affecting other objects, like tasks marked
-    // with "Fixes Txxx".
+    // try to act as that user when affecting other objects.
 
     // This helps to prevent mistakes where a user accidentally writes the
     // wrong task IDs and affects tasks they can't see (and thus can't undo the
@@ -105,43 +102,6 @@ final class DiffusionUpdateObjectAfterCommitWorker
     }
 
     return $viewer;
-  }
-
-  private function updateTask(
-    PhabricatorRepositoryCommit $commit,
-    ManiphestTask $task) {
-
-    $acting_phid = $this->getActingPHID($commit);
-    $acting_user = $this->loadActingUser($acting_phid);
-
-    $commit_phid = $commit->getPHID();
-
-    $xactions = array();
-
-    $xactions[] = $this->newEdgeTransaction(
-      $task,
-      $commit,
-      ManiphestTaskHasCommitEdgeType::EDGECONST);
-
-    $status = $this->getUpdateProperty('status');
-    if ($status) {
-      $xactions[] = $task->getApplicationTransactionTemplate()
-        ->setTransactionType(ManiphestTaskStatusTransaction::TRANSACTIONTYPE)
-        ->setMetadataValue('commitPHID', $commit_phid)
-        ->setNewValue($status);
-    }
-
-    $content_source = $this->newContentSource();
-
-    $editor = $task->getApplicationTransactionEditor()
-      ->setActor($acting_user)
-      ->setActingAsPHID($acting_phid)
-      ->setContentSource($content_source)
-      ->setContinueOnNoEffect(true)
-      ->setContinueOnMissingFields(true)
-      ->addUnmentionablePHIDs(array($commit_phid));
-
-    $editor->applyTransactions($task, $xactions);
   }
 
   private function updateRevision(

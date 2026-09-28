@@ -15,10 +15,6 @@ final class PHUIHomeView
     require_celerity_resource('phabricator-dashboard-css');
     $viewer = $this->getViewer();
 
-    $has_maniphest = PhabricatorApplication::isClassInstalledForViewer(
-      'PhabricatorManiphestApplication',
-      $viewer);
-
     $has_diffusion = PhabricatorApplication::isClassInstalledForViewer(
       'PhabricatorDiffusionApplication',
       $viewer);
@@ -30,11 +26,6 @@ final class PHUIHomeView
     $revision_panel = null;
     if ($has_differential) {
       $revision_panel = $this->buildRevisionPanel();
-    }
-
-    $tasks_panel = null;
-    if ($has_maniphest) {
-      $tasks_panel = $this->buildTasksPanel();
     }
 
     $repository_panel = null;
@@ -55,7 +46,6 @@ final class PHUIHomeView
       ),
       array(
         $revision_panel,
-        $tasks_panel,
         $repository_panel,
       ));
     $dashboard->addColumn($main_panel, 'thirds');
@@ -87,26 +77,6 @@ final class PHUIHomeView
       ->setName(pht('Active Revisions'))
       ->setProperty('class', 'DifferentialRevisionSearchEngine')
       ->setProperty('key', 'active');
-
-    return $this->renderPanel($panel);
-  }
-
-  private function buildTasksPanel() {
-    $viewer = $this->getViewer();
-
-    if ($viewer->isLoggedIn()) {
-      $name = pht('Assigned Tasks');
-      $query = 'assigned';
-    } else {
-      $name = pht('Open Tasks');
-      $query = 'open';
-    }
-
-    $panel = $this->newQueryPanel()
-      ->setName($name)
-      ->setProperty('class', 'ManiphestTaskSearchEngine')
-      ->setProperty('key', $query)
-      ->setProperty('limit', 15);
 
     return $this->renderPanel($panel);
   }

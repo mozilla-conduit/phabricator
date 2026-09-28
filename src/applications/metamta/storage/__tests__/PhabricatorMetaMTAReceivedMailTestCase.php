@@ -72,7 +72,7 @@ final class PhabricatorMetaMTAReceivedMailTestCase extends PhabricatorTestCase {
   }
 
   public function testDropUnknownSenderMail() {
-    $this->setManiphestCreateEmail();
+    $this->setFilesCreateEmail();
 
     $mail = new PhabricatorMetaMTAReceivedMail();
     $mail->setHeaders(
@@ -96,7 +96,7 @@ final class PhabricatorMetaMTAReceivedMailTestCase extends PhabricatorTestCase {
 
 
   public function testDropDisabledSenderMail() {
-    $this->setManiphestCreateEmail();
+    $this->setFilesCreateEmail();
 
     $user = $this->generateNewTestUser()
       ->setIsDisabled(true)
@@ -122,11 +122,11 @@ final class PhabricatorMetaMTAReceivedMailTestCase extends PhabricatorTestCase {
       $mail->getStatus());
   }
 
-  private function setManiphestCreateEmail() {
-    $maniphest_app = new PhabricatorManiphestApplication();
+  private function setFilesCreateEmail() {
+    $files_app = new PhabricatorFilesApplication();
     try {
       id(new PhabricatorMetaMTAApplicationEmail())
-        ->setApplicationPHID($maniphest_app->getPHID())
+        ->setApplicationPHID($files_app->getPHID())
         ->setAddress('bugs@example.com')
         ->setConfigData(array())
         ->save();

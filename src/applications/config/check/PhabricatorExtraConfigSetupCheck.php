@@ -550,6 +550,13 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
 
       'phurl.short-uri' => $removed_application_reason,
       'debug.sample-rate' => $removed_application_reason,
+      'maniphest.custom-field-definitions' => $removed_application_reason,
+      'maniphest.fields' => $removed_application_reason,
+      'maniphest.priorities' => $removed_application_reason,
+      'maniphest.statuses' => $removed_application_reason,
+      'maniphest.default-priority' => $removed_application_reason,
+      'maniphest.points' => $removed_application_reason,
+      'maniphest.subtypes' => $removed_application_reason,
     );
 
     return $ancient_config;

@@ -1,25 +1,5 @@
 <?php
 
-$conn_w = id(new ManiphestTask())->establishConnection('w');
-$table_name = id(new ManiphestCustomFieldStorage())->getTableName();
-
-$rows = new LiskRawMigrationIterator($conn_w, 'maniphest_taskauxiliarystorage');
-
-echo pht('Migrating custom storage for Maniphest fields...')."\n";
-foreach ($rows as $row) {
-  $phid = $row['taskPHID'];
-  $name = $row['name'];
-
-  echo pht('Migrating %s / %s...', $phid, $name)."\n";
-
-  queryfx(
-    $conn_w,
-    'INSERT IGNORE INTO %T (objectPHID, fieldIndex, fieldValue)
-      VALUES (%s, %s, %s)',
-    $table_name,
-    $phid,
-    PhabricatorHash::digestForIndex('std:maniphest:'.$name),
-    $row['value']);
-}
-
-echo pht('Done.')."\n";
+// This migration depended on the Maniphest application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

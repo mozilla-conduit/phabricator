@@ -106,8 +106,7 @@ EOTEXT
     );
 
     $subtype_description = $this->deformat(pht(<<<EOTEXT
-Allows you to define project subtypes. For a more detailed description of
-subtype configuration, see @{config:maniphest.subtypes}.
+Allows you to define project subtypes.
 EOTEXT
       ));
 

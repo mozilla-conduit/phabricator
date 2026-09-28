@@ -67,7 +67,7 @@ final class PhabricatorRepositoryCommitPublishWorker
       return;
     }
 
-    // NOTE: Close revisions and tasks before applying transactions, because
+    // NOTE: Close revisions before applying transactions, because
     // we want a side effect of closure (the commit being associated with
     // a revision) to occur before a side effect of transactions (Herald
     // executing). The close methods queue tasks for the actual updates to
@@ -75,7 +75,6 @@ final class PhabricatorRepositoryCommitPublishWorker
     // transactions.
 
     $this->closeRevisions($viewer, $commit);
-    $this->closeTasks($viewer, $commit);
 
     $this->applyTransactions($viewer, $repository, $commit);
 
@@ -629,59 +628,6 @@ final class PhabricatorRepositoryCommitPublishWorker
       'revisionMatchData' => $match_data,
     );
     $this->queueObjectUpdate($commit, $revision, $properties);
-  }
-
-  private function closeTasks(
-    PhabricatorUser $actor,
-    PhabricatorRepositoryCommit $commit) {
-
-    $maniphest = 'PhabricatorManiphestApplication';
-    if (!PhabricatorApplication::isClassInstalled($maniphest)) {
-      return;
-    }
-
-    $data = $commit->getCommitData();
-
-    $prefixes = ManiphestTaskStatus::getStatusPrefixMap();
-    $suffixes = ManiphestTaskStatus::getStatusSuffixMap();
-    $message = $data->getCommitMessage();
-
-    $matches = id(new ManiphestCustomFieldStatusParser())
-      ->parseCorpus($message);
-
-    $task_map = array();
-    foreach ($matches as $match) {
-      $prefix = phutil_utf8_strtolower($match['prefix']);
-      $suffix = phutil_utf8_strtolower($match['suffix']);
-
-      $status = idx($suffixes, $suffix);
-      if (!$status) {
-        $status = idx($prefixes, $prefix);
-      }
-
-      foreach ($match['monograms'] as $task_monogram) {
-        $task_id = (int)trim($task_monogram, 'tT');
-        $task_map[$task_id] = $status;
-      }
-    }
-
-    if (!$task_map) {
-      return;
-    }
-
-    $tasks = id(new ManiphestTaskQuery())
-      ->setViewer($actor)
-      ->withIDs(array_keys($task_map))
-      ->execute();
-    foreach ($tasks as $task_id => $task) {
-      $status = $task_map[$task_id];
-
-      $properties = array(
-        'status' => $status,
-      );
-
-      $this->queueObjectUpdate($commit, $task, $properties);
-    }
   }
 
   private function queueObjectUpdate(

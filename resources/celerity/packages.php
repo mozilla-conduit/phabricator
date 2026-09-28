@@ -213,13 +213,6 @@ return array(
     'javelin-behavior-diffusion-commit-graph',
     'javelin-behavior-audit-preview',
   ),
-  'maniphest.pkg.css' => array(
-    'maniphest-task-summary-css',
-  ),
-  'maniphest.pkg.js' => array(
-    'javelin-behavior-maniphest-batch-selector',
-    'javelin-behavior-maniphest-list-editor',
-  ),
   'dark-console.pkg.js' => array(
     'javelin-behavior-dark-console',
     'phabricator-darklog',
