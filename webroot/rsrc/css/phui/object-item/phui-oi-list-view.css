@@ -558,16 +558,6 @@ ul.phui-oi-list-view .phui-oi-selected
   list-style: none;
 }
 
-/* - Badges ---------------------------------------------------------------- */
-
-.phui-oi-col0.phui-oi-badge {
-  width: 28px;
-}
-
-.phui-oi-col0.phui-oi-badge .phui-icon-view {
-  left: 0;
-}
-
 /* - Countdowns ------------------------------------------------------------ */
 
 .phui-oi-col0.phui-oi-countdown {

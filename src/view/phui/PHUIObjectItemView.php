@@ -22,7 +22,6 @@ final class PHUIObjectItemView extends AphrontTagView {
   private $imageHref;
   private $imageIcon;
   private $titleText;
-  private $badge;
   private $countdownNum;
   private $countdownNoun;
   private $sideColumn;
@@ -99,11 +98,6 @@ final class PHUIObjectItemView extends AphrontTagView {
 
   public function setSubHead($subhead) {
     $this->subhead = $subhead;
-    return $this;
-  }
-
-  public function setBadge(PHUIBadgeMiniView $badge) {
-    $this->badge = $badge;
     return $this;
   }
 
@@ -678,15 +672,6 @@ final class PHUIObjectItemView extends AphrontTagView {
           'class' => 'phui-oi-col0',
         ),
         $status);
-    }
-
-    if ($this->badge) {
-      $column0 = phutil_tag(
-        'div',
-        array(
-          'class' => 'phui-oi-col0 phui-oi-badge',
-        ),
-        $this->badge);
     }
 
     if ($this->countdownNum) {

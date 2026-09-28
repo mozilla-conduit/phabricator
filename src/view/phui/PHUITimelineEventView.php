@@ -27,7 +27,6 @@ final class PHUITimelineEventView extends AphrontView {
   private $reallyMajorEvent;
   private $hideCommentOptions = false;
   private $authorPHID;
-  private $badges = array();
   private $pinboardItems = array();
   private $isSilent;
   private $isMFA;
@@ -172,11 +171,6 @@ final class PHUITimelineEventView extends AphrontView {
 
   public function addClass($class) {
     $this->classes[] = $class;
-    return $this;
-  }
-
-  public function addBadge(PHUIBadgeMiniView $badge) {
-    $this->badges[] = $badge;
     return $this;
   }
 
@@ -384,8 +378,6 @@ final class PHUITimelineEventView extends AphrontView {
     // Render "extra" information (timestamp, etc).
     $extra = $this->renderExtra($events);
 
-    $show_badges = false;
-
     $group_titles = array();
     $group_items = array();
     $group_children = array();
@@ -413,7 +405,6 @@ final class PHUITimelineEventView extends AphrontView {
 
       if ($event->hasChildren()) {
         $group_children[] = $event->renderChildren();
-        $show_badges = true;
       }
     }
 
@@ -428,7 +419,6 @@ final class PHUITimelineEventView extends AphrontView {
       '');
 
     $image = null;
-    $badges = null;
     if ($image_uri) {
       $image = javelin_tag(
         ($this->userHandle->getURI()) ? 'a' : 'div',
@@ -439,17 +429,6 @@ final class PHUITimelineEventView extends AphrontView {
           'aural' => false,
         ),
         '');
-      if ($this->badges && $show_badges) {
-        $flex = new PHUIBadgeBoxView();
-        $flex->addItems($this->badges);
-        $flex->setCollapsed(true);
-        $badges = phutil_tag(
-          'div',
-          array(
-            'class' => 'phui-timeline-badges',
-          ),
-          $flex);
-      }
     }
 
     $content_classes = array();
@@ -500,7 +479,7 @@ final class PHUITimelineEventView extends AphrontView {
       array(
         'class' => implode(' ', $content_classes),
       ),
-      array($image, $badges, $wedge, $content, $pinboard));
+      array($image, $wedge, $content, $pinboard));
 
     $outer_classes = $this->classes;
     $outer_classes[] = 'phui-timeline-shell';
