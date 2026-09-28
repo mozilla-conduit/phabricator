@@ -1133,7 +1133,7 @@ final class DifferentialRevision extends DifferentialDAO
         ->loadGraph();
 
     return array(
-      'stackGraph' => $stack_graph->getEdges(DifferentialRevisionDependsOnRevisionEdgeType::EDGECONST,),
+      'stackGraph' => $stack_graph->getEdges(DifferentialRevisionDependsOnRevisionEdgeType::EDGECONST),
       'title' => $this->getTitle(),
       'uri' => PhabricatorEnv::getURI($this->getURI()),
       'authorPHID' => $this->getAuthorPHID(),
