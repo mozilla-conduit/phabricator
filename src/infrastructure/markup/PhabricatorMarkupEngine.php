@@ -363,7 +363,6 @@ final class PhabricatorMarkupEngine extends Phobject {
   public static function newFeedMarkupEngine() {
     return self::newMarkupEngine(
       array(
-        'macros'      => false,
         'youtube'     => false,
       ));
   }
@@ -447,7 +446,6 @@ final class PhabricatorMarkupEngine extends Phobject {
         'remarkup.enable-embedded-youtube'),
       'differential.diff' => null,
       'header.generate-toc' => false,
-      'macros'        => true,
       'uri.allowed-protocols' => PhabricatorEnv::getEnvConfig(
         'uri.allowed-protocols'),
       'uri.full' => false,
@@ -521,11 +519,6 @@ final class PhabricatorMarkupEngine extends Phobject {
     }
 
     $rules[] = new PhutilRemarkupHyperlinkRule();
-
-    if ($options['macros']) {
-      $rules[] = new PhabricatorImageMacroRemarkupRule();
-      $rules[] = new PhabricatorMemeRemarkupRule();
-    }
 
     $rules[] = new PhutilRemarkupBoldRule();
     $rules[] = new PhutilRemarkupItalicRule();

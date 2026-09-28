@@ -96,6 +96,11 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       'conpherence' => true,
       'pholio' => true,
       'token' => true,
+      'file' => array(
+        'file_imagemacro',
+        'macro_transaction',
+        'macro_transaction_comment',
+      ),
     );
   }
 

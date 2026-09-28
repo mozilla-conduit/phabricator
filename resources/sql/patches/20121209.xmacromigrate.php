@@ -1,23 +1,5 @@
 <?php
 
-echo pht('Giving image macros PHIDs');
-$table = new PhabricatorFileImageMacro();
-$table->openTransaction();
-
-foreach (new LiskMigrationIterator($table) as $macro) {
-  if ($macro->getPHID()) {
-    continue;
-  }
-
-  echo '.';
-
-  queryfx(
-    $macro->establishConnection('w'),
-    'UPDATE %T SET phid = %s WHERE id = %d',
-    $macro->getTableName(),
-    $macro->generatePHID(),
-    $macro->getID());
-}
-
-$table->saveTransaction();
-echo "\n".pht('Done.')."\n";
+// This migration depended on the Macro application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

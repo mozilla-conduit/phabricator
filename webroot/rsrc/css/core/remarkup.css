@@ -638,16 +638,6 @@ var.remarkup-assist-textarea {
   opacity: 1.0;
 }
 
-.phabricator-image-macro-hero {
-  margin: auto;
-  max-width: 95%;
-}
-
-.phabricator-remarkup-macro {
-  height: auto;
-  max-width: 100%;
-}
-
 .remarkup-nav-sequence-arrow {
   color: {$lightgreytext};
 }

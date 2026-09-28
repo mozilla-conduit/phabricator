@@ -1,26 +1,5 @@
 <?php
 
-$table = new PhabricatorFileImageMacro();
-foreach (new LiskMigrationIterator($table) as $macro) {
-  $name = $macro->getName();
-
-  echo pht("Linking macro '%s'...", $name)."\n";
-
-  $editor = new PhabricatorEdgeEditor();
-
-  $phids[] = $macro->getFilePHID();
-  $phids[] = $macro->getAudioPHID();
-  $phids = array_filter($phids);
-
-  if ($phids) {
-    foreach ($phids as $phid) {
-      $editor->addEdge(
-        $macro->getPHID(),
-        25,
-        $phid);
-    }
-    $editor->save();
-  }
-}
-
-echo pht('Done.')."\n";
+// This migration depended on the Macro application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

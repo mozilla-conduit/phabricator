@@ -11,7 +11,7 @@ final class PhabricatorEmojiDatasource extends PhabricatorTypeaheadDatasource {
   }
 
   public function getDatasourceApplicationClass() {
-    return 'PhabricatorMacroApplication';
+    return null;
   }
 
   public function loadResults() {
