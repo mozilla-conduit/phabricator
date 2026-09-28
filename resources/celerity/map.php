@@ -58,7 +58,6 @@ return array(
     'rsrc/css/application/conpherence/participant-pane.css' => '69e0058a',
     'rsrc/css/application/conpherence/transaction.css' => '3a3f5e7e',
     'rsrc/css/application/contentsource/content-source-view.css' => 'cdf0d579',
-    'rsrc/css/application/countdown/timer.css' => 'bff8012f',
     'rsrc/css/application/daemon/bulk-job.css' => '73af99f5',
     'rsrc/css/application/dashboard/dashboard.css' => '5a205b9d',
     'rsrc/css/application/diff/diff-tree-view.css' => 'e2d3e222',
@@ -375,7 +374,6 @@ return array(
     'rsrc/js/application/conpherence/behavior-pontificate.js' => '4ae58b5a',
     'rsrc/js/application/conpherence/behavior-quicksand-blacklist.js' => '5a6f6a06',
     'rsrc/js/application/conpherence/behavior-toggle-widget.js' => '8f959ad0',
-    'rsrc/js/application/countdown/timer.js' => '6a162524',
     'rsrc/js/application/daemon/behavior-bulk-job-reload.js' => '3829a3cf',
     'rsrc/js/application/dashboard/behavior-dashboard-async-panel.js' => '9c01e364',
     'rsrc/js/application/dashboard/behavior-dashboard-move-panels.js' => 'a2ab19be',
@@ -609,7 +607,6 @@ return array(
     'javelin-behavior-conpherence-participant-pane' => '43ba89a2',
     'javelin-behavior-conpherence-pontificate' => '4ae58b5a',
     'javelin-behavior-conpherence-search' => '91befbcc',
-    'javelin-behavior-countdown-timer' => '6a162524',
     'javelin-behavior-dark-console' => '457f4d16',
     'javelin-behavior-dashboard-async-panel' => '9c01e364',
     'javelin-behavior-dashboard-move-panels' => 'a2ab19be',
@@ -776,7 +773,6 @@ return array(
     'phabricator-busy' => '5202e831',
     'phabricator-content-source-view-css' => 'cdf0d579',
     'phabricator-core-css' => 'b3ebd90d',
-    'phabricator-countdown-css' => 'bff8012f',
     'phabricator-darklog' => '3b869402',
     'phabricator-darkmessage' => '26cd4b73',
     'phabricator-dashboard-css' => '5a205b9d',
@@ -1549,10 +1545,6 @@ return array(
     '6a1583a8' => array(
       'javelin-behavior',
       'javelin-history',
-    ),
-    '6a162524' => array(
-      'javelin-behavior',
-      'javelin-dom',
     ),
     '6a18c42e' => array(
       'javelin-install',
