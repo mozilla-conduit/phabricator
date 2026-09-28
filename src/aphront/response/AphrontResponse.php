@@ -168,7 +168,7 @@ abstract class AphrontResponse extends Phobject {
     // requests to work.
     $csp[] = $this->newContentSecurityPolicy('connect-src', "'self'");
 
-    // DarkConsole and PHPAST both use frames to render some content.
+    // DarkConsole uses frames to render some content.
     $csp[] = $this->newContentSecurityPolicy('frame-src', "'self'");
 
     // This is a more modern flavor of of "X-Frame-Options" and prevents
