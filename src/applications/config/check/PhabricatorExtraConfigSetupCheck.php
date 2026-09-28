@@ -549,6 +549,7 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
       'phd.verbose' => $phd_reason,
 
       'phurl.short-uri' => $removed_application_reason,
+      'debug.sample-rate' => $removed_application_reason,
     );
 
     return $ancient_config;

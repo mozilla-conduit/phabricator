@@ -90,6 +90,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       'phrequent' => true,
       'phurl' => true,
       'badges' => true,
+      'multimeter' => true,
     );
   }
 
