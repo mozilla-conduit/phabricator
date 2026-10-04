@@ -119,18 +119,75 @@ final class RevisionMergeConflictStackQueryTestCase
         'instead of being used as the merge base.'));
   }
 
-  public function testDescendantBudgetScalesWithTheBatch() {
-    $this->assertEqual(
-      RevisionMergeConflictStackQuery::MAX_DESCENDANTS_PER_REVISION,
-      RevisionMergeConflictStackQuery::newDescendantLimit(1),
-      pht('A single revision should get the per-revision budget.'));
+  public function testClosedParentsDoNotMakeTheStackNonLinear() {
+    $revision = $this->newRevision(4, DifferentialRevisionStatus::NEEDS_REVIEW);
+    $open = $this->newRevision(3, DifferentialRevisionStatus::ACCEPTED);
+    $landed = $this->newRevision(2, DifferentialRevisionStatus::PUBLISHED);
+    $abandoned = $this->newRevision(1, DifferentialRevisionStatus::ABANDONED);
 
     $this->assertEqual(
-      50 * RevisionMergeConflictStackQuery::MAX_DESCENDANTS_PER_REVISION,
-      RevisionMergeConflictStackQuery::newDescendantLimit(50),
+      $open,
+      RevisionMergeConflictStackQuery::newOpenParent(
+        $revision,
+        array($landed, $open, $abandoned)),
       pht(
-        'A landing that fans out to many candidates should get a budget for '.
-        'each of them, rather than sharing one flat allowance.'));
+        'Landed and abandoned parents should be ignored, leaving the one open '.
+        'parent for the walk to continue through.'));
+  }
+
+  public function testNoOpenParentStopsTheWalk() {
+    $revision = $this->newRevision(3, DifferentialRevisionStatus::NEEDS_REVIEW);
+    $landed = $this->newRevision(2, DifferentialRevisionStatus::PUBLISHED);
+    $abandoned = $this->newRevision(1, DifferentialRevisionStatus::ABANDONED);
+
+    $this->assertEqual(
+      null,
+      RevisionMergeConflictStackQuery::newOpenParent(
+        $revision,
+        array($landed, $abandoned)),
+      pht(
+        'A revision whose parents are all closed should have no open '.
+        'parent.'));
+  }
+
+  public function testSeveralOpenParentsAreNotCheckable() {
+    $revision = $this->newRevision(3, DifferentialRevisionStatus::NEEDS_REVIEW);
+    $first = $this->newRevision(2, DifferentialRevisionStatus::ACCEPTED);
+    $second = $this->newRevision(1, DifferentialRevisionStatus::NEEDS_REVIEW);
+
+    $this->assertExceptionMessage(
+      'RevisionMergeConflictReasonException',
+      'has 2 open parent revisions',
+      function () use ($revision, $first, $second) {
+        RevisionMergeConflictStackQuery::newOpenParent(
+          $revision,
+          array($first, $second));
+      });
+  }
+
+  public function testSingleLandedParentIsTheMergeBase() {
+    $landed = $this->newRevision(2, DifferentialRevisionStatus::PUBLISHED);
+    $abandoned = $this->newRevision(1, DifferentialRevisionStatus::ABANDONED);
+
+    $this->assertEqual(
+      $landed,
+      RevisionMergeConflictStackQuery::newLandedParent(
+        array($abandoned, $landed)),
+      pht(
+        'The only landed parent should be used as the merge base, ignoring '.
+        'abandoned ones.'));
+  }
+
+  public function testSeveralLandedParentsHaveNoMergeBase() {
+    $first = $this->newRevision(2, DifferentialRevisionStatus::PUBLISHED);
+    $second = $this->newRevision(1, DifferentialRevisionStatus::PUBLISHED);
+
+    $this->assertEqual(
+      null,
+      RevisionMergeConflictStackQuery::newLandedParent(array($first, $second)),
+      pht(
+        'With several landed parents there is no single commit to merge from, '.
+        'so none should be picked.'));
   }
 
   private function newRevision(

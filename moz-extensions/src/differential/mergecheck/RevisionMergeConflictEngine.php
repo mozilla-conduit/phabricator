@@ -67,7 +67,7 @@ final class RevisionMergeConflictEngine extends Phobject {
   // git, so cap the total across the stack. This runs unattended for every open
   // revision touching a landed path, and a diff bigger than this is not
   // something we can usefully check anyway.
-  const MAX_PATCH_BYTES = 32 * 1024 ** 2;
+  const MAX_PATCH_BYTES = 64 * 1024 ** 2;
 
   // Ceiling on any single git invocation. Generous enough for a large merge on
   // a large repository, short enough that a wedged command frees its taskmaster
