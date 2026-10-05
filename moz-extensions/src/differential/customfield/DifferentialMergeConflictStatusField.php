@@ -378,11 +378,6 @@ final class DifferentialMergeConflictStatusField
           'Merge checks follow one parent at a time. Editing the revision so '.
           'it depends on a single parent lets the stack be checked.');
 
-      case RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP:
-        return pht(
-          'Landing the lower part of the stack first brings it under the '.
-          'depth the check can handle.');
-
       case RevisionMergeConflictReasonException::CODE_PATCH_TOO_LARGE:
         return pht(
           'Splitting the change into smaller revisions brings the stack '.

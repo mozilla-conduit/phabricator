@@ -255,7 +255,6 @@ final class DifferentialMergeConflictStatusFieldTestCase
       RevisionMergeConflictReasonException::CODE_PARENT_ABANDONED,
       RevisionMergeConflictReasonException::CODE_PARENT_OTHER_REPOSITORY,
       RevisionMergeConflictReasonException::CODE_STACK_NOT_LINEAR,
-      RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
       RevisionMergeConflictReasonException::CODE_PATCH_TOO_LARGE,
       RevisionMergeConflictReasonException::CODE_COMMAND_FAILED,
       RevisionMergeConflictReasonException::CODE_INTERNAL_ERROR,
