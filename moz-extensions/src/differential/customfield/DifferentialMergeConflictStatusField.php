@@ -404,9 +404,9 @@ final class DifferentialMergeConflictStatusField
    *
    * The two causes need opposite advice, so they are worth telling apart: a
    * Mercurial node recorded against a Git repository can never resolve, while
-   * a Git commit that has not been fetched yet resolves on its own. Telling
-   * the second group to change tooling would be wrong, since they are already
-   * doing the right thing.
+   * a Git commit that has not been fetched yet can be checked once it arrives.
+   * Its arrival does not requeue the check, so the advice is to update the
+   * revision rather than to change tooling, which they already do correctly.
    */
   private static function newBaseMissingHint(
     ?string $creation_method,
@@ -414,9 +414,9 @@ final class DifferentialMergeConflictStatusField
 
     if (!self::isMercurialTooling($creation_method, $source_control_system)) {
       return pht(
-        'The base commit has not reached this repository yet, which usually '.
-        'means it was pushed moments before the revision was submitted. This '.
-        'normally resolves on its own.');
+        'The base commit is not in this repository yet. Updating the '.
+        'revision re-runs the check once it is; otherwise the check only '.
+        're-runs when a commit touching the same files lands.');
     }
 
     if (phutil_nonempty_string($creation_method)) {

@@ -184,10 +184,10 @@ final class DifferentialMergeConflictStatusFieldTestCase
       'git');
 
     $this->assertTrue(
-      strpos($native, 'resolves on its own') !== false,
+      strpos($native, 'Updating the revision re-runs the check') !== false,
       pht(
-        'A Git base that has not been fetched yet must not be blamed on '.
-        'tooling, since the author is already submitting correctly: %s',
+        'A Git base that has not been fetched yet is advised to update the '.
+        'revision, since its arrival does not requeue the check: %s',
         $native));
 
     $this->assertTrue(
