@@ -231,10 +231,13 @@ final class DifferentialMergeConflictStatusFieldTestCase
       array('PHID-DIFF-active'),
       1757000000);
 
-    $this->assertTrue(
-      phutil_nonempty_string(
-        DifferentialMergeConflictStatusField::newHintForValue($value, false)),
-      pht('A current verdict with a reason code should offer a hint.'));
+    $this->assertEqual(
+      DifferentialMergeConflictStatusField::newHint(
+        RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
+        null,
+        null),
+      DifferentialMergeConflictStatusField::newHintForValue($value, false),
+      pht('A current verdict should offer the hint for its reason code.'));
 
     $this->assertEqual(
       null,
