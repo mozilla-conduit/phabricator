@@ -107,7 +107,7 @@ final class RevisionMergeConflictStackQuery extends Phobject {
     if (count($parents) !== count($parent_phids)) {
       throw new RevisionMergeConflictReasonException(
         pht(
-          'Failed to load the parent revisions of %s.',
+          'Failed to load all parent revisions of %s.',
           $revision->getMonogram()));
     }
 
