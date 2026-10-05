@@ -91,6 +91,7 @@ final class RevisionMergeConflictEngine extends Phobject {
   private ?array $stackRevisions = null;
   private ?array $stackDiffs = null;
   private ?string $stackStopReason = null;
+  private ?string $stackStopReasonCode = null;
   private ?DifferentialRevision $baseFromLandedParent = null;
 
   public function setViewer(PhabricatorUser $viewer): self {
@@ -131,7 +132,8 @@ final class RevisionMergeConflictEngine extends Phobject {
       // claim a conflict we couldn't actually prove.
       return $this->newResult(
         DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
-        $ex->getMessage());
+        $ex->getMessage(),
+        $ex->getReasonCode());
     } catch (CommandException $ex) {
       // A command exception's message is a multi-line dump of the command line,
       // stdout and stderr. That belongs in the log, not in a field we render to
@@ -142,7 +144,8 @@ final class RevisionMergeConflictEngine extends Phobject {
         DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
         pht(
           'A git command failed while checking mergeability. See the daemon '.
-          'log for details.'));
+          'log for details.'),
+        RevisionMergeConflictReasonException::CODE_COMMAND_FAILED);
     } catch (Exception $ex) {
       // Anything else was not written with this audience in mind: a filesystem
       // error naming a server path, a policy exception, a programming error.
@@ -153,7 +156,8 @@ final class RevisionMergeConflictEngine extends Phobject {
         DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
         pht(
           'Mergeability could not be determined. See the daemon log for '.
-          'details.'));
+          'details.'),
+        RevisionMergeConflictReasonException::CODE_INTERNAL_ERROR);
     }
   }
 
@@ -161,7 +165,8 @@ final class RevisionMergeConflictEngine extends Phobject {
     if (!$this->repository->isGit()) {
       return $this->newResult(
         DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
-        pht('Repository is not a Git repository.'));
+        pht('Repository is not a Git repository.'),
+        RevisionMergeConflictReasonException::CODE_NOT_GIT);
     }
 
     $stack = $this->getStackDiffs();
@@ -195,6 +200,9 @@ final class RevisionMergeConflictEngine extends Phobject {
     return $this->newResult(
       $status,
       $this->newVerdictReason($status, $base, $target_tip),
+      // A definitive verdict has no cause to name: the reason describes what
+      // was merged rather than why nothing could be.
+      null,
       $base,
       $target_tip);
   }
@@ -283,6 +291,7 @@ final class RevisionMergeConflictEngine extends Phobject {
     $chain = $query->loadAncestorChain();
     $this->stackQuery = $query;
     $this->stackStopReason = $query->getStopReason();
+    $this->stackStopReasonCode = $query->getStopReasonCode();
 
     $diffs = array();
     foreach ($chain as $revision) {
@@ -332,15 +341,19 @@ final class RevisionMergeConflictEngine extends Phobject {
     }
 
     if (!phutil_nonempty_string($recorded)) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_NO_RECORDED_BASE,
         $this->describeDiffProblem(0, pht('has no recorded base revision')));
     }
 
     if ($this->stackStopReason !== null) {
-      throw new RevisionMergeConflictReasonException($this->stackStopReason);
+      throw RevisionMergeConflictReasonException::newWithCode(
+        $this->stackStopReasonCode ?? RevisionMergeConflictReasonException::CODE_UNSPECIFIED,
+        $this->stackStopReason);
     }
 
-    throw new RevisionMergeConflictReasonException(
+    throw RevisionMergeConflictReasonException::newWithCode(
+      RevisionMergeConflictReasonException::CODE_BASE_MISSING,
       pht(
         'The stack is based on commit "%s", which is not present in the '.
         'repository.',
@@ -424,7 +437,8 @@ final class RevisionMergeConflictEngine extends Phobject {
     // The renderer treats a limit of zero as "no limit", so an exhausted budget
     // has to stop here rather than being passed through.
     if ($byte_limit < 1) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_PATCH_TOO_LARGE,
         $this->newPatchTooLargeMessage($position));
     }
 
@@ -435,7 +449,8 @@ final class RevisionMergeConflictEngine extends Phobject {
       ->executeOne();
 
     if (!$loaded_diff) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_DIFF_RELOAD_FAILED,
         pht('Failed to reload diff %d with changesets.', $diff->getID()));
     }
 
@@ -447,7 +462,8 @@ final class RevisionMergeConflictEngine extends Phobject {
         ->setByteLimit($byte_limit)
         ->buildPatch();
     } catch (ArcanistDiffByteSizeException $ex) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_PATCH_TOO_LARGE,
         $this->newPatchTooLargeMessage($position));
     }
   }
@@ -464,7 +480,8 @@ final class RevisionMergeConflictEngine extends Phobject {
   public function resolveTargetTip(): string {
     $branch = $this->repository->getDefaultBranch();
     if (!phutil_nonempty_string($branch)) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_NO_DEFAULT_BRANCH,
         pht('Repository has no default branch.'));
     }
 
@@ -503,7 +520,8 @@ final class RevisionMergeConflictEngine extends Phobject {
     }
 
     if ($ancestor_future->getWasKilledByTimeout()) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_GIT_TIMEOUT,
         pht(
           '"git merge-base" did not finish within %s seconds.',
           new PhutilNumber(self::GIT_TIMEOUT_SECONDS)));
@@ -520,7 +538,8 @@ final class RevisionMergeConflictEngine extends Phobject {
     $refs_future->resolve();
 
     if ($refs_future->getWasKilledByTimeout()) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_GIT_TIMEOUT,
         pht(
           '"git for-each-ref" did not finish within %s seconds.',
           new PhutilNumber(self::GIT_TIMEOUT_SECONDS)));
@@ -534,7 +553,8 @@ final class RevisionMergeConflictEngine extends Phobject {
       return;
     }
 
-    throw new RevisionMergeConflictReasonException(
+    throw RevisionMergeConflictReasonException::newWithCode(
+      RevisionMergeConflictReasonException::CODE_BASE_NOT_ANCESTOR,
       pht(
         'The stack is based on commit "%s", which is not on any branch this '.
         'repository fetches.',
@@ -574,7 +594,8 @@ final class RevisionMergeConflictEngine extends Phobject {
     foreach ($stack as $position => $diff) {
       $patch = $this->renderGitPatch($diff, $position, $remaining_bytes);
       if (!phutil_nonempty_string($patch)) {
-        throw new RevisionMergeConflictReasonException(
+        throw RevisionMergeConflictReasonException::newWithCode(
+          RevisionMergeConflictReasonException::CODE_PATCH_EMPTY,
           $this->describeDiffProblem($position, pht('produced an empty patch')));
       }
 
@@ -589,7 +610,8 @@ final class RevisionMergeConflictEngine extends Phobject {
         $apply_future->resolvex();
       } catch (CommandException $ex) {
         if ($apply_future->getWasKilledByTimeout()) {
-          throw new RevisionMergeConflictReasonException(
+          throw RevisionMergeConflictReasonException::newWithCode(
+            RevisionMergeConflictReasonException::CODE_GIT_TIMEOUT,
             $this->describeDiffProblem(
               $position,
               pht(
@@ -597,7 +619,8 @@ final class RevisionMergeConflictEngine extends Phobject {
                 new PhutilNumber(self::GIT_TIMEOUT_SECONDS))));
         }
 
-        throw new RevisionMergeConflictReasonException(
+        throw RevisionMergeConflictReasonException::newWithCode(
+          RevisionMergeConflictReasonException::CODE_PATCH_DOES_NOT_APPLY,
           $this->describeDiffProblem(
             $position,
             pht('does not apply on top of the stack base')));
@@ -649,7 +672,8 @@ final class RevisionMergeConflictEngine extends Phobject {
     // A timed-out command is killed by a signal, and the resulting exit code
     // must never be read as a merge verdict.
     if ($merge_future->getWasKilledByTimeout()) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_GIT_TIMEOUT,
         pht(
           '"git merge-tree" did not finish within %s seconds.',
           new PhutilNumber(self::GIT_TIMEOUT_SECONDS)));
@@ -661,7 +685,8 @@ final class RevisionMergeConflictEngine extends Phobject {
       case 1:
         return DifferentialMergeConflictStatusField::STATUS_CONFLICT;
       default:
-        throw new RevisionMergeConflictReasonException(
+        throw RevisionMergeConflictReasonException::newWithCode(
+          RevisionMergeConflictReasonException::CODE_MERGE_TREE_EXIT,
           pht('Unexpected "git merge-tree" exit code: %d.', $err));
     }
   }
@@ -723,7 +748,8 @@ final class RevisionMergeConflictEngine extends Phobject {
     $version = $this->getGitVersion();
 
     if (version_compare($version, self::MINIMUM_GIT_VERSION, '<')) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_GIT_TOO_OLD,
         pht(
           'Merge conflict detection requires git %s or newer, but this '.
           'repository is using git %s.',
@@ -755,15 +781,42 @@ final class RevisionMergeConflictEngine extends Phobject {
   private function newResult(
     string $status,
     string $reason,
+    ?string $reason_code = null,
     ?string $base_commit = null,
     ?string $target_commit = null): array {
+    $base_diff = $this->getBaseDiff();
+
     return array(
       'status' => $status,
       'reason' => $reason,
+      'reasonCode' => $reason_code,
       'baseCommit' => $base_commit,
       'targetCommit' => $target_commit,
       'baseRevisionPHID' => $this->getBaseRevisionPHID(),
+      // How the base was submitted, which is what tells a reader whether an
+      // unresolvable base is their tooling or a commit that has not reached
+      // this repository yet.
+      'baseDiffCreationMethod' => $base_diff
+        ? $base_diff->getCreationMethod()
+        : null,
+      'baseDiffSourceControlSystem' => $base_diff
+        ? $base_diff->getSourceControlSystem()
+        : null,
     );
+  }
+
+  /**
+   * The diff at the bottom of the stack, whose recorded base the check used, or
+   * `null` if the walk never got that far. Reads the resolved stack directly
+   * rather than through `getStackDiffs`, which would throw while we are already
+   * reporting a failure.
+   */
+  private function getBaseDiff(): ?DifferentialDiff {
+    if (!$this->stackDiffs) {
+      return null;
+    }
+
+    return head($this->stackDiffs);
   }
 
   /**

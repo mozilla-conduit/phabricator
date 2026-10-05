@@ -7,11 +7,13 @@
  */
 return array(
   'names' => array(
+    'rsrc/css/differential/merge-conflict-status.css' => '8af24bdd',
     'rsrc/css/reviewhelper/reviewhelper-feedback.css' => '0f9cbe2d',
     'rsrc/js/reviewhelper/behavior-reviewhelper-feedback.js' => '08402370',
   ),
   'symbols' => array(
     'javelin-behavior-reviewhelper-feedback' => '08402370',
+    'merge-conflict-status-css' => '8af24bdd',
     'reviewhelper-feedback-css' => '0f9cbe2d',
   ),
   'requires' => array(),
