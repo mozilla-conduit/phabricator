@@ -225,7 +225,7 @@ final class DifferentialMergeConflictStatusFieldTestCase
       array(
         'status' => DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
         'reasonCode' =>
-          RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
+          RevisionMergeConflictReasonException::CODE_STACK_NOT_LINEAR,
       ),
       $this->newDiff(),
       array('PHID-DIFF-active'),
@@ -233,7 +233,7 @@ final class DifferentialMergeConflictStatusFieldTestCase
 
     $this->assertEqual(
       DifferentialMergeConflictStatusField::newHint(
-        RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
+        RevisionMergeConflictReasonException::CODE_STACK_NOT_LINEAR,
         null,
         null),
       DifferentialMergeConflictStatusField::newHintForValue($value, false),
