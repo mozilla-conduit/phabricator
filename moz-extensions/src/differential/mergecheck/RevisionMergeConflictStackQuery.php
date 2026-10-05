@@ -22,6 +22,7 @@ final class RevisionMergeConflictStackQuery extends Phobject {
   private ?PhabricatorUser $viewer = null;
   private ?DifferentialRevision $revision = null;
   private ?string $stopReason = null;
+  private ?string $stopReasonCode = null;
   private ?DifferentialRevision $landedParent = null;
 
   public function setViewer(PhabricatorUser $viewer): self {
@@ -43,6 +44,7 @@ final class RevisionMergeConflictStackQuery extends Phobject {
    */
   public function loadAncestorChain(): array {
     $this->stopReason = null;
+    $this->stopReasonCode = null;
     $this->landedParent = null;
 
     $chain = array($this->revision);
@@ -58,7 +60,8 @@ final class RevisionMergeConflictStackQuery extends Phobject {
       }
 
       if (isset($seen[$parent->getPHID()])) {
-        throw new RevisionMergeConflictReasonException(
+        throw RevisionMergeConflictReasonException::newWithCode(
+          RevisionMergeConflictReasonException::CODE_STACK_CYCLE,
           pht(
             'Stack contains a dependency cycle at %s.',
             $parent->getMonogram()));
@@ -76,6 +79,14 @@ final class RevisionMergeConflictStackQuery extends Phobject {
    */
   public function getStopReason(): ?string {
     return $this->stopReason;
+  }
+
+  /**
+   * Names the same stop in a form that survives rewording, so a caller that
+   * rethrows the reason can carry the cause with it.
+   */
+  public function getStopReasonCode(): ?string {
+    return $this->stopReasonCode;
   }
 
   /**
@@ -105,7 +116,8 @@ final class RevisionMergeConflictStackQuery extends Phobject {
       ->execute();
 
     if (count($parents) !== count($parent_phids)) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_PARENT_LOAD_FAILED,
         pht(
           'Failed to load all parent revisions of %s.',
           $revision->getMonogram()));
@@ -120,7 +132,8 @@ final class RevisionMergeConflictStackQuery extends Phobject {
 
     $stop_reason = self::newParentStopReason($revision, $parent);
     if ($stop_reason !== null) {
-      $this->stopReason = $stop_reason;
+      $this->stopReason = $stop_reason['message'];
+      $this->stopReasonCode = $stop_reason['code'];
       return null;
     }
 
@@ -145,7 +158,8 @@ final class RevisionMergeConflictStackQuery extends Phobject {
     }
 
     if (count($open_parents) > 1) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_STACK_NOT_LINEAR,
         pht(
           '%s has %s open parent revisions; merge checks require a linear '.
           'stack.',
@@ -180,36 +194,45 @@ final class RevisionMergeConflictStackQuery extends Phobject {
 
   /**
    * Decides whether the upward walk should continue through a candidate parent.
-   * Returns `null` to accept the parent, or the reason the walk has to stop
-   * there. Throws when the stack is shaped in a way we can't check at all.
+   * Returns `null` to accept the parent, or a map of `code` and `message`
+   * naming why the walk has to stop there. Throws when the stack is shaped in a
+   * way we can't check at all.
    */
   public static function newParentStopReason(
     DifferentialRevision $revision,
-    DifferentialRevision $parent): ?string {
+    DifferentialRevision $parent): ?array {
 
     if ($parent->isAbandoned()) {
-      return pht(
-        'Parent revision %s was abandoned, so its changes will never reach '.
-        'the target branch.',
-        $parent->getMonogram());
+      return array(
+        'code' => RevisionMergeConflictReasonException::CODE_PARENT_ABANDONED,
+        'message' => pht(
+          'Parent revision %s was abandoned, so its changes will never reach '.
+          'the target branch.',
+          $parent->getMonogram()),
+      );
     }
 
     if ($parent->isClosed()) {
-      return pht(
-        'Parent revision %s has already landed. Update this revision on top '.
-        'of the current target branch to check it.',
-        $parent->getMonogram());
+      return array(
+        'code' => RevisionMergeConflictReasonException::CODE_PARENT_LANDED,
+        'message' => pht(
+          'Parent revision %s has already landed. Update this revision on top '.
+          'of the current target branch to check it.',
+          $parent->getMonogram()),
+      );
     }
 
     if ($parent->getRepositoryPHID() !== $revision->getRepositoryPHID()) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_PARENT_OTHER_REPOSITORY,
         pht(
           'Parent revision %s belongs to a different repository.',
           $parent->getMonogram()));
     }
 
     if (!$parent->getActiveDiff()) {
-      throw new RevisionMergeConflictReasonException(
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_PARENT_NO_ACTIVE_DIFF,
         pht(
           'Parent revision %s has no active diff.',
           $parent->getMonogram()));

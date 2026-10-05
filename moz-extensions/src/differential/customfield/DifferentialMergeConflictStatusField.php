@@ -20,6 +20,9 @@ final class DifferentialMergeConflictStatusField
   // Keys used in the stored JSON payload.
   const KEY_STATUS = 'status';
   const KEY_REASON = 'reason';
+  const KEY_REASON_CODE = 'reasonCode';
+  const KEY_BASE_DIFF_CREATION_METHOD = 'baseDiffCreationMethod';
+  const KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM = 'baseDiffSourceControlSystem';
   const KEY_TARGET_COMMIT = 'checkedAgainstCommit';
   const KEY_BASE_COMMIT = 'checkedAgainstBaseCommit';
   const KEY_BASE_REVISION_PHID = 'checkedAgainstBaseRevisionPHID';
@@ -30,6 +33,7 @@ final class DifferentialMergeConflictStatusField
 
   // Derived for the Conduit payload only; never written to storage.
   const KEY_IS_STALE = 'isStale';
+  const KEY_HINT = 'hint';
 
 /* -(  Core Properties and Field Identity  )--------------------------------- */
 
@@ -142,6 +146,13 @@ final class DifferentialMergeConflictStatusField
     return array(
       self::KEY_STATUS => idx($result, 'status'),
       self::KEY_REASON => idx($result, 'reason'),
+      self::KEY_REASON_CODE => idx($result, 'reasonCode'),
+      self::KEY_BASE_DIFF_CREATION_METHOD => idx(
+        $result,
+        'baseDiffCreationMethod'),
+      self::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM => idx(
+        $result,
+        'baseDiffSourceControlSystem'),
       self::KEY_TARGET_COMMIT => idx($result, 'targetCommit'),
       self::KEY_BASE_COMMIT => idx($result, 'baseCommit'),
       self::KEY_BASE_REVISION_PHID => idx($result, 'baseRevisionPHID'),
@@ -222,6 +233,7 @@ final class DifferentialMergeConflictStatusField
     $rows = array(
       $this->newVerdictRow($value),
       $this->newLastCheckedRow($value),
+      $this->newHintRow($value),
     );
 
     return phutil_tag(
@@ -280,6 +292,173 @@ final class DifferentialMergeConflictStatusField
           pht('Mergeability could not be determined'),
           $reason);
     }
+  }
+
+  /**
+   * Renders what the reader can do about a verdict the check could not reach,
+   * or `null` when there is nothing useful to say.
+   */
+  private function newHintRow(array $value) {
+    $hint = self::newHintForValue($value, $this->isStatusStale($value));
+    if ($hint === null) {
+      return null;
+    }
+
+    return $this->newStatusRow(
+      PHUIStatusItemView::ICON_INFO,
+      'blue',
+      null,
+      pht('What to do'),
+      $hint);
+  }
+
+  /**
+   * Suggests what to do about a stored verdict, or `null` when it is stale.
+   *
+   * A stale verdict is about to be replaced, so advice about it would describe
+   * something that no longer applies.
+   */
+  public static function newHintForValue(array $value, bool $is_stale): ?string {
+    if ($is_stale) {
+      return null;
+    }
+
+    return self::newHint(
+      idx($value, self::KEY_REASON_CODE),
+      idx($value, self::KEY_BASE_DIFF_CREATION_METHOD),
+      idx($value, self::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM));
+  }
+
+  /**
+   * Suggests what to do about a cause the check named.
+   *
+   * Written about the revision rather than to its author: this renders for
+   * everyone who reads the revision, so second person would address the wrong
+   * reader. Returns `null` for a cause with no useful advice, including every
+   * definitive verdict, which records no code at all.
+   */
+  public static function newHint(
+    ?string $reason_code,
+    ?string $creation_method,
+    ?string $source_control_system): ?string {
+
+    switch ($reason_code) {
+      case RevisionMergeConflictReasonException::CODE_BASE_MISSING:
+        return self::newBaseMissingHint(
+          $creation_method,
+          $source_control_system);
+
+      case RevisionMergeConflictReasonException::CODE_BASE_NOT_ANCESTOR:
+        return pht(
+          'Rebasing onto the target branch and updating the revision gives '.
+          'the check a base it can merge from.');
+
+      case RevisionMergeConflictReasonException::CODE_PATCH_DOES_NOT_APPLY:
+        return pht(
+          'The stack no longer applies to the commit it records as its base. '.
+          'Rebasing the stack and updating its revisions will fix this.');
+
+      case RevisionMergeConflictReasonException::CODE_PARENT_LANDED:
+        return pht(
+          'Updating this revision on top of the current target branch drops '.
+          'the landed parent from the stack.');
+
+      case RevisionMergeConflictReasonException::CODE_PARENT_ABANDONED:
+        return pht(
+          'Removing the dependency on the abandoned revision, or reparenting '.
+          'this revision onto an open one, lets the stack be checked.');
+
+      case RevisionMergeConflictReasonException::CODE_PARENT_OTHER_REPOSITORY:
+        return pht(
+          'A stack has to land into a single repository. Removing the '.
+          'cross-repository dependency lets the check run.');
+
+      case RevisionMergeConflictReasonException::CODE_STACK_NOT_LINEAR:
+        return pht(
+          'Merge checks follow one parent at a time. Editing the revision so '.
+          'it depends on a single parent lets the stack be checked.');
+
+      case RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP:
+        return pht(
+          'Landing the lower part of the stack first brings it under the '.
+          'depth the check can handle.');
+
+      case RevisionMergeConflictReasonException::CODE_PATCH_TOO_LARGE:
+        return pht(
+          'Splitting the change into smaller revisions brings the stack '.
+          'under the size the check can handle.');
+
+      case RevisionMergeConflictReasonException::CODE_COMMAND_FAILED:
+      case RevisionMergeConflictReasonException::CODE_INTERNAL_ERROR:
+        return pht(
+          'This is a fault on the Phabricator side rather than a problem '.
+          'with the revision. The details are in the daemon log.');
+
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Explains a base commit this repository does not have.
+   *
+   * The two causes need opposite advice, so they are worth telling apart: a
+   * Mercurial node recorded against a Git repository can never resolve, while
+   * a Git commit that has not been fetched yet can be checked once it arrives.
+   * Its arrival does not requeue the check, so the advice is to update the
+   * revision rather than to change tooling, which they already do correctly.
+   */
+  private static function newBaseMissingHint(
+    ?string $creation_method,
+    ?string $source_control_system): string {
+
+    if (!self::isMercurialTooling($creation_method, $source_control_system)) {
+      return pht(
+        'The base commit is not in this repository yet. Updating the '.
+        'revision re-runs the check once it is; otherwise the check only '.
+        're-runs when a commit touching the same files lands.');
+    }
+
+    if (phutil_nonempty_string($creation_method)) {
+      return pht(
+        'This revision was submitted with "%s", which records a Mercurial '.
+        'base commit that does not exist in this Git repository. Submitting '.
+        'from a native Git checkout lets the check run.',
+        $creation_method);
+    }
+
+    return pht(
+      'This revision records a Mercurial base commit, which does not exist '.
+      'in this Git repository. Submitting from a native Git checkout lets '.
+      'the check run.');
+  }
+
+  /**
+   * Whether the base was submitted by tooling that names commits in Mercurial
+   * terms.
+   *
+   * The creation method has to be consulted as well as the diff's own source
+   * control system: `moz-phab-hg` submits against a Git repository, declaring
+   * itself Git, while still recording Mercurial nodes.
+   */
+  public static function isMercurialTooling(
+    ?string $creation_method,
+    ?string $source_control_system): bool {
+
+    if ($source_control_system === 'hg') {
+      return true;
+    }
+
+    if (!phutil_nonempty_string($creation_method)) {
+      return false;
+    }
+
+    if (strpos($creation_method, 'cinnabar') !== false) {
+      return true;
+    }
+
+    return (substr($creation_method, -3) === '-hg') ||
+           (strpos($creation_method, '-hg-') !== false);
   }
 
   /**
@@ -451,7 +630,15 @@ final class DifferentialMergeConflictStatusField
     // the revision's current diff?
     $value[self::KEY_IS_STALE] = $this->isStatusStale($value);
 
+    // Redact before deriving the hint, since the hint is built from fields
+    // that describe restricted ancestors.
     $value = $this->newViewerSafeValue($value);
+
+    // Lando shows its own warning, so hand it the same advice rather than
+    // making it reimplement the mapping from reason code to remedy.
+    $value[self::KEY_HINT] = self::newHintForValue(
+      $value,
+      $value[self::KEY_IS_STALE]);
 
     // The stack is an implementation detail of the currency check, and it
     // names the ancestors' diffs. `isStale` above already answers the only
@@ -464,8 +651,8 @@ final class DifferentialMergeConflictStatusField
 /* -(  Policy  )------------------------------------------------------------- */
 
   /**
-   * Replaces the verdict's reason when it describes revisions the reader is
-   * not allowed to see.
+   * Redacts the verdict's explanation when it describes revisions the reader
+   * is not allowed to see.
    *
    * The check runs as the omnipotent viewer, so the reason it wrote names the
    * monograms of ancestors and of the revision whose landing commit it merged
@@ -479,9 +666,24 @@ final class DifferentialMergeConflictStatusField
       return $value;
     }
 
+    return self::newRedactedValue($value);
+  }
+
+  /**
+   * Strips everything that describes the checked stack rather than this
+   * revision's own landing.
+   *
+   * The reason code gives away an ancestor's state (landed, abandoned), and the
+   * base diff tooling describes the diff at the bottom of the stack, which may
+   * be restricted. Clearing them also clears the hint derived from them.
+   */
+  public static function newRedactedValue(array $value): array {
     $value[self::KEY_REASON] = pht(
       'This revision lands on top of revisions you do not have permission '.
       'to see, so what the check ran against is not shown.');
+    $value[self::KEY_REASON_CODE] = null;
+    $value[self::KEY_BASE_DIFF_CREATION_METHOD] = null;
+    $value[self::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM] = null;
 
     return $value;
   }

@@ -138,6 +138,138 @@ final class DifferentialMergeConflictStatusFieldTestCase
       pht('An `unknown` result may not have resolved a base commit.'));
   }
 
+  public function testMercurialToolingDetection() {
+    $cases = array(
+      // Declared Mercurial, whatever submitted it.
+      array('arc', 'hg', true),
+      array('phlay', 'hg', true),
+      // `moz-phab-hg` declares itself Git while recording Mercurial nodes, so
+      // the creation method has to be consulted too. This is the largest
+      // affected population in production.
+      array('moz-phab-hg', 'git', true),
+      array('moz-phab-git-cinnabar', 'git', true),
+      array('moz-phab-git-cinnabar-uplift', 'hg', true),
+      // Native Git tooling.
+      array('moz-phab-git', 'git', false),
+      array('moz-phab-jj', 'git', false),
+      array('moz-phab-git-uplift-lando', 'git', false),
+      array('commit', 'git', false),
+      // Nothing recorded at all.
+      array(null, null, false),
+    );
+
+    foreach ($cases as $case) {
+      list($method, $system, $expected) = $case;
+
+      $this->assertEqual(
+        $expected,
+        DifferentialMergeConflictStatusField::isMercurialTooling($method, $system),
+        pht('Tooling check for "%s" on "%s".', $method, $system));
+    }
+  }
+
+  public function testMissingBaseHintSplitsToolingFromFetchLag() {
+    $cinnabar = DifferentialMergeConflictStatusField::newHint(
+      RevisionMergeConflictReasonException::CODE_BASE_MISSING,
+      'moz-phab-git-cinnabar',
+      'hg');
+
+    $this->assertTrue(
+      strpos($cinnabar, 'native Git checkout') !== false,
+      pht('A Mercurial base is advised to submit from Git: %s', $cinnabar));
+
+    $native = DifferentialMergeConflictStatusField::newHint(
+      RevisionMergeConflictReasonException::CODE_BASE_MISSING,
+      'moz-phab-git',
+      'git');
+
+    $this->assertTrue(
+      strpos($native, 'Updating the revision re-runs the check') !== false,
+      pht(
+        'A Git base that has not been fetched yet is advised to update the '.
+        'revision, since its arrival does not requeue the check: %s',
+        $native));
+
+    $this->assertTrue(
+      strpos($native, 'native Git checkout') === false,
+      pht('The fetch-lag hint must not advise a tooling change.'));
+  }
+
+  public function testHintNamesTheSubmittingTool() {
+    $hint = DifferentialMergeConflictStatusField::newHint(
+      RevisionMergeConflictReasonException::CODE_BASE_MISSING,
+      'moz-phab-hg',
+      'git');
+
+    $this->assertTrue(
+      strpos($hint, 'moz-phab-hg') !== false,
+      pht('The hint names the tool so the advice can be acted on: %s', $hint));
+  }
+
+  public function testDefinitiveVerdictsHaveNoHint() {
+    $this->assertEqual(
+      null,
+      DifferentialMergeConflictStatusField::newHint(null, 'moz-phab-git', 'git'),
+      pht(
+        'A clean or conflicting verdict records no reason code and needs no '.
+        'advice.'));
+
+    $this->assertEqual(
+      null,
+      DifferentialMergeConflictStatusField::newHint('some-future-code', 'moz-phab-git', 'git'),
+      pht('An unrecognised code yields no hint rather than raising.'));
+  }
+
+  public function testStaleVerdictHasNoHint() {
+    $value = DifferentialMergeConflictStatusField::newStatusValue(
+      array(
+        'status' => DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
+        'reasonCode' =>
+          RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
+      ),
+      $this->newDiff(),
+      array('PHID-DIFF-active'),
+      1757000000);
+
+    $this->assertEqual(
+      DifferentialMergeConflictStatusField::newHint(
+        RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
+        null,
+        null),
+      DifferentialMergeConflictStatusField::newHintForValue($value, false),
+      pht('A current verdict should offer the hint for its reason code.'));
+
+    $this->assertEqual(
+      null,
+      DifferentialMergeConflictStatusField::newHintForValue($value, true),
+      pht(
+        'A stale verdict should offer no hint, so Lando does not show advice '.
+        'for an outdated result.'));
+  }
+
+  public function testEveryHintedCodeIsReachable() {
+    $codes = array(
+      RevisionMergeConflictReasonException::CODE_BASE_NOT_ANCESTOR,
+      RevisionMergeConflictReasonException::CODE_PATCH_DOES_NOT_APPLY,
+      RevisionMergeConflictReasonException::CODE_PARENT_LANDED,
+      RevisionMergeConflictReasonException::CODE_PARENT_ABANDONED,
+      RevisionMergeConflictReasonException::CODE_PARENT_OTHER_REPOSITORY,
+      RevisionMergeConflictReasonException::CODE_STACK_NOT_LINEAR,
+      RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
+      RevisionMergeConflictReasonException::CODE_PATCH_TOO_LARGE,
+      RevisionMergeConflictReasonException::CODE_COMMAND_FAILED,
+      RevisionMergeConflictReasonException::CODE_INTERNAL_ERROR,
+    );
+
+    foreach ($codes as $code) {
+      $hint = DifferentialMergeConflictStatusField::newHint($code, 'moz-phab-git', 'git');
+
+      $this->assertTrue(
+        phutil_nonempty_string($hint),
+        pht('Reason code "%s" should offer a hint.', $code));
+    }
+  }
+
   public function testCheckedAgainstDescription() {
     $this->assertEqual(
       'Diff 456, based on aaaaaaaaaaaa',
@@ -302,6 +434,60 @@ final class DifferentialMergeConflictStatusFieldTestCase
       pht(
         'A standalone revision\'s verdict names nothing but itself, so it '.
         'should cost no policy checks.'));
+  }
+
+  public function testRestrictedStackRedactsEverythingAboutTheStack() {
+    $value = DifferentialMergeConflictStatusField::newStatusValue(
+      array(
+        'status' => DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
+        'reason' => 'Parent D123 is abandoned.',
+        'reasonCode' =>
+          RevisionMergeConflictReasonException::CODE_PARENT_ABANDONED,
+        'baseDiffCreationMethod' => 'moz-phab-hg',
+        'baseDiffSourceControlSystem' => 'git',
+      ),
+      $this->newDiff(),
+      array('PHID-DIFF-restricted', 'PHID-DIFF-active'),
+      1757000000);
+
+    $redacted = DifferentialMergeConflictStatusField::newRedactedValue($value);
+
+    $this->assertEqual(
+      DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
+      idx($redacted, DifferentialMergeConflictStatusField::KEY_STATUS),
+      pht('The verdict describes this revision, so it should still be shown.'));
+
+    $this->assertTrue(
+      strpos(
+        idx($redacted, DifferentialMergeConflictStatusField::KEY_REASON),
+        'D123') === false,
+      pht('The reason should not name the restricted ancestor.'));
+
+    $leaky_keys = array(
+      DifferentialMergeConflictStatusField::KEY_REASON_CODE,
+      DifferentialMergeConflictStatusField::KEY_BASE_DIFF_CREATION_METHOD,
+      DifferentialMergeConflictStatusField::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM,
+    );
+    foreach ($leaky_keys as $key) {
+      $this->assertEqual(
+        null,
+        idx($redacted, $key),
+        pht('`%s` describes the restricted stack, so it should be cleared.', $key));
+    }
+
+    $this->assertEqual(
+      null,
+      DifferentialMergeConflictStatusField::newHint(
+        idx($redacted, DifferentialMergeConflictStatusField::KEY_REASON_CODE),
+        idx(
+          $redacted,
+          DifferentialMergeConflictStatusField::KEY_BASE_DIFF_CREATION_METHOD),
+        idx(
+          $redacted,
+          DifferentialMergeConflictStatusField::KEY_BASE_DIFF_SOURCE_CONTROL_SYSTEM)),
+      pht(
+        'A redacted value should yield no hint, since the hint would reveal '.
+        'the restricted ancestor\'s state.'));
   }
 
   private function newStatusValue(): array {
