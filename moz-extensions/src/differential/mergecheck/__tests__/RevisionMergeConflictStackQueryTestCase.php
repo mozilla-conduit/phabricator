@@ -225,6 +225,33 @@ final class RevisionMergeConflictStackQueryTestCase
         'so none should be picked.'));
   }
 
+  public function testLandedParentIsReportedOverAbandonedOne() {
+    $abandoned = $this->newRevision(3, DifferentialRevisionStatus::ABANDONED);
+    $first = $this->newRevision(2, DifferentialRevisionStatus::PUBLISHED);
+    $second = $this->newRevision(1, DifferentialRevisionStatus::PUBLISHED);
+
+    $this->assertEqual(
+      $first,
+      RevisionMergeConflictStackQuery::newClosedStopParent(
+        array($abandoned, $first, $second)),
+      pht(
+        'With several landed parents and an abandoned one, the walk should be '.
+        'reported as stopping at a landed parent, not the abandoned one.'));
+  }
+
+  public function testAbandonedParentIsReportedWhenNoneLanded() {
+    $first = $this->newRevision(2, DifferentialRevisionStatus::ABANDONED);
+    $second = $this->newRevision(1, DifferentialRevisionStatus::ABANDONED);
+
+    $this->assertEqual(
+      $first,
+      RevisionMergeConflictStackQuery::newClosedStopParent(
+        array($first, $second)),
+      pht(
+        'With only abandoned parents, the walk should be reported as stopping '.
+        'at an abandoned parent.'));
+  }
+
   private function newRevision(
     int $id,
     string $status,

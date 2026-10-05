@@ -127,7 +127,7 @@ final class RevisionMergeConflictStackQuery extends Phobject {
     if (!$parent) {
       // Every parent has landed or was abandoned, so the walk stops here.
       $this->landedParent = self::newLandedParent($parents);
-      $parent = coalesce($this->landedParent, head($parents));
+      $parent = self::newClosedStopParent($parents);
     }
 
     $stop_reason = self::newParentStopReason($revision, $parent);
@@ -190,6 +190,23 @@ final class RevisionMergeConflictStackQuery extends Phobject {
     }
 
     return head($landed_parents);
+  }
+
+  /**
+   * Returns the closed parent the upward walk is reported as stopping at.
+   * Prefers a landed parent over an abandoned one, since with any landed parent
+   * the fix is to rebase rather than to remove an abandoned dependency.
+   */
+  public static function newClosedStopParent(
+    array $parents): DifferentialRevision {
+
+    foreach ($parents as $parent) {
+      if (self::canUseParentAsMergeBase($parent)) {
+        return $parent;
+      }
+    }
+
+    return head($parents);
   }
 
   /**
