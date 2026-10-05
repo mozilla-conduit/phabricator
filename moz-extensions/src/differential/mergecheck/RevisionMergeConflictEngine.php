@@ -486,7 +486,7 @@ final class RevisionMergeConflictEngine extends Phobject {
    * is a base on no fetched branch at all, such as an object left behind by a
    * force-push or an old fetch configuration, since nothing lands on top of it.
    */
-  private function requireBaseOnFetchedBranch(
+  public function requireBaseOnFetchedBranch(
     string $base,
     string $target_tip): void {
 
