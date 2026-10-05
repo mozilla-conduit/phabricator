@@ -120,6 +120,39 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
         'answers whether the stack rebases onto the target.'));
   }
 
+  public function testBaseOnNoFetchedBranchIsRefused() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    $root = $this->commit($path, 'root');
+    $target_tip = $this->commit($path, 'autoland tip');
+
+    // `commit-tree` writes a commit that no branch points at, like one left
+    // behind by a force-push.
+    list($stdout) = execx(
+      'git -C %s -c user.name=Test -c user.email=test@example.com '.
+      'commit-tree %s -p %s -m %s',
+      $path,
+      $root.'^{tree}',
+      $root,
+      'unreachable');
+    $unreachable = trim($stdout);
+
+    $caught = null;
+    try {
+      $this->newEngine($path)->requireBaseOnFetchedBranch(
+        $unreachable,
+        $target_tip);
+    } catch (RevisionMergeConflictReasonException $ex) {
+      $caught = $ex;
+    }
+
+    $this->assertTrue(
+      ($caught instanceof RevisionMergeConflictReasonException),
+      pht('A base on no fetched branch must not be checked.'));
+  }
+
   private function commit(string $path, string $message): string {
     execx(
       'git -C %s -c user.name=Test -c user.email=test@example.com '.
