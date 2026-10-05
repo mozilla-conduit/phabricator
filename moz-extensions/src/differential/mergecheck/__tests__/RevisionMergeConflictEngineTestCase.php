@@ -98,6 +98,28 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
       pht('A base that is an ancestor of the target tip is checked.'));
   }
 
+  public function testBaseOnAnotherFetchedBranchIsAccepted() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    $this->commit($path, 'root');
+    execx('git -C %s checkout -q -b main', $path);
+    $main_only = $this->commit($path, 'main only');
+    execx('git -C %s checkout -q autoland', $path);
+    $target_tip = $this->commit($path, 'autoland tip');
+
+    $this->newEngine($path)->requireBaseOnFetchedBranch(
+      $main_only,
+      $target_tip);
+
+    $this->assertTrue(
+      true,
+      pht(
+        'A base on `main` but not `autoland` is checked, since the merge '.
+        'answers whether the stack rebases onto the target.'));
+  }
+
   private function commit(string $path, string $message): string {
     execx(
       'git -C %s -c user.name=Test -c user.email=test@example.com '.
