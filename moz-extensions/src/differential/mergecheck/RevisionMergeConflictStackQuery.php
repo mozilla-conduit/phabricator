@@ -129,9 +129,9 @@ final class RevisionMergeConflictStackQuery extends Phobject {
 
   /**
    * Returns the only open revision among a revision's direct parents, or `null`
-   * if every parent has landed or was abandoned. Closed parents are ignored, since
-   * they no longer stand between the revision and the target branch, so only
-   * more than one open parent makes the stack non-linear.
+   * if every parent has landed or was abandoned. Closed parents are ignored,
+   * since they no longer stand between the revision and the target branch, so
+   * only more than one open parent makes the stack non-linear.
    */
   public static function newOpenParent(
     DifferentialRevision $revision,
