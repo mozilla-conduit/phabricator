@@ -34,7 +34,6 @@ final class RevisionMergeConflictReasonException extends Exception {
   const CODE_DIFF_RELOAD_FAILED = 'diff-reload-failed';
 
   // The shape of the stack.
-  const CODE_STACK_TOO_DEEP = 'stack-too-deep';
   const CODE_STACK_NOT_LINEAR = 'stack-not-linear';
   const CODE_STACK_CYCLE = 'stack-cycle';
   const CODE_PARENT_ABANDONED = 'parent-abandoned';

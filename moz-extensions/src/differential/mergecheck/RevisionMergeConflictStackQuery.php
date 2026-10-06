@@ -19,16 +19,6 @@
  */
 final class RevisionMergeConflictStackQuery extends Phobject {
 
-  // Applying every ancestor patch costs a `git apply` each, so give up on
-  // pathologically deep stacks rather than spending unbounded worker time.
-  // The deepest stacks seen in practice are around 50 revisions.
-  const MAX_ANCESTOR_DEPTH = 50;
-
-  // Likewise, cap how many descendants a single changed revision can fan out
-  // to. The budget for a call is this times the number of revisions passed in,
-  // so batching candidates together does not make each one's fan-out smaller.
-  const MAX_DESCENDANTS_PER_REVISION = 100;
-
   private ?PhabricatorUser $viewer = null;
   private ?DifferentialRevision $revision = null;
   private ?string $stopReason = null;
@@ -61,7 +51,9 @@ final class RevisionMergeConflictStackQuery extends Phobject {
     $seen = array($this->revision->getPHID() => true);
     $cursor = $this->revision;
 
-    while (count($chain) <= self::MAX_ANCESTOR_DEPTH) {
+    // The walk is unbounded: it ends at the bottom of the stack, and the cycle
+    // check below guarantees it gets there.
+    while (true) {
       $parent = $this->loadOpenParent($cursor);
       if (!$parent) {
         return $chain;
@@ -79,12 +71,6 @@ final class RevisionMergeConflictStackQuery extends Phobject {
       array_unshift($chain, $parent);
       $cursor = $parent;
     }
-
-    throw RevisionMergeConflictReasonException::newWithCode(
-      RevisionMergeConflictReasonException::CODE_STACK_TOO_DEEP,
-      pht(
-        'Stack is more than %s revisions deep.',
-        new PhutilNumber(self::MAX_ANCESTOR_DEPTH)));
   }
 
   /**
@@ -123,42 +109,104 @@ final class RevisionMergeConflictStackQuery extends Phobject {
       return null;
     }
 
-    if (count($parent_phids) > 1) {
-      throw RevisionMergeConflictReasonException::newWithCode(
-        RevisionMergeConflictReasonException::CODE_STACK_NOT_LINEAR,
-        pht(
-          '%s has %s parent revisions; merge checks require a linear stack.',
-          $revision->getMonogram(),
-          new PhutilNumber(count($parent_phids))));
-    }
-
-    $parent = id(new DifferentialRevisionQuery())
+    $parents = id(new DifferentialRevisionQuery())
       ->setViewer($this->viewer)
       ->withPHIDs($parent_phids)
       ->needActiveDiffs(true)
-      ->executeOne();
+      ->execute();
 
-    if (!$parent) {
+    if (count($parents) !== count($parent_phids)) {
       throw RevisionMergeConflictReasonException::newWithCode(
         RevisionMergeConflictReasonException::CODE_PARENT_LOAD_FAILED,
         pht(
-          'Failed to load the parent revision of %s.',
+          'Failed to load all parent revisions of %s.',
           $revision->getMonogram()));
+    }
+
+    $parent = self::newOpenParent($revision, $parents);
+    if (!$parent) {
+      // Every parent has landed or was abandoned, so the walk stops here.
+      $this->landedParent = self::newLandedParent($parents);
+      $parent = self::newClosedStopParent($parents);
     }
 
     $stop_reason = self::newParentStopReason($revision, $parent);
     if ($stop_reason !== null) {
       $this->stopReason = $stop_reason['message'];
       $this->stopReasonCode = $stop_reason['code'];
-
-      if (self::canUseParentAsMergeBase($parent)) {
-        $this->landedParent = $parent;
-      }
-
       return null;
     }
 
     return $parent;
+  }
+
+  /**
+   * Returns the only open revision among a revision's direct parents, or `null`
+   * if every parent has landed or was abandoned. Closed parents are ignored,
+   * since they no longer stand between the revision and the target branch, so
+   * only more than one open parent makes the stack non-linear.
+   */
+  public static function newOpenParent(
+    DifferentialRevision $revision,
+    array $parents): ?DifferentialRevision {
+
+    $open_parents = array();
+    foreach ($parents as $parent) {
+      if (!$parent->isClosed()) {
+        $open_parents[] = $parent;
+      }
+    }
+
+    if (count($open_parents) > 1) {
+      throw RevisionMergeConflictReasonException::newWithCode(
+        RevisionMergeConflictReasonException::CODE_STACK_NOT_LINEAR,
+        pht(
+          '%s has %s open parent revisions; merge checks require a linear '.
+          'stack.',
+          $revision->getMonogram(),
+          new PhutilNumber(count($open_parents))));
+    }
+
+    return head($open_parents) ?: null;
+  }
+
+  /**
+   * Returns the parent whose landed commit the stack should be merged from, or
+   * `null` unless exactly one parent can serve. With several landed parents we
+   * can't tell which commit the stack was written on top of, so we don't guess.
+   */
+  public static function newLandedParent(
+    array $parents): ?DifferentialRevision {
+
+    $landed_parents = array();
+    foreach ($parents as $parent) {
+      if (self::canUseParentAsMergeBase($parent)) {
+        $landed_parents[] = $parent;
+      }
+    }
+
+    if (count($landed_parents) !== 1) {
+      return null;
+    }
+
+    return head($landed_parents);
+  }
+
+  /**
+   * Returns the closed parent the upward walk is reported as stopping at.
+   * Prefers a landed parent over an abandoned one, since with any landed parent
+   * the fix is to rebase rather than to remove an abandoned dependency.
+   */
+  public static function newClosedStopParent(
+    array $parents): DifferentialRevision {
+
+    foreach ($parents as $parent) {
+      if (self::canUseParentAsMergeBase($parent)) {
+        return $parent;
+      }
+    }
+
+    return head($parents);
   }
 
   /**
@@ -233,13 +281,11 @@ final class RevisionMergeConflictStackQuery extends Phobject {
   public static function loadDescendantPHIDs(array $revision_phids): array {
     $edge_type = DifferentialRevisionDependedOnByRevisionEdgeType::EDGECONST;
 
-    $limit = self::newDescendantLimit(count($revision_phids));
-
     $seen = array_fuse($revision_phids);
     $found = array();
     $queue = $revision_phids;
 
-    while ($queue && count($found) < $limit) {
+    while ($queue) {
       $children = id(new PhabricatorEdgeQuery())
         ->withSourcePHIDs($queue)
         ->withEdgeTypes(array($edge_type))
@@ -258,31 +304,7 @@ final class RevisionMergeConflictStackQuery extends Phobject {
       }
     }
 
-    // Hitting the budget means revisions above the ones we found keep a stale
-    // verdict with nothing to say so. Say so in the log, since the callers
-    // queue work and have nowhere to report it.
-    if (count($found) >= $limit) {
-      phlog(
-        pht(
-          'Merge check descendant walk stopped at its budget of %s for %s '.
-          'revision(s); revisions stacked above the ones found were not '.
-          'queued.',
-          new PhutilNumber($limit),
-          new PhutilNumber(count($revision_phids))));
-    }
-
     return array_values($found);
-  }
-
-  /**
-   * The number of descendants a call is allowed to find, which scales with the
-   * number of revisions it was asked about. A commit landing on a busy branch
-   * passes its whole candidate set in one call, and a flat budget there would
-   * spend the entire allowance on whichever candidates happened to be walked
-   * first.
-   */
-  public static function newDescendantLimit(int $revision_count): int {
-    return ($revision_count * self::MAX_DESCENDANTS_PER_REVISION);
   }
 
 }
