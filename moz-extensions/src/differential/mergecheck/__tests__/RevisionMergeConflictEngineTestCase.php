@@ -153,6 +153,37 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
       pht('A base on no fetched branch must not be checked.'));
   }
 
+  public function testTemporaryIndexIsRemovedWhenClosed() {
+    $engine = new RevisionMergeConflictEngine();
+
+    $index_path = $engine->openTemporaryIndex();
+    $directory = dirname($index_path);
+
+    $this->assertTrue(
+      Filesystem::pathExists($directory),
+      pht('Opening the temporary index should create its directory.'));
+
+    $this->assertFalse(
+      Filesystem::pathExists($index_path),
+      pht(
+        'The index should not exist yet, since git rejects an empty '.
+        'placeholder file.'));
+
+    Filesystem::writeFile($index_path, 'index written by git');
+    Filesystem::writeFile($index_path.'.lock', 'lock left by a killed git');
+
+    $engine->closeTemporaryIndex();
+
+    $this->assertFalse(
+      Filesystem::pathExists($directory),
+      pht(
+        'Closing the temporary index should remove its directory and '.
+        'everything git wrote there, without waiting for the process to '.
+        'exit.'));
+
+    $engine->closeTemporaryIndex();
+  }
+
   private function commit(string $path, string $message): string {
     execx(
       'git -C %s -c user.name=Test -c user.email=test@example.com '.
