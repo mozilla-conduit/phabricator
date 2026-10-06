@@ -558,6 +558,8 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
       'maniphest.points' => $removed_application_reason,
       'maniphest.subtypes' => $removed_application_reason,
       'debug.profile-rate' => $removed_application_reason,
+      'owners.fields' => $removed_application_reason,
+      'owners.custom-field-definitions' => $removed_application_reason,
     );
 
     return $ancient_config;

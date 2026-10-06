@@ -69,7 +69,6 @@ return array(
     'rsrc/css/application/herald/herald-test.css' => '7e7bbdae',
     'rsrc/css/application/herald/herald.css' => '648d39e2',
     'rsrc/css/application/objectselector/object-selector.css' => 'ee77366f',
-    'rsrc/css/application/owners/owners-path-editor.css' => 'fa7c13ef',
     'rsrc/css/application/people/people-picture-menu-item.css' => 'fe8e07cf',
     'rsrc/css/application/people/people-profile.css' => '2ea2daa1',
     'rsrc/css/application/policy/policy-edit.css' => '8794e2ed',
@@ -350,8 +349,6 @@ return array(
     'rsrc/js/application/herald/HeraldRuleEditor.js' => '2633bef7',
     'rsrc/js/application/herald/PathTypeahead.js' => 'ad486db3',
     'rsrc/js/application/herald/herald-rule-editor.js' => '0922e81d',
-    'rsrc/js/application/owners/OwnersPathEditor.js' => '2a8b62d9',
-    'rsrc/js/application/owners/owners-path-editor.js' => 'ff688a7a',
     'rsrc/js/application/passphrase/passphrase-credential-control.js' => '48fe33d0',
     'rsrc/js/application/policy/behavior-policy-control.js' => '0eaa33a9',
     'rsrc/js/application/policy/behavior-policy-rule-editor.js' => '9347f172',
@@ -538,7 +535,6 @@ return array(
     'javelin-behavior-launch-icon-composer' => 'a17b84f1',
     'javelin-behavior-lightbox-attachments' => '14c7ab36',
     'javelin-behavior-linked-container' => '74446546',
-    'javelin-behavior-owners-path-editor' => 'ff688a7a',
     'javelin-behavior-passphrase-credential-control' => '48fe33d0',
     'javelin-behavior-phabricator-autofocus' => '65bb0011',
     'javelin-behavior-phabricator-clipboard-copy' => 'cf32921f',
@@ -633,8 +629,6 @@ return array(
     'javelin-workflow' => '945ff654',
     'mozilla-motd-css' => '33958f24',
     'multirow-row-manager' => '5b54c823',
-    'owners-path-editor' => '2a8b62d9',
-    'owners-path-editor-css' => 'fa7c13ef',
     'path-typeahead' => 'ad486db3',
     'people-picture-menu-item-css' => 'fe8e07cf',
     'people-profile-css' => '2ea2daa1',
@@ -980,15 +974,6 @@ return array(
     '289bf236' => array(
       'javelin-install',
       'javelin-util',
-    ),
-    '2a8b62d9' => array(
-      'multirow-row-manager',
-      'javelin-install',
-      'path-typeahead',
-      'javelin-dom',
-      'javelin-util',
-      'phabricator-prefab',
-      'phuix-form-control-view',
     ),
     '2bdadf1a' => array(
       'javelin-behavior',
@@ -1804,10 +1789,6 @@ return array(
     ),
     'fdc13e4e' => array(
       'javelin-install',
-    ),
-    'ff688a7a' => array(
-      'owners-path-editor',
-      'javelin-behavior',
     ),
   ),
   'packages' => array(

@@ -1,18 +1,5 @@
 <?php
 
-$table = new PhabricatorOwnersPackage();
-$conn_w = $table->establishConnection('w');
-$iterator = new LiskMigrationIterator($table);
-foreach ($iterator as $package) {
-  $id = $package->getID();
-
-  echo pht('Adding mail key for package %d...', $id);
-  echo "\n";
-
-  queryfx(
-    $conn_w,
-    'UPDATE %T SET mailKey = %s WHERE id = %d',
-    $table->getTableName(),
-    Filesystem::readRandomCharacters(20),
-    $id);
-}
+// This migration depended on the Owners application, which has been removed
+// from the Mozilla fork. It is kept as a no-op so the patch list stays
+// consistent with installs where it has already been applied.
