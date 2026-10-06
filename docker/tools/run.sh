@@ -78,12 +78,14 @@ case "$command" in
         ;;
     lint)
         cd /src
-        # `arc lint` exits 1 when the worst message is a warning. Much of the
-        # upstream code predates this arcanist's rules, so fail only on errors.
+        # `arc lint` exits 1 when the worst message is a warning, but also when
+        # it crashes. Much of the upstream code predates this arcanist's rules,
+        # so rerun hiding warnings, which exits 0 unless `arc` itself failed.
         status=0
         "$ARC" lint --never-apply-patches "$@" || status=$?
         if [ "$status" -eq 1 ]; then
-            status=0
+            exec "$ARC" lint --never-apply-patches --severity error \
+                --output none "$@" 2> /dev/null
         fi
         exit "$status"
         ;;
