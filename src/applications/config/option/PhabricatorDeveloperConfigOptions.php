@@ -66,7 +66,7 @@ final class PhabricatorDeveloperConfigOptions
             "long time (more than 30 seconds) to render.\n\n".
             "If a page is slow to render (but taking less than 30 seconds), ".
             "the best tools to use to figure out why it is slow are usually ".
-            "the DarkConsole service call profiler and XHProf.\n\n".
+            "the DarkConsole service call profiler.\n\n".
             "However, if a request takes a very long time to return, some ".
             "components (like Apache, nginx, or PHP itself) may abort the ".
             "request before it finishes. This can prevent you from using ".
@@ -100,26 +100,6 @@ final class PhabricatorDeveloperConfigOptions
             'redirecting, allowing you to examine service and profiling '.
             'information. It also makes the UX awful, so you should only '.
             'enable it when debugging.')),
-      $this->newOption('debug.profile-rate', 'int', 0)
-        ->addExample(0,     pht('No profiling'))
-        ->addExample(1,     pht('Profile every request (slow)'))
-        ->addExample(1000,  pht('Profile 0.1%% of all requests'))
-        ->setSummary(pht('Automatically profile some percentage of pages.'))
-        ->setDescription(
-          pht(
-            "Normally, pages are profiled only when explicitly ".
-            "requested via DarkConsole. However, it may be useful to profile ".
-            "some pages automatically.\n\n".
-            "Set this option to a positive integer N to profile 1 / N pages ".
-            "automatically. For example, setting it to 1 will profile every ".
-            "page, while setting it to 1000 will profile 1 page per 1000 ".
-            "requests (i.e., 0.1%% of requests).\n\n".
-            "Since profiling is slow and generates a lot of data, you should ".
-            "set this to 0 in production (to disable it) or to a large number ".
-            "(to collect a few samples, if you're interested in having some ".
-            "data to look at eventually). In development, it may be useful to ".
-            "set it to 1 in order to debug performance problems.\n\n".
-            "NOTE: You must install XHProf for profiling to work.")),
       $this->newOption('phabricator.developer-mode', 'bool', false)
         ->setBoolOptions(
           array(

@@ -150,10 +150,6 @@ final class AphrontApplicationConfiguration
         'M' => idx($_SERVER, 'REQUEST_METHOD', '-'),
       ));
 
-    DarkConsoleXHProfPluginAPI::hookProfiler();
-
-    // We just activated the profiler, so we don't need to keep track of
-    // startup phases anymore: it can take over from here.
     PhabricatorStartup::beginStartupPhase('startup.done');
 
     DarkConsoleErrorLogPluginAPI::registerErrorHandler();
@@ -212,8 +208,6 @@ final class AphrontApplicationConfiguration
       ));
 
     $access_log->write();
-
-    DarkConsoleXHProfPluginAPI::saveProfilerSample($access_log);
 
     PhabricatorStartup::disconnectRateLimits(
       array(

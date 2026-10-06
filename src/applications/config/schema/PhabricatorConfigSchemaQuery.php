@@ -112,6 +112,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       ),
       'maniphest' => true,
       'calendar' => true,
+      'xhprof' => true,
     );
   }
 

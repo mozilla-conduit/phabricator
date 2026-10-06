@@ -274,9 +274,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       require_celerity_resource('aphront-dark-console-css');
 
       $headers = array();
-      if (DarkConsoleXHProfPluginAPI::isProfilerStarted()) {
-        $headers[DarkConsoleXHProfPluginAPI::getProfilerHeader()] = 'page';
-      }
       if (DarkConsoleServicesPlugin::isQueryAnalyzerRequested()) {
         $headers[DarkConsoleServicesPlugin::getQueryAnalyzerHeader()] = true;
       }
@@ -573,9 +570,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     $user = $this->getRequest()->getUser();
 
     $headers = array();
-    if (DarkConsoleXHProfPluginAPI::isProfilerStarted()) {
-      $headers[DarkConsoleXHProfPluginAPI::getProfilerHeader()] = 'page';
-    }
     if (DarkConsoleServicesPlugin::isQueryAnalyzerRequested()) {
       $headers[DarkConsoleServicesPlugin::getQueryAnalyzerHeader()] = true;
     }

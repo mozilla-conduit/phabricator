@@ -557,6 +557,7 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
       'maniphest.default-priority' => $removed_application_reason,
       'maniphest.points' => $removed_application_reason,
       'maniphest.subtypes' => $removed_application_reason,
+      'debug.profile-rate' => $removed_application_reason,
     );
 
     return $ancient_config;
