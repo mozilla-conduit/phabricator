@@ -270,7 +270,7 @@ final class PhabricatorRepositoryPullEngine
     // Check if repository fetching should use --shallow-exclude.
     $config = PhabricatorEnv::getEnvConfig('diffusion.shallow-repos');
     $callsign = $repository->getCallsign();
-    if (array_key_exists($callsign, $config)) {
+    if ($config && array_key_exists($callsign, $config)) {
       $cutoff = $config[$callsign];
       $repository->execLocalCommand(
         'config --local --add "alias.ft" "fetch --shallow-since=%s"', $cutoff);

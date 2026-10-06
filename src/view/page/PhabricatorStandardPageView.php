@@ -440,6 +440,9 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     return $response;
   }
 
+  /**
+   * @phutil-external-symbol class MozillaMOTD
+   */
   protected function getBody() {
     $user = null;
     $request = $this->getRequest();

@@ -105,7 +105,7 @@ final class DifferentialUpliftRequestCustomField
         return implode("\n", $questions);
     }
 
-    public function newCommentAction() {
+    protected function newCommentAction() {
         return null;
     }
 

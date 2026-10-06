@@ -54,6 +54,10 @@
     "nolint": {
       "type": "nolint"
     },
+    "php": {
+      "type": "php",
+      "include": "(^moz-extensions/.*\\.php$)"
+    },
     "phutil-library": {
       "type": "phutil-library",
       "include": "(\\.php$)"
@@ -79,6 +83,7 @@
     "xhpast": {
       "type": "xhpast",
       "include": "(\\.php$)",
+      "exclude": "(^moz-extensions/)",
       "standard": "phutil.xhpast",
       "xhpast.php-version": "5.5"
     }
