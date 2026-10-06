@@ -29,7 +29,7 @@ final class DifferentialExactUserFunctionDatasource
         'summary' => pht('Find results matching users exactly.'),
         'description' => pht(
           "This function allows you to find results associated only with ".
-          "a user, exactly, and not any of their projects or packages. For ".
+          "a user, exactly, and not any of their projects. For ".
           "example, this will find results associated with only `%s`:".
           "\n\n%s\n\n",
           'alincoln',

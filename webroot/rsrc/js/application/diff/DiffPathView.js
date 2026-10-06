@@ -24,7 +24,6 @@ JX.install('DiffPathView', {
     _isDirectory: false,
     _displayPath: null,
     _isLowImportance: false,
-    _isOwned: false,
     _isHidden: false,
     _isLoading: false,
 
@@ -131,15 +130,6 @@ JX.install('DiffPathView', {
         node,
         'diff-tree-path-low-importance',
         this._isLowImportance);
-
-      return this;
-    },
-
-    setIsOwned: function(owned) {
-      this._isOwned = owned;
-
-      var node = this.getNode();
-      JX.DOM.alterClass(node, 'diff-tree-path-owned', this._isOwned);
 
       return this;
     },

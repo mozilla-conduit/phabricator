@@ -8,7 +8,7 @@ final class DifferentialResponsibleDatasource
   }
 
   public function getPlaceholderText() {
-    return pht('Type a user, project, or package name, or function...');
+    return pht('Type a user or project name, or function...');
   }
 
   public function getDatasourceApplicationClass() {
@@ -21,7 +21,6 @@ final class DifferentialResponsibleDatasource
       new DifferentialResponsibleViewerFunctionDatasource(),
       new DifferentialExactUserFunctionDatasource(),
       new PhabricatorProjectDatasource(),
-      new PhabricatorOwnersPackageDatasource(),
     );
   }
 
@@ -47,14 +46,6 @@ final class DifferentialResponsibleDatasource
     foreach ($projects as $project) {
       $phids[] = $project->getPHID();
       $values[] = $project->getPHID();
-    }
-
-    $packages = id(new PhabricatorOwnersPackageQuery())
-      ->setViewer($viewer)
-      ->withOwnerPHIDs($phids)
-      ->execute();
-    foreach ($packages as $package) {
-      $values[] = $package->getPHID();
     }
 
     return $values;

@@ -439,40 +439,11 @@ final class DifferentialRevisionViewController
 
     if ($this->isVeryLargeDiff()) {
       $toc_view = null;
-
-      // When rendering a "very large" diff, we skip computation of owners
-      // that own no files because it is significantly expensive and not very
-      // valuable.
-      foreach ($revision->getReviewers() as $reviewer) {
-        // Give each reviewer a dummy nonempty value so the UI does not render
-        // the "(Owns No Changed Paths)" note. If that behavior becomes more
-        // sophisticated in the future, this behavior might also need to.
-        $reviewer->attachChangesets($changesets);
-      }
     } else {
-      $this->buildPackageMaps($changesets);
-
       $toc_view = $this->buildTableOfContents(
         $changesets,
         $unfolded_changesets,
         $target->loadCoverageMap($viewer));
-
-      // Attach changesets to each reviewer so we can show which Owners package
-      // reviewers own no files.
-      foreach ($revision->getReviewers() as $reviewer) {
-        $reviewer_phid = $reviewer->getReviewerPHID();
-        $reviewer_changesets = $this->getPackageChangesets($reviewer_phid);
-        $reviewer->attachChangesets($reviewer_changesets);
-      }
-
-      $authority_packages = $this->getAuthorityPackages();
-      foreach ($changesets as $changeset) {
-        $changeset_packages = $this->getChangesetPackages($changeset);
-
-        $changeset
-          ->setAuthorityPackages($authority_packages)
-          ->setChangesetPackages($changeset_packages);
-      }
     }
 
     $tab_group = new PHUITabGroupView();

@@ -89,18 +89,11 @@ final class DifferentialRevisionAcceptTransaction
       }
     }
 
-    $default_unchecked = array();
     foreach ($reviewers as $reviewer) {
       $reviewer_phid = $reviewer->getReviewerPHID();
 
       if (!$reviewer->hasAuthority($viewer)) {
-        // If the viewer doesn't have authority to act on behalf of a reviewer,
-        // we check if they can accept by force.
-        if ($revision->canReviewerForceAccept($viewer, $reviewer)) {
-          $default_unchecked[$reviewer_phid] = true;
-        } else {
-          continue;
-        }
+        continue;
       }
 
       if (!$include_accepted) {
@@ -117,31 +110,13 @@ final class DifferentialRevisionAcceptTransaction
 
     $handles = $viewer->loadHandles($reviewer_phids);
 
-    $head = array();
-    $tail = array();
     foreach ($reviewer_phids as $reviewer_phid) {
-      $is_force = isset($default_unchecked[$reviewer_phid]);
+      $value[] = $reviewer_phid;
 
-      if ($is_force) {
-        $tail[] = $reviewer_phid;
-
-        $options[$reviewer_phid] = pht(
-          'Force accept as %s',
-          $viewer->renderHandle($reviewer_phid));
-      } else {
-        $head[] = $reviewer_phid;
-        $value[] = $reviewer_phid;
-
-        $options[$reviewer_phid] = pht(
-          'Accept as %s',
-          $viewer->renderHandle($reviewer_phid));
-      }
+      $options[$reviewer_phid] = pht(
+        'Accept as %s',
+        $viewer->renderHandle($reviewer_phid));
     }
-
-    // Reorder reviewers so "force accept" reviewers come at the end.
-    $options =
-      array_select_keys($options, $head) +
-      array_select_keys($options, $tail);
 
     return array($options, $value);
   }
@@ -200,7 +175,7 @@ final class DifferentialRevisionAcceptTransaction
 
     // NOTE: We're including reviewers who have already been accepted in this
     // check. Legitimate users may race one another to accept on behalf of
-    // packages. If we get a form submission which includes a reviewer which
+    // projects. If we get a form submission which includes a reviewer which
     // someone has already accepted, that's fine. See T12757.
 
     list($options) = $this->getActionOptions($actor, $object, true);
