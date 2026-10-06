@@ -44,6 +44,29 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
       pht('An unparseable version must be rejected rather than assumed good.'));
   }
 
+  public function testHasContainingBranch() {
+    $this->assertTrue(
+      RevisionMergeConflictEngine::hasContainingBranch("refs/heads/main\n"),
+      pht(
+        'A base on a fetched branch other than the target is checked, since '.
+        'the merge answers whether the stack rebases onto the target.'));
+
+    $this->assertTrue(
+      RevisionMergeConflictEngine::hasContainingBranch(
+        "refs/heads/autoland\nrefs/heads/main\n"),
+      pht('A base on several fetched branches is checked.'));
+
+    $this->assertFalse(
+      RevisionMergeConflictEngine::hasContainingBranch(''),
+      pht(
+        'A base on no fetched branch, such as a force-pushed commit, must '.
+        'not be checked.'));
+
+    $this->assertFalse(
+      RevisionMergeConflictEngine::hasContainingBranch("\n"),
+      pht('Blank output means no branch contains the base.'));
+  }
+
   public function testIsAncestorExitCode() {
     $this->assertTrue(
       RevisionMergeConflictEngine::isAncestorExitCode(0),
@@ -58,6 +81,96 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
       pht(
         'A git error means ancestry is unproven, which must be treated the '.
         'same as a base that is not on the target branch.'));
+  }
+
+  public function testBaseOnTargetBranchIsAccepted() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    $root = $this->commit($path, 'root');
+    $target_tip = $this->commit($path, 'autoland tip');
+
+    $this->newEngine($path)->requireBaseOnFetchedBranch($root, $target_tip);
+
+    $this->assertTrue(
+      true,
+      pht('A base that is an ancestor of the target tip is checked.'));
+  }
+
+  public function testBaseOnAnotherFetchedBranchIsAccepted() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    $this->commit($path, 'root');
+    execx('git -C %s checkout -q -b main', $path);
+    $main_only = $this->commit($path, 'main only');
+    execx('git -C %s checkout -q autoland', $path);
+    $target_tip = $this->commit($path, 'autoland tip');
+
+    $this->newEngine($path)->requireBaseOnFetchedBranch(
+      $main_only,
+      $target_tip);
+
+    $this->assertTrue(
+      true,
+      pht(
+        'A base on `main` but not `autoland` is checked, since the merge '.
+        'answers whether the stack rebases onto the target.'));
+  }
+
+  public function testBaseOnNoFetchedBranchIsRefused() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    $root = $this->commit($path, 'root');
+    $target_tip = $this->commit($path, 'autoland tip');
+
+    // `commit-tree` writes a commit that no branch points at, like one left
+    // behind by a force-push.
+    list($stdout) = execx(
+      'git -C %s -c user.name=Test -c user.email=test@example.com '.
+      'commit-tree %s -p %s -m %s',
+      $path,
+      $root.'^{tree}',
+      $root,
+      'unreachable');
+    $unreachable = trim($stdout);
+
+    $caught = null;
+    try {
+      $this->newEngine($path)->requireBaseOnFetchedBranch(
+        $unreachable,
+        $target_tip);
+    } catch (RevisionMergeConflictReasonException $ex) {
+      $caught = $ex;
+    }
+
+    $this->assertTrue(
+      ($caught instanceof RevisionMergeConflictReasonException),
+      pht('A base on no fetched branch must not be checked.'));
+  }
+
+  private function commit(string $path, string $message): string {
+    execx(
+      'git -C %s -c user.name=Test -c user.email=test@example.com '.
+      'commit -q --allow-empty -m %s',
+      $path,
+      $message);
+
+    list($stdout) = execx('git -C %s rev-parse HEAD', $path);
+    return trim($stdout);
+  }
+
+  private function newEngine(string $path): RevisionMergeConflictEngine {
+    $repository = id(new PhabricatorRepository())
+      ->setVersionControlSystem(PhabricatorRepositoryType::REPOSITORY_TYPE_GIT)
+      ->setLocalPath($path);
+
+    return id(new RevisionMergeConflictEngine())
+      ->setRepository($repository);
   }
 
 }
