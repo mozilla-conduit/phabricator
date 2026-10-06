@@ -213,13 +213,12 @@ final class DiffusionCommitAuditorsTransaction
 
         switch (phid_get_type($phid)) {
           case PhabricatorPeopleUserPHIDType::TYPECONST:
-          case PhabricatorOwnersPackagePHIDType::TYPECONST:
           case PhabricatorProjectProjectPHIDType::TYPECONST:
             break;
           default:
             $errors[] = $this->newInvalidError(
               pht(
-                'Auditor "%s" must be a user, a package, or a project.',
+                'Auditor "%s" must be a user or a project.',
                 $phid),
               $xaction);
             continue 2;

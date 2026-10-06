@@ -8,7 +8,6 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
   private $coverage;
   private $coverageID;
   private $context;
-  private $packages;
 
   public function setChangeset(DifferentialChangeset $changeset) {
     $this->changeset = $changeset;
@@ -64,16 +63,6 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
     return $this->context;
   }
 
-  public function setPackages(array $packages) {
-    assert_instances_of($packages, 'PhabricatorOwnersPackage');
-    $this->packages = mpull($packages, null, 'getPHID');
-    return $this;
-  }
-
-  public function getPackages() {
-    return $this->packages;
-  }
-
   public function render() {
     $changeset = $this->getChangeset();
 
@@ -95,8 +84,6 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
 
     $cells[] = $this->renderCoverage();
     $cells[] = $this->renderModifiedCoverage();
-
-    $cells[] = $this->renderPackages();
 
     return $cells;
   }
@@ -215,20 +202,6 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
         'class' => 'differential-toc-meta',
       ),
       $meta);
-  }
-
-  public function renderPackages() {
-    $packages = $this->getPackages();
-
-    if (!$packages) {
-      return null;
-    }
-
-    $viewer = $this->getViewer();
-    $package_phids = mpull($packages, 'getPHID');
-
-    return $viewer->renderHandleList($package_phids)
-      ->setGlyphLimit(48);
   }
 
 }

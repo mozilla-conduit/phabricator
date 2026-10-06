@@ -238,51 +238,7 @@ final class DiffusionLintController extends DiffusionController {
     }
 
     if ($owner_phids) {
-      $or = array();
-      $or[] = qsprintf($conn, 'authorPHID IN (%Ls)', $owner_phids);
-
-      $paths = array();
-      $packages = id(new PhabricatorOwnersOwner())
-        ->loadAllWhere('userPHID IN (%Ls)', $owner_phids);
-      if ($packages) {
-        $paths = id(new PhabricatorOwnersPath())->loadAllWhere(
-          'packageID IN (%Ld)',
-          mpull($packages, 'getPackageID'));
-      }
-
-      if ($paths) {
-        $repositories = id(new PhabricatorRepositoryQuery())
-          ->setViewer($this->getRequest()->getUser())
-          ->withPHIDs(mpull($paths, 'getRepositoryPHID'))
-          ->execute();
-        $repositories = mpull($repositories, 'getID', 'getPHID');
-
-        $branches = id(new PhabricatorRepositoryBranch())->loadAllWhere(
-          'repositoryID IN (%Ld)',
-          $repositories);
-        $branches = mgroup($branches, 'getRepositoryID');
-      }
-
-      foreach ($paths as $path) {
-        $branch = idx(
-          $branches,
-          idx(
-            $repositories,
-            $path->getRepositoryPHID()));
-        if ($branch) {
-          $condition = qsprintf(
-            $conn,
-            '(branchID IN (%Ld) AND path LIKE %>)',
-            array_keys($branch),
-            $path->getPath());
-          if ($path->getExcluded()) {
-            $where[] = qsprintf($conn, 'NOT %Q', $condition);
-          } else {
-            $or[] = $condition;
-          }
-        }
-      }
-      $where[] = qsprintf($conn, '%LO', $or);
+      $where[] = qsprintf($conn, 'authorPHID IN (%Ls)', $owner_phids);
     }
 
     return queryfx_all(

@@ -471,7 +471,7 @@ final class DiffusionCommitQuery
       // a single user and single commit, so this has no practical impact.
 
       // NOTE: We're querying with the viewership of query viewer, not the
-      // actual users. If the viewer can't see a project or package, they
+      // actual users. If the viewer can't see a project, they
       // won't be able to see who has authority on it. This is safer than
       // showing them true authority, and should never matter today, but it
       // also doesn't seem like a significant disclosure and might be
@@ -490,15 +490,6 @@ final class DiffusionCommitQuery
         // Users have authority over themselves.
         $result_phids[] = $authority_phid;
 
-        // Users have authority over packages they own.
-        $owned_packages = id(new PhabricatorOwnersPackageQuery())
-          ->setViewer($viewer)
-          ->withAuthorityPHIDs(array($authority_phid))
-          ->execute();
-        foreach ($owned_packages as $package) {
-          $result_phids[] = $package->getPHID();
-        }
-
         // Users have authority over projects they're members of.
         $projects = id(new PhabricatorProjectQuery())
           ->setViewer($viewer)
@@ -514,7 +505,7 @@ final class DiffusionCommitQuery
           $attach_phids = $result_phids;
 
           // NOTE: When modifying your own commits, you act only on behalf of
-          // yourself, not your packages or projects. The idea here is that you
+          // yourself, not your projects. The idea here is that you
           // can't accept your own commits. In the future, this might change or
           // depend on configuration.
           $author_phid = $commit->getAuthorPHID();

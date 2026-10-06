@@ -7,7 +7,6 @@ final class HeraldPreCommitContentAdapter extends HeraldPreCommitAdapter {
   private $fields;
   private $revision = false;
 
-  private $affectedPackages;
   private $identityCache = array();
 
   public function getAdapterContentName() {
@@ -253,17 +252,6 @@ final class HeraldPreCommitContentAdapter extends HeraldPreCommitAdapter {
   public function getBranches() {
     return $this->getHookEngine()->loadBranches(
       $this->getObject()->getRefNew());
-  }
-
-  public function loadAffectedPackages() {
-    if ($this->affectedPackages === null) {
-      $packages = PhabricatorOwnersPackage::loadAffectedPackages(
-        $this->getHookEngine()->getRepository(),
-        $this->getDiffContent('name'));
-      $this->affectedPackages = $packages;
-    }
-
-    return $this->affectedPackages;
   }
 
 
