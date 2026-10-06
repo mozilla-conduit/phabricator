@@ -85,6 +85,7 @@ final class RevisionMergeConflictEngine extends Phobject {
   private ?PhabricatorRepository $repository = null;
 
   private ?string $scratchObjectDirectory = null;
+  private ?string $temporaryIndexDirectory = null;
   private ?string $repositoryObjectDirectory = null;
 
   private ?RevisionMergeConflictStackQuery $stackQuery = null;
@@ -177,24 +178,16 @@ final class RevisionMergeConflictEngine extends Phobject {
 
     $this->requireBaseOnFetchedBranch($base, $target_tip);
 
-    // Synthesize the stack's tree in a temporary index. The TempFile is held
-    // until the method returns so it (and whatever git writes at its path) is
-    // cleaned up automatically.
-    $temp_index = new TempFile();
-    $index_path = (string)$temp_index;
-
-    // Git wants the index file to either not exist or be a valid index; an
-    // empty placeholder file would be rejected, so remove it and let git
-    // recreate it.
-    Filesystem::remove($index_path);
-
-    $this->openScratchObjectDirectory();
     try {
+      $index_path = $this->openTemporaryIndex();
+      $this->openScratchObjectDirectory();
+
       $revision_tree = $this->synthesizeStackTree($base, $index_path, $stack);
 
       $status = $this->runMerge($base, $target_tip, $revision_tree);
     } finally {
       $this->closeScratchObjectDirectory();
+      $this->closeTemporaryIndex();
     }
 
     return $this->newResult(
@@ -270,6 +263,41 @@ final class RevisionMergeConflictEngine extends Phobject {
     }
 
     return $this->repositoryObjectDirectory;
+  }
+
+/* -(  Temporary index  )---------------------------------------------------- */
+
+  /**
+   * Creates an empty directory to synthesize the stack's tree in, returning the
+   * index path inside it. Git creates the index on first use.
+   *
+   * This avoids `TempFile`, which registers a shutdown function holding every
+   * instance until the process exits. A long-lived taskmaster would keep each
+   * check's index, the size of the repository's file list, on disk until then.
+   */
+  public function openTemporaryIndex(): string {
+    $this->temporaryIndexDirectory = Filesystem::createTemporaryDirectory(
+      'merge-check-index');
+
+    return $this->temporaryIndexDirectory.'/index';
+  }
+
+  /**
+   * Removes the temporary index directory and everything git wrote there.
+   */
+  public function closeTemporaryIndex(): void {
+    $directory = $this->temporaryIndexDirectory;
+    if ($directory === null) {
+      return;
+    }
+
+    $this->temporaryIndexDirectory = null;
+
+    try {
+      Filesystem::remove($directory);
+    } catch (Exception $ex) {
+      phlog($ex);
+    }
   }
 
 /* -(  Stack  )-------------------------------------------------------------- */
