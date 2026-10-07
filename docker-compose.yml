@@ -60,7 +60,8 @@ services:
       - GIT_CONFIG_KEY_0=safe.directory
       - GIT_CONFIG_VALUE_0=*
     depends_on:
-      - phabdb
+      phabdb:
+        condition: service_healthy
     volumes:
       - .:/src
       # In a `git worktree`, `.git` is a file pointing into the main
@@ -83,6 +84,13 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=password
     restart: on-failure
+    # Check over TCP, since the image's initialization runs a temporary server
+    # that only listens on the socket.
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-ppassword"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
 
   # Other Support Containers
   tinyproxy:

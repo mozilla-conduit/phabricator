@@ -24,10 +24,6 @@ container_path() {
     esac
 }
 
-wait_for_mysql() {
-    /app/wait-for-mysql.php > /dev/null
-}
-
 # Directories expand to every PHP file under a `__tests__` directory below
 # them, and `arc unit` runs the test case classes among those. Other files go
 # to `arc unit` unchanged, which runs the tests in their ancestor `__tests__`
@@ -51,7 +47,6 @@ run_tests() {
         fi
     done
 
-    wait_for_mysql
     cd /app
     # The paths come from `find` within the checkout and contain no spaces.
     # shellcheck disable=SC2086
@@ -98,7 +93,6 @@ case "$command" in
         exec "$ARC" liberate -- src/
         ;;
     celerity)
-        wait_for_mysql
         cd /app/phabricator
         exec ./bin/celerity map
         ;;
