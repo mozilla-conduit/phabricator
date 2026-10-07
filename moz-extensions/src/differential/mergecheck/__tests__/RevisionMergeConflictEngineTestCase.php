@@ -184,6 +184,74 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
     $engine->closeTemporaryIndex();
   }
 
+  public function testHasChangedStackPath() {
+    $stack_paths = array('dom/base/Document.cpp' => true);
+
+    $this->assertTrue(
+      RevisionMergeConflictEngine::hasChangedStackPath(
+        array('README.md', 'dom/base/Document.cpp'),
+        $stack_paths),
+      pht('A changed file the stack touches should be relevant.'));
+
+    $this->assertFalse(
+      RevisionMergeConflictEngine::hasChangedStackPath(
+        array('README.md', 'dom/base/Document.h'),
+        $stack_paths),
+      pht('Changes only to files the stack does not touch are irrelevant.'));
+  }
+
+  public function testListChangedPathsBetweenTips() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    Filesystem::writeFile($path.'/kept.txt', 'kept');
+    Filesystem::writeFile($path.'/renamed.txt', 'renamed');
+    execx('git -C %s add -A', $path);
+    $old_tip = $this->commit($path, 'old tip');
+
+    Filesystem::createDirectory($path.'/dir');
+    Filesystem::writeFile($path.'/dir/added.txt', 'added');
+    execx('git -C %s add -A', $path);
+    execx('git -C %s mv renamed.txt moved.txt', $path);
+    $new_tip = $this->commit($path, 'new tip');
+
+    $changed_paths = $this->newEngine($path)->listChangedPaths(
+      $old_tip,
+      $new_tip);
+    sort($changed_paths);
+
+    $this->assertEqual(
+      array('dir/added.txt', 'moved.txt', 'renamed.txt'),
+      $changed_paths,
+      pht(
+        'Changed files should be listed by full path, with both sides of a '.
+        'rename, and unchanged files left out.'));
+
+    $this->assertEqual(
+      array(),
+      $this->newEngine($path)->listChangedPaths($new_tip, $new_tip),
+      pht('A tip that has not moved should have no changed files.'));
+  }
+
+  public function testListChangedPathsAfterAForcePush() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    $root = $this->commit($path, 'root');
+    $old_tip = $this->commit($path, 'discarded tip');
+    execx('git -C %s reset -q --hard %s', $path, $root);
+    $new_tip = $this->commit($path, 'replacement tip');
+
+    $this->assertEqual(
+      null,
+      $this->newEngine($path)->listChangedPaths($old_tip, $new_tip),
+      pht(
+        'A tip that does not descend from the old one should be reported as '.
+        'unknown, so the stored verdict is not reused.'));
+  }
+
   private function commit(string $path, string $message): string {
     execx(
       'git -C %s -c user.name=Test -c user.email=test@example.com '.

@@ -522,6 +522,95 @@ final class RevisionMergeConflictEngine extends Phobject {
   }
 
   /**
+   * Whether the target branch moving from one tip to another could change a
+   * verdict for this stack. A landed commit can only introduce a conflict in
+   * files it changed, so the move only matters if it changed a stack file.
+   * A move that isn't a fast-forward, like a force-push, always matters.
+   */
+  public function hasRelevantTargetChanges(
+    string $old_tip,
+    string $new_tip): bool {
+
+    $changed_paths = $this->listChangedPaths($old_tip, $new_tip);
+    if ($changed_paths === null) {
+      return true;
+    }
+
+    return self::hasChangedStackPath($changed_paths, $this->getStackPaths());
+  }
+
+  /**
+   * Lists the files that differ between two commits, or returns `null` if the
+   * old commit is not an ancestor of the new one.
+   */
+  public function listChangedPaths(string $old_tip, string $new_tip): ?array {
+    if ($old_tip === $new_tip) {
+      return array();
+    }
+
+    $ancestor_future = $this->newGitFuture(
+      'merge-base --is-ancestor %s %s',
+      $old_tip,
+      $new_tip);
+    list($err) = $ancestor_future->resolve();
+    if ($ancestor_future->getWasKilledByTimeout()) {
+      return null;
+    }
+    if (!self::isAncestorExitCode($err)) {
+      return null;
+    }
+
+    // Without rename detection, a rename lists both its old and new path.
+    list($stdout) = $this->newGitFuture(
+      'diff-tree -r -z --name-only --no-renames %s %s',
+      $old_tip,
+      $new_tip)
+      ->resolvex();
+
+    return array_values(array_filter(explode("\0", $stdout), 'strlen'));
+  }
+
+  /**
+   * Whether any changed path is one the stack touches. `$stack_paths` is a set
+   * keyed by path.
+   */
+  public static function hasChangedStackPath(
+    array $changed_paths,
+    array $stack_paths): bool {
+
+    foreach ($changed_paths as $changed_path) {
+      if (isset($stack_paths[$changed_path])) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Returns the set of paths, keyed by path, that any diff in the stack
+   * touches, including the old path of a moved or copied file.
+   */
+  private function getStackPaths(): array {
+    $changesets = id(new DifferentialChangesetQuery())
+      ->setViewer($this->viewer)
+      ->withDiffs($this->getStackDiffs())
+      ->execute();
+
+    $stack_paths = array();
+    foreach ($changesets as $changeset) {
+      $paths = array($changeset->getFilename(), $changeset->getOldFile());
+      foreach ($paths as $path) {
+        if (phutil_nonempty_string($path)) {
+          $stack_paths[$path] = true;
+        }
+      }
+    }
+
+    return $stack_paths;
+  }
+
+  /**
    * Refuses to answer unless the base is on a branch this repository fetches.
    *
    * The base is forced as the merge base, which is what `git rebase` does, so
