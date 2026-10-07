@@ -439,40 +439,11 @@ final class DifferentialRevisionViewController
 
     if ($this->isVeryLargeDiff()) {
       $toc_view = null;
-
-      // When rendering a "very large" diff, we skip computation of owners
-      // that own no files because it is significantly expensive and not very
-      // valuable.
-      foreach ($revision->getReviewers() as $reviewer) {
-        // Give each reviewer a dummy nonempty value so the UI does not render
-        // the "(Owns No Changed Paths)" note. If that behavior becomes more
-        // sophisticated in the future, this behavior might also need to.
-        $reviewer->attachChangesets($changesets);
-      }
     } else {
-      $this->buildPackageMaps($changesets);
-
       $toc_view = $this->buildTableOfContents(
         $changesets,
         $unfolded_changesets,
         $target->loadCoverageMap($viewer));
-
-      // Attach changesets to each reviewer so we can show which Owners package
-      // reviewers own no files.
-      foreach ($revision->getReviewers() as $reviewer) {
-        $reviewer_phid = $reviewer->getReviewerPHID();
-        $reviewer_changesets = $this->getPackageChangesets($reviewer_phid);
-        $reviewer->attachChangesets($reviewer_changesets);
-      }
-
-      $authority_packages = $this->getAuthorityPackages();
-      foreach ($changesets as $changeset) {
-        $changeset_packages = $this->getChangesetPackages($changeset);
-
-        $changeset
-          ->setAuthorityPackages($authority_packages)
-          ->setChangesetPackages($changeset_packages);
-      }
     }
 
     $tab_group = new PHUITabGroupView();
@@ -568,36 +539,17 @@ final class DifferentialRevisionViewController
       ->setBackground(PHUIObjectBoxView::BLUE_PROPERTY)
       ->addTabGroup($tab_group);
 
-    $signatures = DifferentialRequiredSignaturesField::loadForRevision(
-      $revision);
-    $missing_signatures = false;
-    foreach ($signatures as $phid => $signed) {
-      if (!$signed) {
-        $missing_signatures = true;
-      }
-    }
+    $anchor = id(new PhabricatorAnchorView())
+      ->setAnchorName('toc')
+      ->setNavigationMarker(true);
 
     $footer = array();
-    $signature_message = null;
-    if ($missing_signatures) {
-      $signature_message = id(new PHUIInfoView())
-        ->setTitle(pht('Content Hidden'))
-        ->appendChild(
-          pht(
-            'The content of this revision is hidden until the author has '.
-            'signed all of the required legal agreements.'));
-    } else {
-      $anchor = id(new PhabricatorAnchorView())
-        ->setAnchorName('toc')
-        ->setNavigationMarker(true);
-
-      $footer[] = array(
-        $anchor,
-        $warnings,
-        $tab_view,
-        $changeset_view,
-      );
-    }
+    $footer[] = array(
+      $anchor,
+      $warnings,
+      $tab_view,
+      $changeset_view,
+    );
 
     $comment_view = id(new DifferentialRevisionEditEngine())
       ->setViewer($viewer)
@@ -645,7 +597,6 @@ final class DifferentialRevisionViewController
           $diff_detail_box,
           $unit_box,
           $timeline,
-          $signature_message,
         ))
       ->setFooter($footer);
 

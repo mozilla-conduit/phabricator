@@ -65,7 +65,7 @@ final class DifferentialReviewersView extends AphrontView {
 
       // If someone other than the reviewer acted on the reviewer's behalf,
       // show who is responsible for the current state. This is usually a
-      // user accepting for a package or project.
+      // user accepting for a project.
       $authority_phid = $reviewer->getLastActorPHID();
       if ($authority_phid && ($authority_phid !== $phid)) {
         $authority_name = $viewer->renderHandle($authority_phid)
@@ -165,12 +165,6 @@ final class DifferentialReviewersView extends AphrontView {
         $handle->renderHovercardLink(
           null,
           $diff->getPHID()));
-
-      if ($reviewer->isPackage()) {
-        if (!$reviewer->getChangesets()) {
-          $item->setNote(pht('(Owns No Changed Paths)'));
-        }
-      }
 
       if ($handle->hasCapabilities()) {
         if (!$handle->hasViewCapability($diff)) {

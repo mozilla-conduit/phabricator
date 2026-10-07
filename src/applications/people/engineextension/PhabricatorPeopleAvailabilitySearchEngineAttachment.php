@@ -11,35 +11,16 @@ final class PhabricatorPeopleAvailabilitySearchEngineAttachment
     return pht('Get availability information for users.');
   }
 
-  public function willLoadAttachmentData($query, $spec) {
-    $query->needAvailability(true);
-  }
-
   public function getAttachmentForObject($object, $data, $spec) {
-
-    $until = $object->getAwayUntil();
-    if ($until) {
-      $until = (int)$until;
-    } else {
-      $until = null;
-    }
-
-    $value = $object->getDisplayAvailability();
-    if ($value === null) {
-      $value = PhabricatorCalendarEventInvitee::AVAILABILITY_AVAILABLE;
-    }
-
-    $name = PhabricatorCalendarEventInvitee::getAvailabilityName($value);
-    $color = PhabricatorCalendarEventInvitee::getAvailabilityColor($value);
-
-    $event_phid = $object->getAvailabilityEventPHID();
-
+    // Availability was computed from Calendar events. Calendar has been
+    // removed from this install, so every user is reported as available.
+    // The attachment is kept so existing API clients continue to work.
     return array(
-      'value' => $value,
-      'until' => $until,
-      'name' => $name,
-      'color' => $color,
-      'eventPHID' => $event_phid,
+      'value' => 'available',
+      'until' => null,
+      'name' => pht('Available'),
+      'color' => 'green',
+      'eventPHID' => null,
     );
   }
 

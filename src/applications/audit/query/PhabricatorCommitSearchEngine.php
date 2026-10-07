@@ -46,10 +46,6 @@ final class PhabricatorCommitSearchEngine
       $query->withRepositoryPHIDs($map['repositoryPHIDs']);
     }
 
-    if ($map['packagePHIDs']) {
-      $query->withPackagePHIDs($map['packagePHIDs']);
-    }
-
     if ($map['unreachable'] !== null) {
       $query->withUnreachable($map['unreachable']);
     }
@@ -79,7 +75,7 @@ final class PhabricatorCommitSearchEngine
         ->setDatasource(new DifferentialResponsibleDatasource())
         ->setDescription(
           pht(
-            'Find commits where given users, projects, or packages are '.
+            'Find commits where given users or projects are '.
             'responsible for the next steps in the audit workflow.')),
       id(new PhabricatorUsersSearchField())
         ->setLabel(pht('Authors'))
@@ -95,7 +91,7 @@ final class PhabricatorCommitSearchEngine
         ->setDatasource(new DiffusionAuditorFunctionDatasource())
         ->setDescription(
           pht(
-            'Find commits where given users, projects, or packages are '.
+            'Find commits where given users or projects are '.
             'auditors.')),
       id(new PhabricatorSearchCheckboxesField())
         ->setLabel(pht('Audit Status'))
@@ -112,14 +108,6 @@ final class PhabricatorCommitSearchEngine
         ->setAliases(array('repository', 'repositories', 'repositoryPHID'))
         ->setDatasource(new DiffusionRepositoryFunctionDatasource())
         ->setDescription(pht('Find commits in particular repositories.')),
-      id(new PhabricatorSearchDatasourceField())
-        ->setLabel(pht('Packages'))
-        ->setKey('packagePHIDs')
-        ->setConduitKey('packages')
-        ->setAliases(array('package', 'packages', 'packagePHID'))
-        ->setDatasource(new PhabricatorOwnersPackageDatasource())
-        ->setDescription(
-          pht('Find commits which affect given packages.')),
       id(new PhabricatorSearchThreeStateField())
         ->setLabel(pht('Unreachable'))
         ->setKey('unreachable')

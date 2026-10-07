@@ -1021,12 +1021,9 @@ final class DifferentialRevisionQuery
     $revision_map = mpull($revisions, null, 'getPHID');
     $viewer_phid = $this->getViewer()->getPHID();
 
-    // Find all the project/package reviewers which the user may have authority
-    // over.
+    // Find all the project reviewers which the user may have authority over.
     $project_phids = array();
-    $package_phids = array();
     $project_type = PhabricatorProjectProjectPHIDType::TYPECONST;
-    $package_type = PhabricatorOwnersPackagePHIDType::TYPECONST;
 
     foreach ($reviewers as $revision_phid => $reviewer_list) {
       if (!$allow_self) {
@@ -1043,9 +1040,6 @@ final class DifferentialRevisionQuery
         $phid_type = phid_get_type($reviewer_phid);
         if ($phid_type == $project_type) {
           $project_phids[] = $reviewer_phid;
-        }
-        if ($phid_type == $package_type) {
-          $package_phids[] = $reviewer_phid;
         }
       }
     }
@@ -1065,19 +1059,7 @@ final class DifferentialRevisionQuery
       $project_authority = array_fuse($project_authority);
     }
 
-    // And over any packages they own.
-    $package_authority = array();
-    if ($package_phids) {
-      $package_authority = id(new PhabricatorOwnersPackageQuery())
-        ->setViewer($this->getViewer())
-        ->withPHIDs($package_phids)
-        ->withAuthorityPHIDs(array($viewer_phid))
-        ->execute();
-      $package_authority = mpull($package_authority, 'getPHID');
-      $package_authority = array_fuse($package_authority);
-    }
-
-    return $user_authority + $project_authority + $package_authority;
+    return $user_authority + $project_authority;
   }
 
   public function getQueryApplicationClass() {

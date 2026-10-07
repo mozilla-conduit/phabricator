@@ -107,9 +107,6 @@ final class PhabricatorRemarkupControl
           'autocomplete' => 1,
         ));
 
-    $phriction_datasource = new PhrictionDocumentDatasource();
-    $phurl_datasource = new PhabricatorPhurlURLDatasource();
-
     Javelin::initBehavior(
       'phabricator-remarkup-assist',
       array(
@@ -155,28 +152,6 @@ final class PhabricatorRemarkupControl
               '-',
               '/',
             ),
-          ),
-          91 => array( // "["
-            'datasourceURI' => $phriction_datasource->getDatasourceURI(),
-            'headerIcon' => 'fa-book',
-            'headerText' => pht('Find Document:'),
-            'hintText' => $phriction_datasource->getPlaceholderText(),
-            'cancel' => array(
-              ':', // Cancel on "http:" and similar.
-              '|',
-              ']',
-            ),
-            'prefix' => '^\\[',
-          ),
-          40 => array( // "("
-            'datasourceURI' => $phurl_datasource->getDatasourceURI(),
-            'headerIcon' => 'fa-compress',
-            'headerText' => pht('Find Phurl:'),
-            'hintText' => $phurl_datasource->getPlaceholderText(),
-            'cancel' => array(
-              ')',
-            ),
-            'prefix' => '^\\(',
           ),
         ),
       ));
@@ -227,23 +202,6 @@ final class PhabricatorRemarkupControl
         'tip' => pht('Upload File'),
       ),
     );
-
-    $can_use_macros = function_exists('imagettftext');
-
-    if ($can_use_macros) {
-      $can_use_macros = PhabricatorApplication::isClassInstalledForViewer(
-        'PhabricatorMacroApplication',
-        $viewer);
-    }
-
-    if ($can_use_macros) {
-      $actions[] = array(
-        'spacer' => true,
-        );
-      $actions['fa-meh-o'] = array(
-        'tip' => pht('Meme'),
-      );
-    }
 
     $actions['fa-eye'] = array(
       'tip' => pht('Preview'),

@@ -1299,12 +1299,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   public function delete() {
     $this->openTransaction();
 
-      $paths = id(new PhabricatorOwnersPath())
-        ->loadAllWhere('repositoryPHID = %s', $this->getPHID());
-      foreach ($paths as $path) {
-        $path->delete();
-      }
-
       queryfx(
         $this->establishConnection('w'),
         'DELETE FROM %T WHERE repositoryPHID = %s',
@@ -2708,22 +2702,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       $this->delete();
 
       PhabricatorRepositoryURIIndex::updateRepositoryURIs($phid, array());
-
-      $books = id(new DivinerBookQuery())
-        ->setViewer($engine->getViewer())
-        ->withRepositoryPHIDs(array($phid))
-        ->execute();
-      foreach ($books as $book) {
-        $engine->destroyObject($book);
-      }
-
-      $atoms = id(new DivinerAtomQuery())
-        ->setViewer($engine->getViewer())
-        ->withRepositoryPHIDs(array($phid))
-        ->execute();
-      foreach ($atoms as $atom) {
-        $engine->destroyObject($atom);
-      }
 
       $lfs_refs = id(new PhabricatorRepositoryGitLFSRefQuery())
         ->setViewer($engine->getViewer())

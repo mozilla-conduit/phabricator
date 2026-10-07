@@ -236,7 +236,6 @@ final class DiffusionBrowseController extends DiffusionController {
     }
 
     $open_revisions = $this->buildOpenRevisions();
-    $owners_list = $this->buildOwnersList($drequest);
 
     $crumbs = $this->buildCrumbs(
       array(
@@ -259,7 +258,6 @@ final class DiffusionBrowseController extends DiffusionController {
         $renamed_notice,
         $corpus,
         $open_revisions,
-        $owners_list,
       ));
 
     $title = array($basename, $repository->getDisplayName());
@@ -327,7 +325,6 @@ final class DiffusionBrowseController extends DiffusionController {
 
     $crumbs->setBorder(true);
     $tabs = $this->buildTabsView('code');
-    $owners_list = $this->buildOwnersList($drequest);
     $bar = id(new PHUILeftRightView())
       ->setRight($this->corpusButtons)
       ->addClass('diffusion-action-bar');
@@ -341,7 +338,6 @@ final class DiffusionBrowseController extends DiffusionController {
           $empty_result,
           $browse_panel,
           $open_revisions,
-          $owners_list,
           $readme,
         ));
 
@@ -495,80 +491,6 @@ final class DiffusionBrowseController extends DiffusionController {
       ->setLeft($buttons)
       ->addClass('diffusion-action-bar full-mobile-buttons');
     return $bar;
-  }
-
-  private function buildOwnersList(DiffusionRequest $drequest) {
-    $viewer = $this->getViewer();
-
-    $have_owners = PhabricatorApplication::isClassInstalledForViewer(
-      'PhabricatorOwnersApplication',
-      $viewer);
-    if (!$have_owners) {
-      return null;
-    }
-
-    $repository = $drequest->getRepository();
-
-    $package_query = id(new PhabricatorOwnersPackageQuery())
-      ->setViewer($viewer)
-      ->withStatuses(array(PhabricatorOwnersPackage::STATUS_ACTIVE))
-      ->withControl(
-        $repository->getPHID(),
-        array(
-          $drequest->getPath(),
-        ));
-
-    $package_query->execute();
-
-    $packages = $package_query->getControllingPackagesForPath(
-      $repository->getPHID(),
-      $drequest->getPath());
-
-    $ownership = id(new PHUIObjectItemListView())
-      ->setUser($viewer)
-      ->setNoDataString(pht('No Owners'));
-
-    if ($packages) {
-      foreach ($packages as $package) {
-        $item = id(new PHUIObjectItemView())
-          ->setObject($package)
-          ->setObjectName($package->getMonogram())
-          ->setHeader($package->getName())
-          ->setHref($package->getURI());
-
-        $owners = $package->getOwners();
-        if ($owners) {
-          $owner_list = $viewer->renderHandleList(
-            mpull($owners, 'getUserPHID'));
-        } else {
-          $owner_list = phutil_tag('em', array(), pht('None'));
-        }
-        $item->addAttribute(pht('Owners: %s', $owner_list));
-
-        $auto = $package->getAutoReview();
-        $autoreview_map = PhabricatorOwnersPackage::getAutoreviewOptionsMap();
-        $spec = idx($autoreview_map, $auto, array());
-        $name = idx($spec, 'name', $auto);
-        $item->addIcon('fa-code', $name);
-
-        $rule = $package->newAuditingRule();
-        $item->addIcon($rule->getIconIcon(), $rule->getDisplayName());
-
-        if ($package->isArchived()) {
-          $item->setDisabled(true);
-        }
-
-        $ownership->addItem($item);
-      }
-    }
-
-    $view = id(new PHUIObjectBoxView())
-      ->setHeaderText(pht('Owner Packages'))
-      ->setBackground(PHUIObjectBoxView::BLUE_PROPERTY)
-      ->addClass('diffusion-mobile-view')
-      ->setObjectList($ownership);
-
-    return $view;
   }
 
   private function renderFileButton($file_uri = null, $label = null) {

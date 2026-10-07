@@ -27,8 +27,7 @@ final class PhabricatorPeopleUserPHIDType extends PhabricatorPHIDType {
     return id(new PhabricatorPeopleQuery())
       ->withPHIDs($phids)
       ->needProfile(true)
-      ->needProfileImage(true)
-      ->needAvailability(true);
+      ->needProfileImage(true);
   }
 
   public function loadHandles(
@@ -68,16 +67,6 @@ final class PhabricatorPeopleUserPHIDType extends PhabricatorPHIDType {
         $availability = PhabricatorObjectHandle::AVAILABILITY_DISABLED;
       } else if (!$user->isResponsive()) {
         $availability = PhabricatorObjectHandle::AVAILABILITY_NOEMAIL;
-      } else {
-        $until = $user->getAwayUntil();
-        if ($until) {
-          $away = PhabricatorCalendarEventInvitee::AVAILABILITY_AWAY;
-          if ($user->getDisplayAvailability() == $away) {
-            $availability = PhabricatorObjectHandle::AVAILABILITY_NONE;
-          } else {
-            $availability = PhabricatorObjectHandle::AVAILABILITY_PARTIAL;
-          }
-        }
       }
 
       if ($availability) {

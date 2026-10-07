@@ -69,8 +69,7 @@ abstract class DiffusionController extends PhabricatorController {
     // repository has a different canonical path like "/diffusion/XYZ/...",
     // redirect them to the canonical path.
 
-    // Skip this redirect if the request is an AJAX request, like the requests
-    // that Owners makes to complete and validate paths.
+    // Skip this redirect if the request is an AJAX request.
 
     if (!$request->isAjax()) {
       $request_path = $request->getPath();

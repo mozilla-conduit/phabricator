@@ -95,18 +95,20 @@ final class PhabricatorSpacesTestCase extends PhabricatorTestCase {
     $creator = $this->generateNewTestUser();
     $viewer = $this->generateNewTestUser();
 
-    // Create a new paste.
-    $paste = PhabricatorPaste::initializeNewPaste($creator)
+    // Create a new credential.
+    $credential = PassphraseCredential::initializeNewCredential($creator)
       ->setViewPolicy(PhabricatorPolicies::POLICY_USER)
-      ->setFilePHID('')
-      ->setLanguage('')
+      ->setCredentialType(PassphrasePasswordCredentialType::CREDENTIAL_TYPE)
+      ->setProvidesType(PassphrasePasswordCredentialType::PROVIDES_TYPE)
+      ->setIsLocked(0)
+      ->setAllowConduit(0)
       ->save();
 
     // It should be visible.
     $this->assertTrue(
       PhabricatorPolicyFilter::hasCapability(
         $viewer,
-        $paste,
+        $credential,
         PhabricatorPolicyCapability::CAN_VIEW));
 
     // Create a default space with an open view policy.
@@ -115,12 +117,12 @@ final class PhabricatorSpacesTestCase extends PhabricatorTestCase {
       ->save();
     PhabricatorSpacesNamespaceQuery::destroySpacesCache();
 
-    // The paste should now be in the space implicitly, but still visible
+    // The credential should now be in the space implicitly, but still visible
     // because the space view policy is open.
     $this->assertTrue(
       PhabricatorPolicyFilter::hasCapability(
         $viewer,
-        $paste,
+        $credential,
         PhabricatorPolicyCapability::CAN_VIEW));
 
     // Make the space view policy restrictive.
@@ -129,15 +131,15 @@ final class PhabricatorSpacesTestCase extends PhabricatorTestCase {
       ->save();
     PhabricatorSpacesNamespaceQuery::destroySpacesCache();
 
-    // The paste should be in the space implicitly, and no longer visible.
+    // The credential should be in the space implicitly, and no longer visible.
     $this->assertFalse(
       PhabricatorPolicyFilter::hasCapability(
         $viewer,
-        $paste,
+        $credential,
         PhabricatorPolicyCapability::CAN_VIEW));
 
-    // Put the paste in the space explicitly.
-    $paste
+    // Put the credential in the space explicitly.
+    $credential
       ->setSpacePHID($default->getPHID())
       ->save();
     PhabricatorSpacesNamespaceQuery::destroySpacesCache();
@@ -146,24 +148,24 @@ final class PhabricatorSpacesTestCase extends PhabricatorTestCase {
     $this->assertFalse(
       PhabricatorPolicyFilter::hasCapability(
         $viewer,
-        $paste,
+        $credential,
         PhabricatorPolicyCapability::CAN_VIEW));
 
     // Create an alternate space with more permissive policies, then move the
-    // paste to that space.
+    // credential to that space.
     $alternate = $this->newSpace($creator, pht('Alternate Space'), false)
       ->setViewPolicy(PhabricatorPolicies::POLICY_USER)
       ->save();
-    $paste
+    $credential
       ->setSpacePHID($alternate->getPHID())
       ->save();
     PhabricatorSpacesNamespaceQuery::destroySpacesCache();
 
-    // Now the paste should be visible again.
+    // Now the credential should be visible again.
     $this->assertTrue(
       PhabricatorPolicyFilter::hasCapability(
         $viewer,
-        $paste,
+        $credential,
         PhabricatorPolicyCapability::CAN_VIEW));
   }
 

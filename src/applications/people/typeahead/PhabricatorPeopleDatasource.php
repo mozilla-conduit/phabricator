@@ -19,8 +19,7 @@ final class PhabricatorPeopleDatasource
     $viewer = $this->getViewer();
 
     $query = id(new PhabricatorPeopleQuery())
-      ->setOrderVector(array('username'))
-      ->needAvailability(true);
+      ->setOrderVector(array('username'));
 
     if ($this->getPhase() == self::PHASE_PREFIX) {
       $prefix = $this->getPrefixQuery();
@@ -95,14 +94,6 @@ final class PhabricatorPeopleDatasource
           $display_type = pht('User');
         }
         $result->setDisplayType($display_type);
-      }
-
-      $until = $user->getAwayUntil();
-      if ($until) {
-        $availability = $user->getDisplayAvailability();
-        $color = PhabricatorCalendarEventInvitee::getAvailabilityColor(
-          $availability);
-        $result->setAvailabilityColor($color);
       }
 
       $results[] = $result;

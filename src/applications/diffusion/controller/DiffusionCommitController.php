@@ -535,7 +535,6 @@ final class DiffusionCommitController extends DiffusionController {
     $edge_query = id(new PhabricatorEdgeQuery())
       ->withSourcePHIDs(array($commit_phid))
       ->withEdgeTypes(array(
-        DiffusionCommitHasTaskEdgeType::EDGECONST,
         DiffusionCommitHasRevisionEdgeType::EDGECONST,
         DiffusionCommitRevertsCommitEdgeType::EDGECONST,
         DiffusionCommitRevertedByCommitEdgeType::EDGECONST,
@@ -543,8 +542,6 @@ final class DiffusionCommitController extends DiffusionController {
 
     $edges = $edge_query->execute();
 
-    $task_phids = array_keys(
-      $edges[$commit_phid][DiffusionCommitHasTaskEdgeType::EDGECONST]);
     $revision_phid = key(
       $edges[$commit_phid][DiffusionCommitHasRevisionEdgeType::EDGECONST]);
 
@@ -737,17 +734,6 @@ final class DiffusionCommitController extends DiffusionController {
       $view->addProperty(
         pht('Reverted By'),
         $viewer->renderHandleList($reverted_by_phids));
-    }
-
-    if ($task_phids) {
-      $task_list = array();
-      foreach ($task_phids as $phid) {
-        $task_list[] = $handles[$phid]->renderLink();
-      }
-      $task_list = phutil_implode_html(phutil_tag('br'), $task_list);
-      $view->addProperty(
-        pht('Tasks'),
-        $task_list);
     }
 
     return $view;
@@ -965,34 +951,6 @@ final class DiffusionCommitController extends DiffusionController {
     $diffusion_view = id(new DiffusionEmptyResultView())
       ->setDiffusionRequest($drequest);
 
-    $have_owners = PhabricatorApplication::isClassInstalledForViewer(
-      'PhabricatorOwnersApplication',
-      $viewer);
-
-    if (!$changesets) {
-      $have_owners = false;
-    }
-
-    if ($have_owners) {
-      if ($viewer->getPHID()) {
-        $packages = id(new PhabricatorOwnersPackageQuery())
-          ->setViewer($viewer)
-          ->withStatuses(array(PhabricatorOwnersPackage::STATUS_ACTIVE))
-          ->withAuthorityPHIDs(array($viewer->getPHID()))
-          ->execute();
-        $toc_view->setAuthorityPackages($packages);
-      }
-
-      $repository = $drequest->getRepository();
-      $repository_phid = $repository->getPHID();
-
-      $control_query = id(new PhabricatorOwnersPackageQuery())
-        ->setViewer($viewer)
-        ->withStatuses(array(PhabricatorOwnersPackage::STATUS_ACTIVE))
-        ->withControl($repository_phid, mpull($changesets, 'getFilename'));
-      $control_query->execute();
-    }
-
     foreach ($changesets as $changeset_id => $changeset) {
       $path = $changeset->getFilename();
       $anchor = $changeset->getAnchorName();
@@ -1013,13 +971,6 @@ final class DiffusionCommitController extends DiffusionController {
             ' ',
             $browse_link,
           ));
-
-      if ($have_owners) {
-        $packages = $control_query->getControllingPackagesForPath(
-          $repository_phid,
-          $changeset->getFilename());
-        $item->setPackages($packages);
-      }
 
       $toc_view->addItem($item);
     }

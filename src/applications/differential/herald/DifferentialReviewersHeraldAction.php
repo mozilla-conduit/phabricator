@@ -68,7 +68,6 @@ abstract class DifferentialReviewersHeraldAction
     $allowed_types = array(
       PhabricatorPeopleUserPHIDType::TYPECONST,
       PhabricatorProjectProjectPHIDType::TYPECONST,
-      PhabricatorOwnersPackagePHIDType::TYPECONST,
     );
 
     $targets = $this->loadStandardTargets($phids, $allowed_types, $current);

@@ -25,11 +25,6 @@ final class PhabricatorMonogramDatasourceEngineExtension
       return '/differential/';
     }
 
-    // Send "t" to Maniphest.
-    if (preg_match('/^t\z/i', $query)) {
-      return '/maniphest/';
-    }
-
     // Otherwise, if the user entered an object name, jump to that object.
     $objects = id(new PhabricatorObjectQuery())
       ->setViewer($viewer)

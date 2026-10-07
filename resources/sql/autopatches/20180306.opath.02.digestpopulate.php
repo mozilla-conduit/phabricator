@@ -1,19 +1,5 @@
 <?php
 
-$table = new PhabricatorOwnersPath();
-$conn = $table->establishConnection('w');
-
-foreach (new LiskMigrationIterator($table) as $path) {
-  $index = PhabricatorHash::digestForIndex($path->getPath());
-
-  if ($index === $path->getPathIndex()) {
-    continue;
-  }
-
-  queryfx(
-    $conn,
-    'UPDATE %T SET pathIndex = %s WHERE id = %d',
-    $table->getTableName(),
-    $index,
-    $path->getID());
-}
+// This migration depended on the Owners application, which has been removed
+// from the Mozilla fork. It is kept as a no-op so the patch list stays
+// consistent with installs where it has already been applied.

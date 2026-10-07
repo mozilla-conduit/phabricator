@@ -20,7 +20,7 @@ abstract class DifferentialRevisionReviewTransaction
     // Remove reviewers which aren't actionable. In the case of "Accept", we
     // may allow the transaction to proceed with some reviewers who have
     // already accepted, to avoid race conditions where two reviewers fill
-    // out the form at the same time and accept on behalf of the same package.
+    // out the form at the same time and accept on behalf of the same project.
     // It's okay for these reviewers to survive validation, but they should
     // not survive beyond this point.
     $value = array_fuse($value);
@@ -119,17 +119,7 @@ abstract class DifferentialRevisionReviewTransaction
     // the desired set of states.
     foreach ($revision->getReviewers() as $reviewer) {
       if (!$reviewer->hasAuthority($viewer)) {
-        $can_force = false;
-
-        if ($is_accepted) {
-          if ($revision->canReviewerForceAccept($viewer, $reviewer)) {
-            $can_force = true;
-          }
-        }
-
-        if (!$can_force) {
-          continue;
-        }
+        continue;
       }
 
       $status = $reviewer->getReviewerStatus();
@@ -179,18 +169,11 @@ abstract class DifferentialRevisionReviewTransaction
     // reviewers you have authority for. When you resign, you only affect
     // yourself.
     $with_authority = ($status != DifferentialReviewerStatus::STATUS_RESIGNED);
-    $with_force = ($status == DifferentialReviewerStatus::STATUS_ACCEPTED);
 
     if ($with_authority) {
       foreach ($revision->getReviewers() as $reviewer) {
         if (!$reviewer->hasAuthority($viewer)) {
-          if (!$with_force) {
-            continue;
-          }
-
-          if (!$revision->canReviewerForceAccept($viewer, $reviewer)) {
-            continue;
-          }
+          continue;
         }
 
         $map[$reviewer->getReviewerPHID()] = $status;

@@ -324,6 +324,10 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
     $phd_reason = pht(
       'Use "bin/phd debug ..." to get a detailed daemon execution log.');
 
+    $removed_application_reason = pht(
+      'The application which used this option has been removed from '.
+      'this Phabricator install.');
+
     $ancient_config += array(
       'phid.external-loaders' =>
         pht(
@@ -543,6 +547,19 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
 
       'phd.trace' => $phd_reason,
       'phd.verbose' => $phd_reason,
+
+      'phurl.short-uri' => $removed_application_reason,
+      'debug.sample-rate' => $removed_application_reason,
+      'maniphest.custom-field-definitions' => $removed_application_reason,
+      'maniphest.fields' => $removed_application_reason,
+      'maniphest.priorities' => $removed_application_reason,
+      'maniphest.statuses' => $removed_application_reason,
+      'maniphest.default-priority' => $removed_application_reason,
+      'maniphest.points' => $removed_application_reason,
+      'maniphest.subtypes' => $removed_application_reason,
+      'debug.profile-rate' => $removed_application_reason,
+      'owners.fields' => $removed_application_reason,
+      'owners.custom-field-definitions' => $removed_application_reason,
     );
 
     return $ancient_config;

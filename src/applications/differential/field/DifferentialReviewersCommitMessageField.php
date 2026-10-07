@@ -25,7 +25,6 @@ final class DifferentialReviewersCommitMessageField
       array(
         PhabricatorPeopleUserPHIDType::TYPECONST,
         PhabricatorProjectProjectPHIDType::TYPECONST,
-        PhabricatorOwnersPackagePHIDType::TYPECONST,
       ),
       false,
       array('!'));

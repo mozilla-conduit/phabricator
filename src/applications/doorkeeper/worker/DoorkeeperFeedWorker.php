@@ -89,7 +89,7 @@ abstract class DoorkeeperFeedWorker extends FeedPushWorker {
 
   /**
    * Get the primary object the story is about, like a
-   * @{class:DifferentialRevision} or @{class:ManiphestTask}.
+   * @{class:DifferentialRevision}.
    *
    * @return object Object which the story is about.
    * @task context

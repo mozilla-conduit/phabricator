@@ -796,32 +796,32 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
     $exploration = $this->createProject($user);
     $exploration_diplomacy = $this->createProject($user, $exploration);
 
-    $task_engineering = $this->newTask(
+    $dashboard_engineering = $this->newDashboard(
       $user,
       array($engineering),
       pht('Engineering Only'));
 
-    $task_exploration = $this->newTask(
+    $dashboard_exploration = $this->newDashboard(
       $user,
       array($exploration),
       pht('Exploration Only'));
 
-    $task_warp_explore = $this->newTask(
+    $dashboard_warp_explore = $this->newDashboard(
       $user,
       array($engineering_warp, $exploration),
       pht('Warp to New Planet'));
 
-    $task_diplomacy_scan = $this->newTask(
+    $dashboard_diplomacy_scan = $this->newDashboard(
       $user,
       array($engineering_scan, $exploration_diplomacy),
       pht('Scan Diplomat'));
 
-    $task_diplomacy = $this->newTask(
+    $dashboard_diplomacy = $this->newDashboard(
       $user,
       array($exploration_diplomacy),
       pht('Diplomatic Meeting'));
 
-    $task_warp_scan = $this->newTask(
+    $dashboard_warp_scan = $this->newDashboard(
       $user,
       array($engineering_scan, $engineering_warp),
       pht('Scan Warp Drives'));
@@ -829,10 +829,10 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
     $this->assertQueryByProjects(
       $user,
       array(
-        $task_engineering,
-        $task_warp_explore,
-        $task_diplomacy_scan,
-        $task_warp_scan,
+        $dashboard_engineering,
+        $dashboard_warp_explore,
+        $dashboard_diplomacy_scan,
+        $dashboard_warp_scan,
       ),
       array($engineering),
       pht('All Engineering'));
@@ -840,8 +840,8 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
     $this->assertQueryByProjects(
       $user,
       array(
-        $task_diplomacy_scan,
-        $task_warp_scan,
+        $dashboard_diplomacy_scan,
+        $dashboard_warp_scan,
       ),
       array($engineering_scan),
       pht('All Scan'));
@@ -849,8 +849,8 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
     $this->assertQueryByProjects(
       $user,
       array(
-        $task_warp_explore,
-        $task_diplomacy_scan,
+        $dashboard_warp_explore,
+        $dashboard_diplomacy_scan,
       ),
       array($engineering, $exploration),
       pht('Engineering + Exploration'));
@@ -860,8 +860,8 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
     $this->assertQueryByProjects(
       $user,
       array(
-        $task_diplomacy_scan,
-        $task_warp_scan,
+        $dashboard_diplomacy_scan,
+        $dashboard_warp_scan,
       ),
       array($engineering, $engineering_scan),
       pht('Engineering + Scan'));
@@ -875,37 +875,40 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
     $stonework_masonry = $this->createProject($user, $stonework);
     $stonework_sculpting = $this->createProject($user, $stonework);
 
-    $task = $this->newTask($user, array());
-    $this->assertEqual(array(), $this->getTaskProjects($task));
+    $dashboard = $this->newDashboard($user, array());
+    $this->assertEqual(array(), $this->getDashboardProjects($dashboard));
 
-    $this->addProjectTags($user, $task, array($stonework->getPHID()));
+    $this->addProjectTags($user, $dashboard, array($stonework->getPHID()));
     $this->assertEqual(
       array(
         $stonework->getPHID(),
       ),
-      $this->getTaskProjects($task));
+      $this->getDashboardProjects($dashboard));
 
     // Adding a descendant should remove the parent.
-    $this->addProjectTags($user, $task, array($stonework_masonry->getPHID()));
+    $this->addProjectTags(
+      $user,
+      $dashboard,
+      array($stonework_masonry->getPHID()));
     $this->assertEqual(
       array(
         $stonework_masonry->getPHID(),
       ),
-      $this->getTaskProjects($task));
+      $this->getDashboardProjects($dashboard));
 
     // Adding an ancestor should remove the descendant.
-    $this->addProjectTags($user, $task, array($stonework->getPHID()));
+    $this->addProjectTags($user, $dashboard, array($stonework->getPHID()));
     $this->assertEqual(
       array(
         $stonework->getPHID(),
       ),
-      $this->getTaskProjects($task));
+      $this->getDashboardProjects($dashboard));
 
     // Adding two tags in the same hierarchy which are not mutual ancestors
     // should remove the ancestor but otherwise work fine.
     $this->addProjectTags(
       $user,
-      $task,
+      $dashboard,
       array(
         $stonework_masonry->getPHID(),
         $stonework_sculpting->getPHID(),
@@ -917,7 +920,7 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
     );
     sort($expect);
 
-    $this->assertEqual($expect,  $this->getTaskProjects($task));
+    $this->assertEqual($expect,  $this->getDashboardProjects($dashboard));
   }
 
   public function testTagMilestoneConflicts() {
@@ -928,256 +931,41 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
     $stonework_1 = $this->createProject($user, $stonework, true);
     $stonework_2 = $this->createProject($user, $stonework, true);
 
-    $task = $this->newTask($user, array());
-    $this->assertEqual(array(), $this->getTaskProjects($task));
+    $dashboard = $this->newDashboard($user, array());
+    $this->assertEqual(array(), $this->getDashboardProjects($dashboard));
 
-    $this->addProjectTags($user, $task, array($stonework->getPHID()));
+    $this->addProjectTags($user, $dashboard, array($stonework->getPHID()));
     $this->assertEqual(
       array(
         $stonework->getPHID(),
       ),
-      $this->getTaskProjects($task));
+      $this->getDashboardProjects($dashboard));
 
     // Adding a milesone should remove the parent.
-    $this->addProjectTags($user, $task, array($stonework_1->getPHID()));
+    $this->addProjectTags($user, $dashboard, array($stonework_1->getPHID()));
     $this->assertEqual(
       array(
         $stonework_1->getPHID(),
       ),
-      $this->getTaskProjects($task));
+      $this->getDashboardProjects($dashboard));
 
     // Adding the parent should remove the milestone.
-    $this->addProjectTags($user, $task, array($stonework->getPHID()));
+    $this->addProjectTags($user, $dashboard, array($stonework->getPHID()));
     $this->assertEqual(
       array(
         $stonework->getPHID(),
       ),
-      $this->getTaskProjects($task));
+      $this->getDashboardProjects($dashboard));
 
     // First, add one milestone.
-    $this->addProjectTags($user, $task, array($stonework_1->getPHID()));
+    $this->addProjectTags($user, $dashboard, array($stonework_1->getPHID()));
     // Now, adding a second milestone should remove the first milestone.
-    $this->addProjectTags($user, $task, array($stonework_2->getPHID()));
+    $this->addProjectTags($user, $dashboard, array($stonework_2->getPHID()));
     $this->assertEqual(
       array(
         $stonework_2->getPHID(),
       ),
-      $this->getTaskProjects($task));
-  }
-
-  public function testBoardMoves() {
-    $user = $this->createUser();
-    $user->save();
-
-    $board = $this->createProject($user);
-
-    $backlog = $this->addColumn($user, $board, 0);
-    $column = $this->addColumn($user, $board, 1);
-
-    // New tasks should appear in the backlog.
-    $task1 = $this->newTask($user, array($board));
-    $expect = array(
-      $backlog->getPHID(),
-    );
-    $this->assertColumns($expect, $user, $board, $task1);
-
-    // Moving a task should move it to the destination column.
-    $this->moveToColumn($user, $board, $task1, $backlog, $column);
-    $expect = array(
-      $column->getPHID(),
-    );
-    $this->assertColumns($expect, $user, $board, $task1);
-
-    // Same thing again, with a new task.
-    $task2 = $this->newTask($user, array($board));
-    $expect = array(
-      $backlog->getPHID(),
-    );
-    $this->assertColumns($expect, $user, $board, $task2);
-
-    // Move it, too.
-    $this->moveToColumn($user, $board, $task2, $backlog, $column);
-    $expect = array(
-      $column->getPHID(),
-    );
-    $this->assertColumns($expect, $user, $board, $task2);
-
-    // Now the stuff should be in the column, in order, with the more recently
-    // moved task on top.
-    $expect = array(
-      $task2->getPHID(),
-      $task1->getPHID(),
-    );
-    $label = pht('Simple move');
-    $this->assertTasksInColumn($expect, $user, $board, $column, $label);
-
-    // Move the second task after the first task.
-    $options = array(
-      'afterPHIDs' => array($task1->getPHID()),
-    );
-    $this->moveToColumn($user, $board, $task2, $column, $column, $options);
-    $expect = array(
-      $task1->getPHID(),
-      $task2->getPHID(),
-    );
-    $label = pht('With afterPHIDs');
-    $this->assertTasksInColumn($expect, $user, $board, $column, $label);
-
-    // Move the second task before the first task.
-    $options = array(
-      'beforePHIDs' => array($task1->getPHID()),
-    );
-    $this->moveToColumn($user, $board, $task2, $column, $column, $options);
-    $expect = array(
-      $task2->getPHID(),
-      $task1->getPHID(),
-    );
-    $label = pht('With beforePHIDs');
-    $this->assertTasksInColumn($expect, $user, $board, $column, $label);
-  }
-
-  public function testMilestoneMoves() {
-    $user = $this->createUser();
-    $user->save();
-
-    $board = $this->createProject($user);
-
-    $backlog = $this->addColumn($user, $board, 0);
-
-    // Create a task into the backlog.
-    $task = $this->newTask($user, array($board));
-    $expect = array(
-      $backlog->getPHID(),
-    );
-    $this->assertColumns($expect, $user, $board, $task);
-
-    $milestone = $this->createProject($user, $board, true);
-
-    $this->addProjectTags($user, $task, array($milestone->getPHID()));
-
-    // We just want the side effect of looking at the board: creation of the
-    // milestone column.
-    $this->loadColumns($user, $board, $task);
-
-    $column = id(new PhabricatorProjectColumnQuery())
-      ->setViewer($user)
-      ->withProjectPHIDs(array($board->getPHID()))
-      ->withProxyPHIDs(array($milestone->getPHID()))
-      ->executeOne();
-
-    $this->assertTrue((bool)$column);
-
-    // Moving the task to the milestone should have moved it to the milestone
-    // column.
-    $expect = array(
-      $column->getPHID(),
-    );
-    $this->assertColumns($expect, $user, $board, $task);
-
-
-    // Move the task within the "Milestone" column. This should not affect
-    // the projects the task is tagged with. See T10912.
-    $task_a = $task;
-
-    $task_b = $this->newTask($user, array($backlog));
-    $this->moveToColumn($user, $board, $task_b, $backlog, $column);
-
-    $a_options = array(
-      'beforePHID' => $task_b->getPHID(),
-    );
-
-    $b_options = array(
-      'beforePHID' => $task_a->getPHID(),
-    );
-
-    $old_projects = $this->getTaskProjects($task);
-
-    // Move the target task to the top.
-    $this->moveToColumn($user, $board, $task_a, $column, $column, $a_options);
-    $new_projects = $this->getTaskProjects($task_a);
-    $this->assertEqual($old_projects, $new_projects);
-
-    // Move the other task.
-    $this->moveToColumn($user, $board, $task_b, $column, $column, $b_options);
-    $new_projects = $this->getTaskProjects($task_a);
-    $this->assertEqual($old_projects, $new_projects);
-
-    // Move the target task again.
-    $this->moveToColumn($user, $board, $task_a, $column, $column, $a_options);
-    $new_projects = $this->getTaskProjects($task_a);
-    $this->assertEqual($old_projects, $new_projects);
-
-
-    // Add the parent project to the task. This should move it out of the
-    // milestone column and into the parent's backlog.
-    $this->addProjectTags($user, $task, array($board->getPHID()));
-    $expect_columns = array(
-      $backlog->getPHID(),
-    );
-    $this->assertColumns($expect_columns, $user, $board, $task);
-
-    $new_projects = $this->getTaskProjects($task);
-    $expect_projects = array(
-      $board->getPHID(),
-    );
-    $this->assertEqual($expect_projects, $new_projects);
-  }
-
-  public function testColumnExtendedPolicies() {
-    $user = $this->createUser();
-    $user->save();
-
-    $board = $this->createProject($user);
-    $column = $this->addColumn($user, $board, 0);
-
-    // At first, the user should be able to view and edit the column.
-    $column = $this->refreshColumn($user, $column);
-    $this->assertTrue((bool)$column);
-
-    $can_edit = PhabricatorPolicyFilter::hasCapability(
-      $user,
-      $column,
-      PhabricatorPolicyCapability::CAN_EDIT);
-    $this->assertTrue($can_edit);
-
-    // Now, set the project edit policy to "Members of Project". This should
-    // disable editing.
-    $members_policy = id(new PhabricatorProjectMembersPolicyRule())
-      ->getObjectPolicyFullKey();
-    $board->setEditPolicy($members_policy)->save();
-
-    $column = $this->refreshColumn($user, $column);
-    $this->assertTrue((bool)$column);
-
-    $can_edit = PhabricatorPolicyFilter::hasCapability(
-      $user,
-      $column,
-      PhabricatorPolicyCapability::CAN_EDIT);
-    $this->assertFalse($can_edit);
-
-    // Now, join the project. This should make the column editable again.
-    $this->joinProject($board, $user);
-
-    $column = $this->refreshColumn($user, $column);
-    $this->assertTrue((bool)$column);
-
-    // This test has been failing randomly in a way that doesn't reproduce
-    // on any host, so add some extra assertions to try to nail it down.
-    $board = $this->refreshProject($board, $user, true);
-    $this->assertTrue((bool)$board);
-    $this->assertTrue($board->isUserMember($user->getPHID()));
-
-    $can_view = PhabricatorPolicyFilter::hasCapability(
-      $user,
-      $column,
-      PhabricatorPolicyCapability::CAN_VIEW);
-    $this->assertTrue($can_view);
-
-    $can_edit = PhabricatorPolicyFilter::hasCapability(
-      $user,
-      $column,
-      PhabricatorPolicyCapability::CAN_EDIT);
-    $this->assertTrue($can_edit);
+      $this->getDashboardProjects($dashboard));
   }
 
   public function testProjectPolicyRules() {
@@ -1226,11 +1014,11 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
         ))
       ->save();
 
-    $any_task = ManiphestTask::initializeNewTask($author)
+    $any_dashboard = PhabricatorDashboard::initializeNewDashboard($author)
       ->setViewPolicy($any_policy->getPHID())
       ->save();
 
-    $all_task = ManiphestTask::initializeNewTask($author)
+    $all_dashboard = PhabricatorDashboard::initializeNewDashboard($author)
       ->setViewPolicy($all_policy->getPHID())
       ->save();
 
@@ -1260,12 +1048,12 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
 
       $can_any = PhabricatorPolicyFilter::hasCapability(
         $user,
-        $any_task,
+        $any_dashboard,
         PhabricatorPolicyCapability::CAN_VIEW);
 
       $can_all = PhabricatorPolicyFilter::hasCapability(
         $user,
-        $all_task,
+        $all_dashboard,
         PhabricatorPolicyCapability::CAN_VIEW);
 
       $this->assertEqual($expect_any, $can_any, pht('%s / Any', $label));
@@ -1274,102 +1062,9 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
   }
 
 
-  private function moveToColumn(
-    PhabricatorUser $viewer,
-    PhabricatorProject $board,
-    ManiphestTask $task,
-    PhabricatorProjectColumn $src,
-    PhabricatorProjectColumn $dst,
-    $options = null) {
-
-    $xactions = array();
-
-    if (!$options) {
-      $options = array();
-    }
-
-    $value = array(
-      'columnPHID' => $dst->getPHID(),
-    ) + $options;
-
-    $xactions[] = id(new ManiphestTransaction())
-      ->setTransactionType(PhabricatorTransactions::TYPE_COLUMNS)
-      ->setNewValue(array($value));
-
-    $editor = id(new ManiphestTransactionEditor())
-      ->setActor($viewer)
-      ->setContentSource($this->newContentSource())
-      ->setContinueOnNoEffect(true)
-      ->applyTransactions($task, $xactions);
-  }
-
-  private function assertColumns(
-    array $expect,
-    PhabricatorUser $viewer,
-    PhabricatorProject $board,
-    ManiphestTask $task) {
-    $column_phids = $this->loadColumns($viewer, $board, $task);
-    $this->assertEqual($expect, $column_phids);
-  }
-
-  private function loadColumns(
-    PhabricatorUser $viewer,
-    PhabricatorProject $board,
-    ManiphestTask $task) {
-    $engine = id(new PhabricatorBoardLayoutEngine())
-      ->setViewer($viewer)
-      ->setBoardPHIDs(array($board->getPHID()))
-      ->setObjectPHIDs(
-        array(
-          $task->getPHID(),
-        ))
-      ->executeLayout();
-
-    $columns = $engine->getObjectColumns($board->getPHID(), $task->getPHID());
-    $column_phids = mpull($columns, 'getPHID');
-    $column_phids = array_values($column_phids);
-
-    return $column_phids;
-  }
-
-  private function assertTasksInColumn(
-    array $expect,
-    PhabricatorUser $viewer,
-    PhabricatorProject $board,
-    PhabricatorProjectColumn $column,
-    $label = null) {
-
-    $engine = id(new PhabricatorBoardLayoutEngine())
-      ->setViewer($viewer)
-      ->setBoardPHIDs(array($board->getPHID()))
-      ->setObjectPHIDs($expect)
-      ->executeLayout();
-
-    $object_phids = $engine->getColumnObjectPHIDs(
-      $board->getPHID(),
-      $column->getPHID());
-    $object_phids = array_values($object_phids);
-
-    $this->assertEqual($expect, $object_phids, $label);
-  }
-
-  private function addColumn(
-    PhabricatorUser $viewer,
-    PhabricatorProject $project,
-    $sequence) {
-
-    $project->setHasWorkboard(1)->save();
-
-    return PhabricatorProjectColumn::initializeNewColumn($viewer)
-      ->setSequence(0)
-      ->setProperty('isDefault', ($sequence == 0))
-      ->setProjectPHID($project->getPHID())
-      ->save();
-  }
-
-  private function getTaskProjects(ManiphestTask $task) {
+  private function getDashboardProjects(PhabricatorDashboard $dashboard) {
     $project_phids = PhabricatorEdgeQuery::loadDestinationPHIDs(
-      $task->getPHID(),
+      $dashboard->getPHID(),
       PhabricatorProjectObjectHasProjectEdgeType::EDGECONST);
 
     sort($project_phids);
@@ -1406,12 +1101,12 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
 
   private function addProjectTags(
     PhabricatorUser $viewer,
-    ManiphestTask $task,
+    PhabricatorDashboard $dashboard,
     array $phids) {
 
     $xactions = array();
 
-    $xactions[] = id(new ManiphestTransaction())
+    $xactions[] = id(new PhabricatorDashboardTransaction())
       ->setTransactionType(PhabricatorTransactions::TYPE_EDGE)
       ->setMetadataValue(
         'edge:type',
@@ -1421,32 +1116,32 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
           '+' => array_fuse($phids),
         ));
 
-    $editor = id(new ManiphestTransactionEditor())
+    $editor = id(new PhabricatorDashboardTransactionEditor())
       ->setActor($viewer)
       ->setContentSource($this->newContentSource())
       ->setContinueOnNoEffect(true)
-      ->applyTransactions($task, $xactions);
+      ->applyTransactions($dashboard, $xactions);
   }
 
-  private function newTask(
+  private function newDashboard(
     PhabricatorUser $viewer,
     array $projects,
     $name = null) {
 
-    $task = ManiphestTask::initializeNewTask($viewer);
+    $dashboard = PhabricatorDashboard::initializeNewDashboard($viewer);
 
     if ($name === null || $name === '') {
-      $name = pht('Test Task');
+      $name = pht('Test Dashboard');
     }
 
     $xactions = array();
 
-    $xactions[] = id(new ManiphestTransaction())
-      ->setTransactionType(ManiphestTaskTitleTransaction::TRANSACTIONTYPE)
+    $xactions[] = id(new PhabricatorDashboardTransaction())
+      ->setTransactionType(PhabricatorDashboardNameTransaction::TRANSACTIONTYPE)
       ->setNewValue($name);
 
     if ($projects) {
-      $xactions[] = id(new ManiphestTransaction())
+      $xactions[] = id(new PhabricatorDashboardTransaction())
         ->setTransactionType(PhabricatorTransactions::TYPE_EDGE)
         ->setMetadataValue(
           'edge:type',
@@ -1457,13 +1152,13 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
           ));
     }
 
-    $editor = id(new ManiphestTransactionEditor())
+    $editor = id(new PhabricatorDashboardTransactionEditor())
       ->setActor($viewer)
       ->setContentSource($this->newContentSource())
       ->setContinueOnNoEffect(true)
-      ->applyTransactions($task, $xactions);
+      ->applyTransactions($dashboard, $xactions);
 
-    return $task;
+    return $dashboard;
   }
 
   private function assertQueryByProjects(
@@ -1478,19 +1173,19 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
     $project_phids = mpull($projects, 'getPHID');
     $constraints = $datasource->evaluateTokens($project_phids);
 
-    $query = id(new ManiphestTaskQuery())
+    $query = id(new PhabricatorDashboardQuery())
       ->setViewer($viewer);
 
     $query->withEdgeLogicConstraints(
       PhabricatorProjectObjectHasProjectEdgeType::EDGECONST,
       $constraints);
 
-    $tasks = $query->execute();
+    $dashboards = $query->execute();
 
-    $expect_phids = mpull($expect, 'getTitle', 'getPHID');
+    $expect_phids = mpull($expect, 'getName', 'getPHID');
     ksort($expect_phids);
 
-    $actual_phids = mpull($tasks, 'getTitle', 'getPHID');
+    $actual_phids = mpull($dashboards, 'getName', 'getPHID');
     ksort($actual_phids);
 
     $this->assertEqual($expect_phids, $actual_phids, $label);
@@ -1507,22 +1202,6 @@ final class PhabricatorProjectCoreTestCase extends PhabricatorTestCase {
       ->needMembers($need_members)
       ->needWatchers($need_watchers)
       ->withIDs(array($project->getID()))
-      ->execute();
-
-    if ($results) {
-      return head($results);
-    } else {
-      return null;
-    }
-  }
-
-  private function refreshColumn(
-    PhabricatorUser $viewer,
-    PhabricatorProjectColumn $column) {
-
-    $results = id(new PhabricatorProjectColumnQuery())
-      ->setViewer($viewer)
-      ->withIDs(array($column->getID()))
       ->execute();
 
     if ($results) {

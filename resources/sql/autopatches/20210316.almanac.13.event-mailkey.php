@@ -1,28 +1,5 @@
 <?php
 
-$event_table = new PhabricatorCalendarEvent();
-$event_conn = $event_table->establishConnection('w');
-
-$properties_table = new PhabricatorMetaMTAMailProperties();
-$conn = $properties_table->establishConnection('w');
-
-$iterator = new LiskRawMigrationIterator(
-  $event_conn,
-  $event_table->getTableName());
-
-foreach ($iterator as $row) {
-  queryfx(
-    $conn,
-    'INSERT IGNORE INTO %R
-        (objectPHID, mailProperties, dateCreated, dateModified)
-      VALUES
-        (%s, %s, %d, %d)',
-    $properties_table,
-    $row['phid'],
-    phutil_json_encode(
-      array(
-        'mailKey' => $row['mailKey'],
-      )),
-    PhabricatorTime::getNow(),
-    PhabricatorTime::getNow());
-}
+// This migration depended on the Calendar application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

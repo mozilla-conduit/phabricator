@@ -1,23 +1,5 @@
 <?php
 
-echo pht('Giving countdowns PHIDs');
-$table = new PhabricatorCountdown();
-$table->openTransaction();
-
-foreach (new LiskMigrationIterator($table) as $countdown) {
-  if ($countdown->getPHID()) {
-    continue;
-  }
-
-  echo '.';
-
-  queryfx(
-    $countdown->establishConnection('w'),
-    'UPDATE %T SET phid = %s WHERE id = %d',
-    $countdown->getTableName(),
-    $countdown->generatePHID(),
-    $countdown->getID());
-}
-
-$table->saveTransaction();
-echo "\n".pht('Done.')."\n";
+// This migration depended on the Countdown application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

@@ -3,7 +3,6 @@
 final class PHUIDiffTableOfContentsListView extends AphrontView {
 
   private $items = array();
-  private $authorityPackages;
   private $header;
   private $infoView;
   private $background;
@@ -14,16 +13,6 @@ final class PHUIDiffTableOfContentsListView extends AphrontView {
   public function addItem(PHUIDiffTableOfContentsItemView $item) {
     $this->items[] = $item;
     return $this;
-  }
-
-  public function setAuthorityPackages(array $authority_packages) {
-    assert_instances_of($authority_packages, 'PhabricatorOwnersPackage');
-    $this->authorityPackages = $authority_packages;
-    return $this;
-  }
-
-  public function getAuthorityPackages() {
-    return $this->authorityPackages;
   }
 
   public function setBackground($background) {
@@ -55,12 +44,6 @@ final class PHUIDiffTableOfContentsListView extends AphrontView {
     $this->requireResource('differential-table-of-contents-css');
 
     Javelin::initBehavior('phabricator-tooltips');
-
-    if ($this->getAuthorityPackages()) {
-      $authority = mpull($this->getAuthorityPackages(), null, 'getPHID');
-    } else {
-      $authority = array();
-    }
 
     $items = $this->items;
     $viewer = $this->getViewer();
@@ -108,7 +91,6 @@ final class PHUIDiffTableOfContentsListView extends AphrontView {
       }
     }
 
-    $any_packages = false;
     $any_coverage = false;
     $any_context = false;
 
@@ -149,16 +131,6 @@ final class PHUIDiffTableOfContentsListView extends AphrontView {
       $style = sprintf('padding-left: %dpx;', $depth * 16);
 
       if ($item) {
-        $packages = $item->renderPackages();
-      } else {
-        $packages = null;
-      }
-
-      if ($packages) {
-        $any_packages = true;
-      }
-
-      if ($item) {
         if ($item->getCoverage()) {
           $any_coverage = true;
         }
@@ -195,25 +167,9 @@ final class PHUIDiffTableOfContentsListView extends AphrontView {
         $lines,
         $coverage,
         $modified_coverage,
-        $packages,
       );
 
       $classes = array();
-
-      $have_authority = false;
-
-      if ($item) {
-        $packages = $item->getPackages();
-        if ($packages) {
-          if (array_intersect_key($packages, $authority)) {
-            $have_authority = true;
-          }
-        }
-      }
-
-      if ($have_authority) {
-        $classes[] = 'highlighted';
-      }
 
       if (!$node->getAttribute('important')) {
         $classes[] = 'diff-toc-low-importance-row';
@@ -238,7 +194,6 @@ final class PHUIDiffTableOfContentsListView extends AphrontView {
           pht('Size'),
           pht('Coverage (All)'),
           pht('Coverage (Touched)'),
-          pht('Packages'),
         ))
       ->setColumnClasses(
         array(
@@ -247,7 +202,6 @@ final class PHUIDiffTableOfContentsListView extends AphrontView {
           'right',
           'differential-toc-cov',
           'differential-toc-cov',
-          null,
         ))
       ->setColumnVisibility(
         array(
@@ -256,7 +210,6 @@ final class PHUIDiffTableOfContentsListView extends AphrontView {
           true,
           $any_coverage,
           $any_coverage,
-          $any_packages,
         ))
       ->setDeviceVisibility(
         array(
@@ -265,7 +218,6 @@ final class PHUIDiffTableOfContentsListView extends AphrontView {
           false,
           false,
           false,
-          true,
         ));
 
     $anchor = id(new PhabricatorAnchorView())

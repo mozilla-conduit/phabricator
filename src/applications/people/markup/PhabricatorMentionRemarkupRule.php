@@ -72,7 +72,6 @@ final class PhabricatorMentionRemarkupRule extends PhutilRemarkupRule {
     $users = id(new PhabricatorPeopleQuery())
       ->setViewer($this->getEngine()->getConfig('viewer'))
       ->withUsernames($usernames)
-      ->needAvailability(true)
       ->execute();
 
     $actual_users = array();
@@ -171,15 +170,6 @@ final class PhabricatorMentionRemarkupRule extends PhutilRemarkupRule {
             $tag->setDotColor(PHUITagView::COLOR_GREY);
           } else if (!$user->isResponsive()) {
             $tag->setDotColor(PHUITagView::COLOR_VIOLET);
-          } else {
-            if ($user->getAwayUntil()) {
-              $away = PhabricatorCalendarEventInvitee::AVAILABILITY_AWAY;
-              if ($user->getDisplayAvailability() == $away) {
-                $tag->setDotColor(PHUITagView::COLOR_RED);
-              } else {
-                $tag->setDotColor(PHUITagView::COLOR_ORANGE);
-              }
-            }
           }
         }
 

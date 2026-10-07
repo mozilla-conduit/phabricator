@@ -1,20 +1,5 @@
 <?php
 
-$key = 'metamta.maniphest.public-create-email';
-echo pht("Migrating `%s` to new application email infrastructure...\n", $key);
-$value = PhabricatorEnv::getEnvConfigIfExists($key);
-$maniphest = new PhabricatorManiphestApplication();
-
-if ($value) {
-  try {
-    PhabricatorMetaMTAApplicationEmail::initializeNewAppEmail(
-      PhabricatorUser::getOmnipotentUser())
-      ->setAddress($value)
-      ->setApplicationPHID($maniphest->getPHID())
-      ->save();
-  } catch (AphrontDuplicateKeyQueryException $ex) {
-    // Already migrated?
-  }
-}
-
-echo pht('Done.')."\n";
+// This migration depended on the Maniphest application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

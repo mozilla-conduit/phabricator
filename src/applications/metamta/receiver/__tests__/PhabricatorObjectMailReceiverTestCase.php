@@ -10,7 +10,7 @@ final class PhabricatorObjectMailReceiverTestCase
   }
 
   public function testDropUnconfiguredPublicMail() {
-    list($task, $user, $mail) = $this->buildMail('public');
+    list($file, $user, $mail) = $this->buildMail('public');
 
     $env = PhabricatorEnv::beginScopedEnv();
     $env->overrideEnvConfig('metamta.public-replies', false);
@@ -24,11 +24,10 @@ final class PhabricatorObjectMailReceiverTestCase
   }
 
   public function testDropPolicyViolationMail() {
-    list($task, $user, $mail) = $this->buildMail('policy');
+    list($file, $user, $mail) = $this->buildMail('policy');
 
-    $task
+    $file
       ->setViewPolicy(PhabricatorPolicies::POLICY_NOONE)
-      ->setOwnerPHID(null)
       ->save();
 
     $env = PhabricatorEnv::beginScopedEnv();
@@ -43,7 +42,7 @@ final class PhabricatorObjectMailReceiverTestCase
   }
 
   public function testDropInvalidObjectMail() {
-    list($task, $user, $mail) = $this->buildMail('404');
+    list($file, $user, $mail) = $this->buildMail('404');
 
     $mail->save();
     $mail->processReceivedMail();
@@ -54,7 +53,7 @@ final class PhabricatorObjectMailReceiverTestCase
   }
 
   public function testDropUserMismatchMail() {
-    list($task, $user, $mail) = $this->buildMail('baduser');
+    list($file, $user, $mail) = $this->buildMail('baduser');
 
     $mail->save();
     $mail->processReceivedMail();
@@ -65,7 +64,7 @@ final class PhabricatorObjectMailReceiverTestCase
   }
 
   public function testDropHashMismatchMail() {
-    list($task, $user, $mail) = $this->buildMail('badhash');
+    list($file, $user, $mail) = $this->buildMail('badhash');
 
     $mail->save();
     $mail->processReceivedMail();
@@ -78,9 +77,19 @@ final class PhabricatorObjectMailReceiverTestCase
   private function buildMail($style) {
     $user = $this->generateNewTestUser();
 
-    $task = id(new PhabricatorManiphestTaskTestDataGenerator())
-      ->setViewer($user)
-      ->generateObject();
+    // The file is authored by someone else, so the sender does not get an
+    // automatic view capability on it.
+    $author = $this->generateNewTestUser();
+    $file = PhabricatorFile::newFromFileData(
+      Filesystem::readRandomCharacters(64),
+      array(
+        'name' => 'mail.dat',
+        'viewPolicy' => PhabricatorPolicies::POLICY_USER,
+        'authorPHID' => $author->getPHID(),
+        'storageEngines' => array(
+          new PhabricatorTestStorageEngine(),
+        ),
+      ));
 
     $is_public = ($style === 'public');
     $is_bad_hash = ($style == 'badhash');
@@ -99,20 +108,20 @@ final class PhabricatorObjectMailReceiverTestCase
       $hash = PhabricatorObjectMailReceiver::computeMailHash('x', 'y');
     } else {
 
-      $mail_key = PhabricatorMetaMTAMailProperties::loadMailKey($task);
+      $mail_key = PhabricatorMetaMTAMailProperties::loadMailKey($file);
 
       $hash = PhabricatorObjectMailReceiver::computeMailHash(
         $mail_key,
-        $is_public ? $task->getPHID() : $user->getPHID());
+        $is_public ? $file->getPHID() : $user->getPHID());
     }
 
     if ($is_404_object) {
-      $task_identifier = 'T'.($task->getID() + 1);
+      $file_identifier = 'F'.($file->getID() + 1);
     } else {
-      $task_identifier = 'T'.$task->getID();
+      $file_identifier = 'F'.$file->getID();
     }
 
-    $to = $task_identifier.'+'.$user_identifier.'+'.$hash.'@example.com';
+    $to = $file_identifier.'+'.$user_identifier.'+'.$hash.'@example.com';
 
     $mail = new PhabricatorMetaMTAReceivedMail();
     $mail->setHeaders(
@@ -127,7 +136,7 @@ final class PhabricatorObjectMailReceiverTestCase
         'text' => 'test',
       ));
 
-    return array($task, $user, $mail);
+    return array($file, $user, $mail);
   }
 
 

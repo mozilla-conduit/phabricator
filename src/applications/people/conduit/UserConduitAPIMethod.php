@@ -8,8 +8,7 @@ abstract class UserConduitAPIMethod extends ConduitAPIMethod {
 
   protected function buildUserInformationDictionary(
     PhabricatorUser $user,
-    $with_email = false,
-    $with_availability = false) {
+    $with_email = false) {
 
     $roles = array();
     if ($user->getIsDisabled()) {
@@ -53,16 +52,6 @@ abstract class UserConduitAPIMethod extends ConduitAPIMethod {
 
     if ($with_email) {
       $return['primaryEmail'] = $email;
-    }
-
-    if ($with_availability) {
-      // TODO: Modernize this once we have a more long-term view of what the
-      // data looks like.
-      $until = $user->getAwayUntil();
-      if ($until) {
-        $return['currentStatus'] = 'away';
-        $return['currentStatusUntil'] = $until;
-      }
     }
 
     return $return;

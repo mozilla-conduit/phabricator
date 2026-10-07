@@ -351,55 +351,12 @@ final class PhabricatorMarkupEngine extends Phobject {
   /**
    * @task engine
    */
-  public static function newManiphestMarkupEngine() {
-    return self::newMarkupEngine(array(
-    ));
-  }
-
-
-  /**
-   * @task engine
-   */
-  public static function newPhrictionMarkupEngine() {
-    return self::newMarkupEngine(array(
-      'header.generate-toc' => true,
-    ));
-  }
-
-
-  /**
-   * @task engine
-   */
-  public static function newPhameMarkupEngine() {
-    return self::newMarkupEngine(
-      array(
-        'macros' => false,
-        'uri.full' => true,
-        'uri.same-window' => true,
-        'uri.base' => PhabricatorEnv::getURI('/'),
-      ));
-  }
-
-
-  /**
-   * @task engine
-   */
   public static function newFeedMarkupEngine() {
     return self::newMarkupEngine(
       array(
-        'macros'      => false,
         'youtube'     => false,
       ));
   }
-
-  /**
-   * @task engine
-   */
-  public static function newCalendarMarkupEngine() {
-    return self::newMarkupEngine(array(
-    ));
-  }
-
 
   /**
    * @task engine
@@ -447,12 +404,6 @@ final class PhabricatorMarkupEngine extends Phobject {
         $engine->setConfig('preserve-linebreaks', false);
         $engine->setConfig('header.generate-toc', true);
         break;
-      case 'diviner':
-        $engine = self::newMarkupEngine(array());
-        $engine->setConfig('preserve-linebreaks', false);
-  //    $engine->setConfig('diviner.renderer', new DivinerDefaultRenderer());
-        $engine->setConfig('header.generate-toc', true);
-        break;
       case 'extract':
         // Engine used for reference/edge extraction. Turn off anything which
         // is slow and doesn't change reference extraction.
@@ -477,7 +428,6 @@ final class PhabricatorMarkupEngine extends Phobject {
         'remarkup.enable-embedded-youtube'),
       'differential.diff' => null,
       'header.generate-toc' => false,
-      'macros'        => true,
       'uri.allowed-protocols' => PhabricatorEnv::getEnvConfig(
         'uri.allowed-protocols'),
       'uri.full' => false,
@@ -551,11 +501,6 @@ final class PhabricatorMarkupEngine extends Phobject {
     }
 
     $rules[] = new PhutilRemarkupHyperlinkRule();
-
-    if ($options['macros']) {
-      $rules[] = new PhabricatorImageMacroRemarkupRule();
-      $rules[] = new PhabricatorMemeRemarkupRule();
-    }
 
     $rules[] = new PhutilRemarkupBoldRule();
     $rules[] = new PhutilRemarkupItalicRule();

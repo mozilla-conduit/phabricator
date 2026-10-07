@@ -8,7 +8,7 @@ final class DiffusionAuditorDatasource
   }
 
   public function getPlaceholderText() {
-    return pht('Type a user, project or package name...');
+    return pht('Type a user or project name...');
   }
 
   public function getDatasourceApplicationClass() {
@@ -19,7 +19,6 @@ final class DiffusionAuditorDatasource
     return array(
       new PhabricatorPeopleDatasource(),
       new PhabricatorProjectDatasource(),
-      new PhabricatorOwnersPackageDatasource(),
     );
   }
 

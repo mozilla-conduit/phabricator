@@ -8,7 +8,7 @@ final class DifferentialReviewerFunctionDatasource
   }
 
   public function getPlaceholderText() {
-    return pht('Type a user, project, package name or function...');
+    return pht('Type a user, project name or function...');
   }
 
   public function getDatasourceApplicationClass() {
@@ -18,7 +18,6 @@ final class DifferentialReviewerFunctionDatasource
   public function getComponentDatasources() {
     return array(
       new PhabricatorProjectOrUserFunctionDatasource(),
-      new PhabricatorOwnersPackageFunctionDatasource(),
       new DifferentialNoReviewersDatasource(),
     );
   }

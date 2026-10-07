@@ -88,11 +88,6 @@ final class AphrontApplicationConfiguration
       return self::writeResponse($sink, $response);
     }
 
-    PhabricatorStartup::beginStartupPhase('multimeter');
-    $multimeter = MultimeterControl::newInstance();
-    $multimeter->setEventContext('<http-init>');
-    $multimeter->setEventViewer('<none>');
-
     // Build a no-op write guard for the setup phase. We'll replace this with a
     // real write guard later on, but we need to survive setup and build a
     // request object first.
@@ -130,9 +125,6 @@ final class AphrontApplicationConfiguration
       return self::writeResponse($sink, $response);
     }
 
-    $multimeter->setSampleRate(
-      PhabricatorEnv::getEnvConfig('debug.sample-rate'));
-
     $debug_time_limit = PhabricatorEnv::getEnvConfig('debug.time-limit');
     if ($debug_time_limit) {
       PhabricatorStartup::setDebugTimeLimit($debug_time_limit);
@@ -158,10 +150,6 @@ final class AphrontApplicationConfiguration
         'M' => idx($_SERVER, 'REQUEST_METHOD', '-'),
       ));
 
-    DarkConsoleXHProfPluginAPI::hookProfiler();
-
-    // We just activated the profiler, so we don't need to keep track of
-    // startup phases anymore: it can take over from here.
     PhabricatorStartup::beginStartupPhase('startup.done');
 
     DarkConsoleErrorLogPluginAPI::registerErrorHandler();
@@ -204,8 +192,7 @@ final class AphrontApplicationConfiguration
       $response = $application->processRequest(
         $request,
         $access_log,
-        $sink,
-        $multimeter);
+        $sink);
       $response_code = $response->getHTTPResponseCode();
     } catch (Exception $ex) {
       $processing_exception = $ex;
@@ -220,16 +207,7 @@ final class AphrontApplicationConfiguration
         'T' => PhabricatorStartup::getMicrosecondsSinceStart(),
       ));
 
-    $multimeter->newEvent(
-      MultimeterEvent::TYPE_REQUEST_TIME,
-      $multimeter->getEventContext(),
-      PhabricatorStartup::getMicrosecondsSinceStart());
-
     $access_log->write();
-
-    $multimeter->saveEvents();
-
-    DarkConsoleXHProfPluginAPI::saveProfilerSample($access_log);
 
     PhabricatorStartup::disconnectRateLimits(
       array(
@@ -245,8 +223,7 @@ final class AphrontApplicationConfiguration
   public function processRequest(
     AphrontRequest $request,
     PhutilDeferredLog $access_log,
-    AphrontHTTPSink $sink,
-    MultimeterControl $multimeter) {
+    AphrontHTTPSink $sink) {
 
     $this->setRequest($request);
 
@@ -257,7 +234,6 @@ final class AphrontApplicationConfiguration
       array(
         'C' => $controller_class,
       ));
-    $multimeter->setEventContext('web.'.$controller_class);
 
     $request->setController($controller);
     $request->setURIMap($uri_data);
@@ -277,7 +253,6 @@ final class AphrontApplicationConfiguration
             'u' => $request->getUser()->getUserName(),
             'P' => $request->getUser()->getPHID(),
           ));
-        $multimeter->setEventViewer('user.'.$request->getUser()->getPHID());
       }
 
       if (!$response) {

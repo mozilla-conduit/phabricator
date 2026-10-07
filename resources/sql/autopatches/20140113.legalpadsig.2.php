@@ -1,23 +1,5 @@
 <?php
 
-echo pht('Adding secretkeys to legalpad document signatures.')."\n";
-
-$table = new LegalpadDocumentSignature();
-$conn_w = $table->establishConnection('w');
-$iterator = new LiskMigrationIterator($table);
-foreach ($iterator as $sig) {
-  $id = $sig->getID();
-
-  echo pht('Populating signature %d...', $id)."\n";
-
-  if (!$sig->getSecretKey()) {
-    queryfx(
-      $conn_w,
-      'UPDATE %T SET secretKey = %s WHERE id = %d',
-      $table->getTableName(),
-      Filesystem::readRandomCharacters(20),
-      $id);
-  }
-}
-
-echo pht('Done.')."\n";
+// This migration depended on the Legalpad application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

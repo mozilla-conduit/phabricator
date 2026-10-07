@@ -42,7 +42,6 @@ JX.install('DiffChangeset', {
     this._pathIconIcon = data.pathIconIcon;
     this._pathIconColor = data.pathIconColor;
     this._isLowImportance = data.isLowImportance;
-    this._isOwned = data.isOwned;
     this._isLoading = true;
 
     this._inlines = null;
@@ -98,7 +97,6 @@ JX.install('DiffChangeset', {
     _pathIconIcon: null,
     _pathIconColor: null,
     _isLowImportance: null,
-    _isOwned: null,
     _isHidden: null,
     _isSelected: false,
     _viewMenu: null,
@@ -1060,7 +1058,6 @@ JX.install('DiffChangeset', {
           .setChangeset(this)
           .setPath(this._pathParts)
           .setIsLowImportance(this._isLowImportance)
-          .setIsOwned(this._isOwned)
           .setIsLoading(this._isLoading);
 
         view.getIcon()

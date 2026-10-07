@@ -20,22 +20,6 @@
   z-index: 2;
 }
 
-.pholio-new-inline-comment {
-  z-index: 2;
-}
-
-.slowvote-bar {
-  z-index: 2;
-}
-
-div.phui-calendar-day-event {
-  z-index: 2;
-}
-
-.slowvote-above-the-bar {
-  z-index: 3;
-}
-
 .phui-timeline-icon-fill {
   z-index: 3;
 }
@@ -48,27 +32,7 @@ div.phui-calendar-day-event {
   z-index: 4;
 }
 
-.project-board-header {
-  z-index: 4;
-}
-
-.conpherence-layout .conpherence-no-threads {
-  z-index: 4;
-}
-
-.conpherence-menu-pane {
-  z-index: 4;
-}
-
-.conpherence-message-pane .conpherence-search-main {
-  z-index: 4;
-}
-
 .dark-console {
-  z-index: 5;
-}
-
-.phui-calendar-date-number  {
   z-index: 5;
 }
 
@@ -87,10 +51,6 @@ div.phui-calendar-day-event {
 
 .diff-banner {
   z-index: 6;
-}
-
-.conpherence-durable-column {
-  z-index: 7;
 }
 
 .jx-scrollbar-bar {
@@ -146,20 +106,8 @@ div.jx-typeahead-results {
   z-index: 17;
 }
 
-.pholio-device-lightbox {
-  z-index: 20;
-}
-
 .phuix-autocomplete {
   z-index: 21;
-}
-
-.conpherence-participant-pane {
-  z-index: 25;
-}
-
-.conpherence-layout .conpherence-loading-mask {
-  z-index: 30;
 }
 
 .phuix-dropdown-menu {

@@ -341,10 +341,9 @@ final class PhabricatorAuditEditor
     $actor = $this->getActor();
     $result = array();
 
-    // Some interactions (like "Fixes Txxx" interacting with Maniphest) have
-    // already been processed, so we're only re-parsing them here to avoid
-    // generating an extra redundant mention. Other interactions are being
-    // processed for the first time.
+    // Some interactions have already been processed, so we're only re-parsing
+    // them here to avoid generating an extra redundant mention. Other
+    // interactions are being processed for the first time.
 
     // We're only recognizing magic in the commit message itself, not in
     // audit comments.
@@ -366,14 +365,6 @@ final class PhabricatorAuditEditor
     $huge_block = implode("\n\n", $flat_blocks);
     $phid_map = array();
     $monograms = array();
-
-    $task_refs = id(new ManiphestCustomFieldStatusParser())
-      ->parseCorpus($huge_block);
-    foreach ($task_refs as $match) {
-      foreach ($match['monograms'] as $monogram) {
-        $monograms[] = $monogram;
-      }
-    }
 
     $rev_refs = id(new DifferentialCustomFieldDependsOnParser())
       ->parseCorpus($huge_block);
@@ -410,31 +401,6 @@ final class PhabricatorAuditEditor
       $this->reopenRevertedRevisions($reverted_objects);
 
       $phid_map[] = $reverted_phids;
-    }
-
-    // See T13463. Copy "related task" edges from the associated revision, if
-    // one exists.
-
-    $revision = DiffusionCommitRevisionQuery::loadRevisionForCommit(
-      $actor,
-      $object);
-    if ($revision) {
-      $task_phids = PhabricatorEdgeQuery::loadDestinationPHIDs(
-        $revision->getPHID(),
-        DifferentialRevisionHasTaskEdgeType::EDGECONST);
-      $task_phids = array_fuse($task_phids);
-
-      if ($task_phids) {
-        $related_edge = DiffusionCommitHasTaskEdgeType::EDGECONST;
-        $result[] = id(new PhabricatorAuditTransaction())
-          ->setTransactionType(PhabricatorTransactions::TYPE_EDGE)
-          ->setMetadataValue('edge:type', $related_edge)
-          ->setNewValue(array('+' => $task_phids));
-      }
-
-      // Mark these objects as unmentionable, since the explicit relationship
-      // is stronger and any mentions are redundant.
-      $phid_map[] = $task_phids;
     }
 
     $phid_map = array_mergev($phid_map);

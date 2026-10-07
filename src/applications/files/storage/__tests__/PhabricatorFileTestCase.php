@@ -69,9 +69,10 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
   }
 
   public function testFileIndirectScramble() {
-    // When a file is attached to an object like a task and the task view
-    // policy changes, the file secret should be scrambled. This invalidates
-    // old URIs if tasks get locked down.
+    // When a file is attached to an object and the object view policy
+    // changes, the file secret should be scrambled. This invalidates old URIs
+    // if objects get locked down. Another file is used as the object here,
+    // since files accept comments.
 
     $engine = new PhabricatorTestStorageEngine();
     $data = Filesystem::readRandomCharacters(64);
@@ -90,29 +91,26 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
     $file = PhabricatorFile::newFromFileData($data, $params);
     $secret1 = $file->getSecretKey();
 
-    $task = ManiphestTask::initializeNewTask($author);
+    $host = $this->newHostFile($author, $engine);
 
     $xactions = array();
-    $xactions[] = id(new ManiphestTransaction())
-      ->setTransactionType(ManiphestTaskTitleTransaction::TRANSACTIONTYPE)
-      ->setNewValue(pht('File Scramble Test Task'));
-
-    $xactions[] = id(new ManiphestTransaction())
-      ->setTransactionType(
-        ManiphestTaskDescriptionTransaction::TRANSACTIONTYPE)
-      ->setNewValue('{'.$file->getMonogram().'}')
+    $xactions[] = id(new PhabricatorFileTransaction())
+      ->setTransactionType(PhabricatorTransactions::TYPE_COMMENT)
       ->setMetadataValue(
         'remarkup.control',
         array(
           'attachedFilePHIDs' => array(
             $file->getPHID(),
           ),
-        ));
+        ))
+      ->attachComment(
+        id(new PhabricatorFileTransactionComment())
+          ->setContent('{'.$file->getMonogram().'}'));
 
-    id(new ManiphestTransactionEditor())
+    id(new PhabricatorFileEditor())
       ->setActor($author)
       ->setContentSource($this->newContentSource())
-      ->applyTransactions($task, $xactions);
+      ->applyTransactions($host, $xactions);
 
     $file = $file->reload();
     $secret2 = $file->getSecretKey();
@@ -120,19 +118,17 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
     $this->assertEqual(
       $secret1,
       $secret2,
-      pht(
-        'File policy should not scramble when attached to '.
-        'newly created object.'));
+      pht('File policy should not scramble when attached to an object.'));
 
     $xactions = array();
-    $xactions[] = id(new ManiphestTransaction())
+    $xactions[] = id(new PhabricatorFileTransaction())
       ->setTransactionType(PhabricatorTransactions::TYPE_VIEW_POLICY)
       ->setNewValue($author->getPHID());
 
-    id(new ManiphestTransactionEditor())
+    id(new PhabricatorFileEditor())
       ->setActor($author)
       ->setContentSource($this->newContentSource())
-      ->applyTransactions($task, $xactions);
+      ->applyTransactions($host, $xactions);
 
     $file = $file->reload();
     $secret3 = $file->getSecretKey();
@@ -174,10 +170,7 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
 
     // Create an object and test object policies.
 
-    $object = ManiphestTask::initializeNewTask($author)
-      ->setTitle(pht('File Visibility Test Task'))
-      ->setViewPolicy(PhabricatorPolicies::getMostOpenPolicy())
-      ->save();
+    $object = $this->newHostFile($author, $engine);
 
     $this->assertTrue(
       $filter->hasCapability(
@@ -199,13 +192,13 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
     $file_ref = '{F'.$file->getID().'}';
 
     $xactions = array();
-    $xactions[] = id(new ManiphestTransaction())
+    $xactions[] = id(new PhabricatorFileTransaction())
       ->setTransactionType(PhabricatorTransactions::TYPE_COMMENT)
       ->attachComment(
-        id(new ManiphestTransactionComment())
+        id(new PhabricatorFileTransactionComment())
           ->setContent($file_ref));
 
-    id(new ManiphestTransactionEditor())
+    id(new PhabricatorFileEditor())
       ->setActor($author)
       ->setContentSource($this->newContentSource())
       ->applyTransactions($object, $xactions);
@@ -223,7 +216,7 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
     // policy exception for the non-author viewer.
 
     $xactions = array();
-    $xactions[] = id(new ManiphestTransaction())
+    $xactions[] = id(new PhabricatorFileTransaction())
       ->setTransactionType(PhabricatorTransactions::TYPE_COMMENT)
       ->setMetadataValue(
         'remarkup.control',
@@ -233,10 +226,10 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
           ),
         ))
       ->attachComment(
-        id(new ManiphestTransactionComment())
+        id(new PhabricatorFileTransactionComment())
           ->setContent($file_ref));
 
-    id(new ManiphestTransactionEditor())
+    id(new PhabricatorFileEditor())
       ->setActor($author)
       ->setContentSource($this->newContentSource())
       ->applyTransactions($object, $xactions);
@@ -275,6 +268,22 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
       ),
       $this->canViewFile($users, $xform),
       pht('Attached Thumbnail Visibility'));
+  }
+
+  private function newHostFile(
+    PhabricatorUser $author,
+    PhabricatorFileStorageEngine $engine) {
+
+    return PhabricatorFile::newFromFileData(
+      Filesystem::readRandomCharacters(64),
+      array(
+        'name' => 'host.dat',
+        'viewPolicy' => PhabricatorPolicies::getMostOpenPolicy(),
+        'authorPHID' => $author->getPHID(),
+        'storageEngines' => array(
+          $engine,
+        ),
+      ));
   }
 
   private function canViewFile(array $users, PhabricatorFile $file) {

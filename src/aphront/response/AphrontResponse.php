@@ -160,15 +160,15 @@ abstract class AphrontResponse extends Phobject {
     // "Monospaced Font Preference" setting.
     $csp[] = "style-src {$default} 'unsafe-inline'";
 
-    // On a small number of pages, including the Stripe workflow and the
-    // ReCAPTCHA challenge, we embed external Javascript directly.
+    // On a small number of pages, including the ReCAPTCHA challenge, we
+    // embed external Javascript directly.
     $csp[] = $this->newContentSecurityPolicy('script-src', $default);
 
     // We need to specify that we can connect to ourself in order for AJAX
     // requests to work.
     $csp[] = $this->newContentSecurityPolicy('connect-src', "'self'");
 
-    // DarkConsole and PHPAST both use frames to render some content.
+    // DarkConsole uses frames to render some content.
     $csp[] = $this->newContentSecurityPolicy('frame-src', "'self'");
 
     // This is a more modern flavor of of "X-Frame-Options" and prevents

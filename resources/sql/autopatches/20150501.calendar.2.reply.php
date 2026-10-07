@@ -1,21 +1,5 @@
 <?php
 
-echo pht('Adding %s to events.', 'mailkeys')."\n";
-
-$table = new PhabricatorCalendarEvent();
-$conn_w = $table->establishConnection('w');
-$iterator = new LiskMigrationIterator($table);
-foreach ($iterator as $event) {
-  $id = $event->getID();
-
-  echo pht('Populating event %d...', $id)."\n";
-
-  queryfx(
-    $conn_w,
-    'UPDATE %T SET mailKey = %s WHERE id = %d',
-    $table->getTableName(),
-    Filesystem::readRandomCharacters(20),
-    $id);
-}
-
-echo pht('Done.')."\n";
+// This migration depended on the Calendar application, which has been
+// removed from the Mozilla fork. It is kept as a no-op so the patch list
+// stays consistent with installs where it has already been applied.

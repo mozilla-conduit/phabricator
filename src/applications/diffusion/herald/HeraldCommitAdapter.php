@@ -12,8 +12,6 @@ final class HeraldCommitAdapter
 
   protected $affectedPaths;
   protected $affectedRevision;
-  protected $affectedPackages;
-  protected $auditNeededPackages;
 
   private $buildRequests = array();
 
@@ -143,40 +141,29 @@ final class HeraldCommitAdapter
     $viewer = $this->getViewer();
 
     if ($this->affectedPaths === null) {
-      $result = PhabricatorOwnerPathQuery::loadAffectedPaths(
-        $this->getRepository(),
-        $this->commit,
-        $viewer);
+      $drequest = DiffusionRequest::newFromDictionary(
+        array(
+          'user' => $viewer,
+          'repository' => $this->getRepository(),
+          'commit' => $this->commit->getCommitIdentifier(),
+        ));
+
+      $paths = DiffusionPathChangeQuery::newFromDiffusionRequest($drequest)
+        ->loadChanges();
+
+      $result = array();
+      foreach ($paths as $path) {
+        $basic_path = '/'.$path->getPath();
+        if ($path->getFileType() == DifferentialChangeType::FILE_DIRECTORY) {
+          $basic_path = rtrim($basic_path, '/').'/';
+        }
+        $result[] = $basic_path;
+      }
+
       $this->affectedPaths = $result;
     }
 
     return $this->affectedPaths;
-  }
-
-  public function loadAffectedPackages() {
-    if ($this->affectedPackages === null) {
-      $packages = PhabricatorOwnersPackage::loadAffectedPackages(
-        $this->getRepository(),
-        $this->loadAffectedPaths());
-      $this->affectedPackages = $packages;
-    }
-    return $this->affectedPackages;
-  }
-
-  public function loadAuditNeededPackages() {
-    if ($this->auditNeededPackages === null) {
-      $status_arr = array(
-        PhabricatorAuditRequestStatus::AUDIT_REQUIRED,
-        PhabricatorAuditRequestStatus::CONCERNED,
-      );
-      $requests = id(new PhabricatorRepositoryAuditRequest())
-          ->loadAllWhere(
-        'commitPHID = %s AND auditStatus IN (%Ls)',
-        $this->commit->getPHID(),
-        $status_arr);
-      $this->auditNeededPackages = $requests;
-    }
-    return $this->auditNeededPackages;
   }
 
   public function loadDifferentialRevision() {

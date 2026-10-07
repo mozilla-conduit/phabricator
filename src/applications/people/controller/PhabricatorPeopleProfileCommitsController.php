@@ -12,7 +12,6 @@ final class PhabricatorPeopleProfileCommitsController
       ->withIDs(array($id))
       ->needProfile(true)
       ->needProfileImage(true)
-      ->needAvailability(true)
       ->executeOne();
     if (!$user) {
       return new Aphront404Response();

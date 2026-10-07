@@ -23,9 +23,6 @@ final class DifferentialChangeset
   private $hunks = self::ATTACHABLE;
   private $diff = self::ATTACHABLE;
 
-  private $authorityPackages;
-  private $changesetPackages;
-
   private $newFileObject = self::ATTACHABLE;
   private $oldFileObject = self::ATTACHABLE;
 
@@ -103,23 +100,6 @@ final class DifferentialChangeset
     return $name;
   }
 
-  public function getOwnersFilename() {
-    // TODO: For Subversion, we should adjust these paths to be relative to
-    // the repository root where possible.
-
-    $path = $this->getFilename();
-
-    if (!isset($path[0])) {
-      return '/';
-    }
-
-    if ($path[0] != '/') {
-      $path = '/'.$path;
-    }
-
-    return $path;
-  }
-
   public function addUnsavedHunk(DifferentialHunk $hunk) {
     if ($this->hunks === self::ATTACHABLE) {
       $this->hunks = array();
@@ -127,24 +107,6 @@ final class DifferentialChangeset
     $this->hunks[] = $hunk;
     $this->unsavedHunks[] = $hunk;
     return $this;
-  }
-
-  public function setAuthorityPackages(array $authority_packages) {
-    $this->authorityPackages = mpull($authority_packages, null, 'getPHID');
-    return $this;
-  }
-
-  public function getAuthorityPackages() {
-    return $this->authorityPackages;
-  }
-
-  public function setChangesetPackages($changeset_packages) {
-    $this->changesetPackages = mpull($changeset_packages, null, 'getPHID');
-    return $this;
-  }
-
-  public function getChangesetPackages() {
-    return $this->changesetPackages;
   }
 
   public function setHasOldState($has_old_state) {
@@ -353,17 +315,6 @@ final class DifferentialChangeset
 
     return id(new PHUIIconView())
       ->setIcon("{$icon} {$color}");
-  }
-
-  public function getIsOwnedChangeset() {
-    $authority_packages = $this->getAuthorityPackages();
-    $changeset_packages = $this->getChangesetPackages();
-
-    if (!$authority_packages || !$changeset_packages) {
-      return false;
-    }
-
-    return (bool)array_intersect_key($authority_packages, $changeset_packages);
   }
 
   public function getIsLowImportanceChangeset() {

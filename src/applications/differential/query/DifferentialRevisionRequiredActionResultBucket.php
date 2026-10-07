@@ -34,7 +34,7 @@ class DifferentialRevisionRequiredActionResultBucket
 
     // The goal is to allow users to resign from revisions they don't want to
     // review to get these revisions off their dashboard, even if there are
-    // other project or package reviewers which they have authority over.
+    // other project reviewers which they have authority over.
     $this->filterResigned($phids);
 
     // We also throw away draft revisions which you aren't the author of.

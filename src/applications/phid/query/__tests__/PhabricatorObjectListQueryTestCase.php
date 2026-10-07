@@ -38,28 +38,33 @@ final class PhabricatorObjectListQueryTestCase extends PhabricatorTestCase {
       ),
       $result);
 
-    $package = PhabricatorOwnersPackage::initializeNewPackage($user)
-      ->setName(pht('Query Test Package'))
-      ->save();
+    $file = PhabricatorFile::newFromFileData(
+      'query test',
+      array(
+        'name' => 'query-test.txt',
+        'storageEngines' => array(
+          new PhabricatorTestStorageEngine(),
+        ),
+      ));
 
-    $package_phid = $package->getPHID();
-    $package_mono = $package->getMonogram();
+    $file_phid = $file->getPHID();
+    $file_mono = $file->getMonogram();
 
-    $result = $this->parseObjectList("{$package_mono} Any Ignored Text");
-    $this->assertEqual(array($package_phid), $result);
+    $result = $this->parseObjectList("{$file_mono} Any Ignored Text");
+    $this->assertEqual(array($file_phid), $result);
 
-    $result = $this->parseObjectList("{$package_mono} Any Text, {$name}");
-    $this->assertEqual(array($package_phid, $phid), $result);
+    $result = $this->parseObjectList("{$file_mono} Any Text, {$name}");
+    $this->assertEqual(array($file_phid, $phid), $result);
 
     $result = $this->parseObjectList(
-      "{$package_mono} Any Text!, {$name}",
+      "{$file_mono} Any Text!, {$name}",
       array(),
       false,
       array('!'));
     $this->assertEqual(
       array(
         array(
-          'phid' => $package_phid,
+          'phid' => $file_phid,
           'suffixes' => array('!' => '!'),
         ),
         array(

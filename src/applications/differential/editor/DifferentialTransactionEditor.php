@@ -11,8 +11,6 @@ final class DifferentialTransactionEditor
   private $wasBroadcasting;
   private $isDraftDemotion;
 
-  private $ownersDiff;
-  private $ownersChangesets;
 
   private $mergeCheckDiffPHID;
   private $mergeCheckStackChanged = false;
@@ -160,9 +158,6 @@ final class DifferentialTransactionEditor
 
     $actor = $this->getActor();
     $actor_phid = $this->getActingAsPHID();
-    $type_edge = PhabricatorTransactions::TYPE_EDGE;
-
-    $edge_ref_task = DifferentialRevisionHasTaskEdgeType::EDGECONST;
 
     $want_downgrade = array();
     $must_downgrade = array();
@@ -203,44 +198,6 @@ final class DifferentialTransactionEditor
 
     $new_author_phid = null;
     switch ($xaction->getTransactionType()) {
-      case DifferentialRevisionUpdateTransaction::TRANSACTIONTYPE:
-        if ($this->getIsCloseByCommit()) {
-          // Don't bother with any of this if this update is a side effect of
-          // commit detection.
-          break;
-        }
-
-        // When a revision is updated and the diff comes from a branch named
-        // "T123" or similar, automatically associate the commit with the
-        // task that the branch names.
-
-        $maniphest = 'PhabricatorManiphestApplication';
-        if (PhabricatorApplication::isClassInstalled($maniphest)) {
-          $diff = $this->requireDiff($xaction->getNewValue());
-          $branch = $diff->getBranch();
-
-          // No "$", to allow for branches like T123_demo.
-          $match = null;
-          if (preg_match('/^T(\d+)/i', $branch, $match)) {
-            $task_id = $match[1];
-            $tasks = id(new ManiphestTaskQuery())
-              ->setViewer($this->getActor())
-              ->withIDs(array($task_id))
-              ->execute();
-            if ($tasks) {
-              $task = head($tasks);
-              $task_phid = $task->getPHID();
-
-              $results[] = id(new DifferentialTransaction())
-                ->setTransactionType($type_edge)
-                ->setMetadataValue('edge:type', $edge_ref_task)
-                ->setIgnoreOnNoEffect(true)
-                ->setNewValue(array('+' => array($task_phid => $task_phid)));
-            }
-          }
-        }
-        break;
-
       case DifferentialRevisionCommandeerTransaction::TRANSACTIONTYPE:
         $new_author_phid = $actor_phid;
         break;
@@ -410,9 +367,6 @@ final class DifferentialTransactionEditor
       }
 
       if ($has_new_diff) {
-        $this->ownersDiff = $new_diff;
-        $this->ownersChangesets = $new_diff->getChangesets();
-
         // Only record what needs rechecking here. The tasks themselves are
         // queued once the transaction has committed, in
         // `queueMergeConflictChecks`.
@@ -835,7 +789,7 @@ final class DifferentialTransactionEditor
     array $changes,
     PhutilMarkupEngine $engine) {
 
-    // For "Fixes ..." and "Depends on ...", we're only going to look at
+    // For "Depends on ..." and "Reverts ...", we're only going to look at
     // content blocks which are part of the revision itself (like "Summary"
     // and  "Test Plan"), not comments.
     $content_parts = array();
@@ -849,15 +803,6 @@ final class DifferentialTransactionEditor
       return array();
     }
     $content_block = implode("\n\n", $content_parts);
-    $task_map = array();
-    $task_refs = id(new ManiphestCustomFieldStatusParser())
-      ->parseCorpus($content_block);
-    foreach ($task_refs as $match) {
-      foreach ($match['monograms'] as $monogram) {
-        $task_id = (int)trim($monogram, 'tT');
-        $task_map[$task_id] = true;
-      }
-    }
 
     $rev_map = array();
     $rev_refs = id(new DifferentialCustomFieldDependsOnParser())
@@ -870,21 +815,7 @@ final class DifferentialTransactionEditor
     }
 
     $edges = array();
-    $task_phids = array();
     $rev_phids = array();
-
-    if ($task_map) {
-      $tasks = id(new ManiphestTaskQuery())
-        ->setViewer($this->getActor())
-        ->withIDs(array_keys($task_map))
-        ->execute();
-
-      if ($tasks) {
-        $task_phids = mpull($tasks, 'getPHID', 'getPHID');
-        $edge_related = DifferentialRevisionHasTaskEdgeType::EDGECONST;
-        $edges[$edge_related] = $task_phids;
-      }
-    }
 
     if ($rev_map) {
       $revs = id(new DifferentialRevisionQuery())
@@ -928,7 +859,6 @@ final class DifferentialTransactionEditor
       $revert_phids = array();
     }
 
-    $this->addUnmentionablePHIDs($task_phids);
     $this->addUnmentionablePHIDs($rev_phids);
     $this->addUnmentionablePHIDs($revert_phids);
 
@@ -1054,201 +984,6 @@ final class DifferentialTransactionEditor
     PhabricatorLiskDAO $object,
     array $xactions) {
     return true;
-  }
-
-  protected function didApplyHeraldRules(
-    PhabricatorLiskDAO $object,
-    HeraldAdapter $adapter,
-    HeraldTranscript $transcript) {
-
-    $repository = $object->getRepository();
-    if (!$repository) {
-      return array();
-    }
-
-    $diff = $this->ownersDiff;
-    $changesets = $this->ownersChangesets;
-
-    $this->ownersDiff = null;
-    $this->ownersChangesets = null;
-
-    if (!$changesets) {
-      return array();
-    }
-
-    $packages = PhabricatorOwnersPackage::loadAffectedPackagesForChangesets(
-      $repository,
-      $diff,
-      $changesets);
-    if (!$packages) {
-      return array();
-    }
-
-    // Identify the packages with "Non-Owner Author" review rules and remove
-    // them if the author has authority over the package.
-
-    $autoreview_map = PhabricatorOwnersPackage::getAutoreviewOptionsMap();
-    $need_authority = array();
-    foreach ($packages as $package) {
-      $autoreview_setting = $package->getAutoReview();
-
-      $spec = idx($autoreview_map, $autoreview_setting);
-      if (!$spec) {
-        continue;
-      }
-
-      if (idx($spec, 'authority')) {
-        $need_authority[$package->getPHID()] = $package->getPHID();
-      }
-    }
-
-    if ($need_authority) {
-      $authority = id(new PhabricatorOwnersPackageQuery())
-        ->setViewer(PhabricatorUser::getOmnipotentUser())
-        ->withPHIDs($need_authority)
-        ->withAuthorityPHIDs(array($object->getAuthorPHID()))
-        ->execute();
-      $authority = mpull($authority, null, 'getPHID');
-
-      foreach ($packages as $key => $package) {
-        $package_phid = $package->getPHID();
-        if (isset($authority[$package_phid])) {
-          unset($packages[$key]);
-          continue;
-        }
-      }
-
-      if (!$packages) {
-        return array();
-      }
-    }
-
-    $auto_subscribe = array();
-    $auto_review = array();
-    $auto_block = array();
-
-    foreach ($packages as $package) {
-      switch ($package->getAutoReview()) {
-        case PhabricatorOwnersPackage::AUTOREVIEW_REVIEW:
-        case PhabricatorOwnersPackage::AUTOREVIEW_REVIEW_ALWAYS:
-          $auto_review[] = $package;
-          break;
-        case PhabricatorOwnersPackage::AUTOREVIEW_BLOCK:
-        case PhabricatorOwnersPackage::AUTOREVIEW_BLOCK_ALWAYS:
-          $auto_block[] = $package;
-          break;
-        case PhabricatorOwnersPackage::AUTOREVIEW_SUBSCRIBE:
-        case PhabricatorOwnersPackage::AUTOREVIEW_SUBSCRIBE_ALWAYS:
-          $auto_subscribe[] = $package;
-          break;
-        case PhabricatorOwnersPackage::AUTOREVIEW_NONE:
-        default:
-          break;
-      }
-    }
-
-    $owners_phid = id(new PhabricatorOwnersApplication())
-      ->getPHID();
-
-    $xactions = array();
-    if ($auto_subscribe) {
-      $xactions[] = $object->getApplicationTransactionTemplate()
-        ->setAuthorPHID($owners_phid)
-        ->setTransactionType(PhabricatorTransactions::TYPE_SUBSCRIBERS)
-        ->setNewValue(
-          array(
-            '+' => mpull($auto_subscribe, 'getPHID'),
-          ));
-    }
-
-    $specs = array(
-      array($auto_review, false),
-      array($auto_block, true),
-    );
-
-    foreach ($specs as $spec) {
-      list($reviewers, $blocking) = $spec;
-      if (!$reviewers) {
-        continue;
-      }
-
-      $phids = mpull($reviewers, 'getPHID');
-      $xaction = $this->newAutoReviewTransaction($object, $phids, $blocking);
-      if ($xaction) {
-        $xactions[] = $xaction;
-      }
-    }
-
-    return $xactions;
-  }
-
-  private function newAutoReviewTransaction(
-    PhabricatorLiskDAO $object,
-    array $phids,
-    $is_blocking) {
-
-    // TODO: This is substantially similar to DifferentialReviewersHeraldAction
-    // and both are needlessly complex. This logic should live in the normal
-    // transaction application pipeline. See T10967.
-
-    $reviewers = $object->getReviewers();
-    $reviewers = mpull($reviewers, null, 'getReviewerPHID');
-
-    if ($is_blocking) {
-      $new_status = DifferentialReviewerStatus::STATUS_BLOCKING;
-    } else {
-      $new_status = DifferentialReviewerStatus::STATUS_ADDED;
-    }
-
-    $new_strength = DifferentialReviewerStatus::getStatusStrength(
-      $new_status);
-
-    $current = array();
-    foreach ($phids as $phid) {
-      if (!isset($reviewers[$phid])) {
-        continue;
-      }
-
-      // If we're applying a stronger status (usually, upgrading a reviewer
-      // into a blocking reviewer), skip this check so we apply the change.
-      $old_strength = DifferentialReviewerStatus::getStatusStrength(
-        $reviewers[$phid]->getReviewerStatus());
-      if ($old_strength <= $new_strength) {
-        continue;
-      }
-
-      $current[] = $phid;
-    }
-
-    $phids = array_diff($phids, $current);
-
-    if (!$phids) {
-      return null;
-    }
-
-    $phids = array_fuse($phids);
-
-    $value = array();
-    foreach ($phids as $phid) {
-      if ($is_blocking) {
-        $value[] = 'blocking('.$phid.')';
-      } else {
-        $value[] = $phid;
-      }
-    }
-
-    $owners_phid = id(new PhabricatorOwnersApplication())
-      ->getPHID();
-
-    $reviewers_type = DifferentialRevisionReviewersTransaction::TRANSACTIONTYPE;
-
-    return $object->getApplicationTransactionTemplate()
-      ->setAuthorPHID($owners_phid)
-      ->setTransactionType($reviewers_type)
-      ->setNewValue(
-        array(
-          '+' => $value,
-        ));
   }
 
   protected function buildHeraldAdapter(
