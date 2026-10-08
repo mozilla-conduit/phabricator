@@ -200,6 +200,30 @@ final class RevisionMergeConflictEngine extends Phobject {
       $target_tip);
   }
 
+  /**
+   * Restates a verdict reached against an earlier tip as one reached against
+   * `$target_tip`, for a caller that has established the branch only moved
+   * through commits that can't change it. Returns `null` if the stack no
+   * longer starts from the base the verdict was reached from.
+   */
+  public function newCarriedOverResult(
+    string $status,
+    string $checked_base,
+    string $target_tip): ?array {
+
+    $base = $this->resolveBaseCommit();
+    if ($base !== $checked_base) {
+      return null;
+    }
+
+    return $this->newResult(
+      $status,
+      $this->newVerdictReason($status, $base, $target_tip),
+      null,
+      $base,
+      $target_tip);
+  }
+
 /* -(  Scratch objects  )---------------------------------------------------- */
 
   /**

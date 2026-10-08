@@ -323,11 +323,16 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
     // branch can queue many tasks for the same revision; since each task
     // resolves the branch tip live, they would otherwise all recompute the
     // same answer.
-    if ($this->isResultCurrent($revision, $active_diff, $engine)) {
+    $stored = id(new DifferentialMergeConflictStatusField())
+      ->readStoredValueForObject($revision->getPHID());
+    if ($this->isResultCurrent($stored, $active_diff, $engine)) {
       return;
     }
 
-    $result = $engine->executeCheck();
+    $result = self::newCarriedOverResult($stored, $active_diff, $engine);
+    if ($result === null) {
+      $result = $engine->executeCheck();
+    }
 
     $this->writeResult($revision, $active_diff, $engine, $result);
   }
@@ -335,18 +340,13 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
   /**
    * Returns true if the revision's stored status was computed from the inputs a
    * fresh check would use, so recomputing it would produce an identical result.
-   *
-   * A status checked against an older branch tip still counts if the branch
-   * only moved through commits that can't change how the stack merges.
    */
   private function isResultCurrent(
-    DifferentialRevision $revision,
+    ?array $stored,
     DifferentialDiff $diff,
     RevisionMergeConflictEngine $engine): bool {
 
-    $stored = id(new DifferentialMergeConflictStatusField())
-      ->readStoredValueForObject($revision->getPHID());
-    if (!is_array($stored)) {
+    if ($stored === null) {
       return false;
     }
 
@@ -359,44 +359,77 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
       return false;
     }
 
-    $is_current = self::isStoredResultCurrent(
+    return self::isStoredResultCurrent(
       $stored,
       $diff->getPHID(),
       $current_stack,
       $current_tip);
-    if ($is_current) {
-      return true;
+  }
+
+  /**
+   * Returns the stored status restated against the current branch tip, or
+   * `null` if a full check is needed. A status checked against an older tip
+   * still holds if the branch only moved through commits that can't change how
+   * the stack merges, and recording the new tip keeps "last checked" current.
+   */
+  public static function newCarriedOverResult(
+    ?array $stored,
+    DifferentialDiff $diff,
+    RevisionMergeConflictEngine $engine): ?array {
+
+    if ($stored === null) {
+      return null;
     }
 
-    // Compare everything but the tip by checking against the stored tip.
+    $stored_status = idx(
+      $stored,
+      DifferentialMergeConflictStatusField::KEY_STATUS);
     $stored_tip = idx(
       $stored,
       DifferentialMergeConflictStatusField::KEY_TARGET_COMMIT);
     $stored_base = idx(
       $stored,
       DifferentialMergeConflictStatusField::KEY_BASE_COMMIT);
-    if (!is_string($stored_tip) || !is_string($stored_base)) {
-      return false;
+    if (!is_string($stored_status) ||
+        !is_string($stored_tip) ||
+        !is_string($stored_base)) {
+      return null;
     }
 
+    try {
+      $current_stack = $engine->getStackDiffPHIDs();
+      $current_tip = $engine->resolveTargetTip();
+    } catch (Exception $ex) {
+      return null;
+    }
+
+    // Compare everything but the tip by checking against the stored tip.
     $is_current_except_tip = self::isStoredResultCurrent(
       $stored,
       $diff->getPHID(),
       $current_stack,
       $stored_tip);
     if (!$is_current_except_tip) {
-      return false;
+      return null;
     }
 
     try {
-      return !$engine->hasRelevantTargetChanges(
+      $has_relevant_changes = $engine->hasRelevantTargetChanges(
         $stored_base,
         $stored_tip,
+        $current_tip);
+      if ($has_relevant_changes) {
+        return null;
+      }
+
+      return $engine->newCarriedOverResult(
+        $stored_status,
+        $stored_base,
         $current_tip);
     } catch (Exception $ex) {
       // A git failure here should cost a full check, not a skipped one.
       phlog($ex);
-      return false;
+      return null;
     }
   }
 
