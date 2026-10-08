@@ -209,12 +209,20 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
   }
 
   /**
-   * Returns the revisions, as a set keyed by PHID, that already have a waiting
-   * check for the same diff we would queue.
+   * Returns the revisions that already have a waiting check for the same diff
+   * we would queue.
    *
    * A waiting check resolves the branch tip when it runs, so it already covers
    * whatever change is queueing another one. A check pinned to an older diff
    * doesn't, since the worker drops it once a newer diff is attached.
+   *
+   * @param list<map<string, string>> $task_rows Waiting tasks, as returned by
+   *   `loadWaitingTaskRows`: each has the revision PHID in `objectPHID` and the
+   *   task data, as JSON, in `data`.
+   * @param map<string, string> $diff_phids Map of revision PHID to the diff
+   *   PHID we would queue a check for.
+   * @return map<string, bool> Set of revision PHIDs, mapped to `true`, that
+   *   should not get another check.
    */
   public static function findWaitingRevisionPHIDs(
     array $task_rows,
