@@ -184,6 +184,211 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
     $engine->closeTemporaryIndex();
   }
 
+  public function testHasRelevantChangedPath() {
+    $stack_paths = array(
+      'dom/base/Document.cpp' => true,
+      'moz.configure' => true,
+    );
+
+    $cases = array(
+      array(
+        array('README.md' => 'M', 'dom/base/Document.cpp' => 'M'),
+        true,
+        pht('A changed file the stack touches should be relevant.'),
+      ),
+      array(
+        array('README.md' => 'M', 'dom/base/Document.h' => 'M'),
+        false,
+        pht(
+          'Modifying files the stack does not touch, even beside a stack '.
+          'file, cannot change how the stack merges.'),
+      ),
+      array(
+        array('dom/base/Document.h' => 'A'),
+        true,
+        pht(
+          'A file added beside a stack file can make `merge-tree` detect a '.
+          'directory rename.'),
+      ),
+      array(
+        array('dom/base/test/test_old.html' => 'D'),
+        true,
+        pht(
+          'A file deleted anywhere under a stack file\'s directory can '.
+          'complete a directory rename.'),
+      ),
+      array(
+        array('dom/base' => 'A'),
+        true,
+        pht('A file added where the stack has a directory clashes with it.'),
+      ),
+      array(
+        array('moz.configure/extra' => 'A'),
+        true,
+        pht('A file added below a stack file clashes with it.'),
+      ),
+      array(
+        array('dom/events/Event.cpp' => 'A', 'NEWS' => 'D'),
+        false,
+        pht(
+          'Files added or deleted outside the directories holding stack '.
+          'files are irrelevant, even under a shared parent directory or at '.
+          'the root.'),
+      ),
+    );
+
+    foreach ($cases as $case) {
+      list($changed_paths, $expected, $message) = $case;
+
+      $this->assertEqual(
+        $expected,
+        RevisionMergeConflictEngine::hasRelevantChangedPath(
+          $changed_paths,
+          $stack_paths),
+        $message);
+    }
+  }
+
+  public function testGetAncestorDirectories() {
+    $this->assertEqual(
+      array('dom/base', 'dom'),
+      RevisionMergeConflictEngine::getAncestorDirectories(
+        'dom/base/Document.cpp'),
+      pht('Directories should be listed nearest first.'));
+
+    $this->assertEqual(
+      array(),
+      RevisionMergeConflictEngine::getAncestorDirectories('moz.configure'),
+      pht('A file at the root should have no directories listed.'));
+  }
+
+  public function testListChangedPathsBetweenTips() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    Filesystem::writeFile($path.'/kept.txt', 'kept');
+    Filesystem::writeFile($path.'/edited.txt', 'edited');
+    Filesystem::writeFile($path.'/renamed.txt', 'renamed');
+    execx('git -C %s add -A', $path);
+    $old_tip = $this->commit($path, 'old tip');
+
+    Filesystem::createDirectory($path.'/dir');
+    Filesystem::writeFile($path.'/dir/added.txt', 'added');
+    Filesystem::writeFile($path.'/edited.txt', 'edited again');
+    execx('git -C %s add -A', $path);
+    execx('git -C %s mv renamed.txt moved.txt', $path);
+    $new_tip = $this->commit($path, 'new tip');
+
+    $changed_paths = $this->newEngine($path)->listChangedPaths(
+      $old_tip,
+      $new_tip);
+    ksort($changed_paths);
+
+    $this->assertEqual(
+      array(
+        'dir/added.txt' => 'A',
+        'edited.txt' => 'M',
+        'moved.txt' => 'A',
+        'renamed.txt' => 'D',
+      ),
+      $changed_paths,
+      pht(
+        'Changed files should be listed by full path with their status, a '.
+        'rename as a deletion and an addition, and unchanged files left out.'));
+
+    $this->assertEqual(
+      array(),
+      $this->newEngine($path)->listChangedPaths($new_tip, $new_tip),
+      pht('A tip that has not moved should have no changed files.'));
+  }
+
+  public function testHasRemovedPath() {
+    $this->assertTrue(
+      RevisionMergeConflictEngine::hasRemovedPath(
+        array(
+          array('blob', 'blob', 'blob'),
+          array('tree', 'tree', 'new-tip:dom missing'),
+        )),
+      pht('A path at the base but missing at a tip should be reported.'));
+
+    $this->assertFalse(
+      RevisionMergeConflictEngine::hasRemovedPath(
+        array(
+          array('blob', 'blob', 'blob'),
+          array('base:new.txt missing', 'tip:new.txt missing', 'blob'),
+        )),
+      pht(
+        'A path missing at the base, like a file the stack adds, should not '.
+        'be reported.'));
+  }
+
+  public function testHasRemovedStackPath() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    Filesystem::createDirectory($path.'/a');
+    Filesystem::writeFile($path.'/a/kept.txt', 'kept');
+    Filesystem::createDirectory($path.'/b');
+    Filesystem::writeFile($path.'/b/renamed.txt', 'renamed');
+    execx('git -C %s add -A', $path);
+    $base = $this->commit($path, 'base');
+
+    execx('git -C %s mv b c', $path);
+    $old_tip = $this->commit($path, 'old tip');
+    $new_tip = $this->commit($path, 'new tip');
+
+    $engine = $this->newEngine($path);
+    $tips = array($old_tip, $new_tip);
+
+    $this->assertFalse(
+      $engine->hasRemovedStackPath(
+        array('a/kept.txt' => true, 'a/added/new.txt' => true),
+        $base,
+        $tips),
+      pht(
+        'Stack files, and directories holding them, that the branch kept or '.
+        'never had should not be reported.'));
+
+    $this->assertTrue(
+      $engine->hasRemovedStackPath(
+        array('b/renamed.txt' => true),
+        $base,
+        $tips),
+      pht(
+        'A stack file the branch renamed before the old tip should be '.
+        'reported, since `merge-tree` pairs it with a path the stack does not '.
+        'name.'));
+
+    $this->assertTrue(
+      $engine->hasRemovedStackPath(
+        array('b/added/new.txt' => true),
+        $base,
+        $tips),
+      pht(
+        'A stack file in a directory the branch renamed should be reported, '.
+        'since `merge-tree` may move it with the directory.'));
+  }
+
+  public function testListChangedPathsAfterAForcePush() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    $root = $this->commit($path, 'root');
+    $old_tip = $this->commit($path, 'discarded tip');
+    execx('git -C %s reset -q --hard %s', $path, $root);
+    $new_tip = $this->commit($path, 'replacement tip');
+
+    $this->assertEqual(
+      null,
+      $this->newEngine($path)->listChangedPaths($old_tip, $new_tip),
+      pht(
+        'A tip that does not descend from the old one should be reported as '.
+        'unknown, so the stored verdict is not reused.'));
+  }
+
   private function commit(string $path, string $message): string {
     execx(
       'git -C %s -c user.name=Test -c user.email=test@example.com '.

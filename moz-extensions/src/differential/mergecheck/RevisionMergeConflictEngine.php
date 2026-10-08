@@ -200,6 +200,30 @@ final class RevisionMergeConflictEngine extends Phobject {
       $target_tip);
   }
 
+  /**
+   * Restates a verdict reached against an earlier tip as one reached against
+   * `$target_tip`, for a caller that has established the branch only moved
+   * through commits that can't change it. Returns `null` if the stack no
+   * longer starts from the base the verdict was reached from.
+   */
+  public function newCarriedOverResult(
+    string $status,
+    string $checked_base,
+    string $target_tip): ?array {
+
+    $base = $this->resolveBaseCommit();
+    if ($base !== $checked_base) {
+      return null;
+    }
+
+    return $this->newResult(
+      $status,
+      $this->newVerdictReason($status, $base, $target_tip),
+      null,
+      $base,
+      $target_tip);
+  }
+
 /* -(  Scratch objects  )---------------------------------------------------- */
 
   /**
@@ -519,6 +543,239 @@ final class RevisionMergeConflictEngine extends Phobject {
       ->resolvex();
 
     return trim($stdout);
+  }
+
+  /**
+   * Whether the target branch moving from one tip to another could change a
+   * verdict for this stack. A landed commit can only change a verdict through
+   * the paths it changed, so the move only matters if one of them is relevant
+   * to the stack. A move that isn't a fast-forward, like a force-push, always
+   * matters.
+   */
+  public function hasRelevantTargetChanges(
+    string $base,
+    string $old_tip,
+    string $new_tip): bool {
+
+    $changed_paths = $this->listChangedPaths($old_tip, $new_tip);
+    if ($changed_paths === null) {
+      return true;
+    }
+
+    $stack_paths = $this->getStackPaths();
+    if (self::hasRelevantChangedPath($changed_paths, $stack_paths)) {
+      return true;
+    }
+
+    return $this->hasRemovedStackPath(
+      $stack_paths,
+      $base,
+      array($old_tip, $new_tip));
+  }
+
+  /**
+   * Whether a stack file, or a directory holding one, exists at the base but
+   * not at one of the tips. `merge-tree` may then pair it with a renamed file
+   * or directory the stack doesn't name, so a change to any path could matter.
+   */
+  public function hasRemovedStackPath(
+    array $stack_paths,
+    string $base,
+    array $tips): bool {
+
+    $paths = array();
+    foreach ($stack_paths as $stack_path => $ignored) {
+      $paths[$stack_path] = true;
+      foreach (self::getAncestorDirectories($stack_path) as $directory) {
+        $paths[$directory] = true;
+      }
+    }
+
+    $commits = array_merge(array($base), $tips);
+
+    $lines = array();
+    foreach ($paths as $path => $ignored) {
+      foreach ($commits as $commit) {
+        $lines[] = $commit.':'.$path;
+      }
+    }
+
+    if (!$lines) {
+      return false;
+    }
+
+    $future = $this->newGitFuture(
+      'cat-file --batch-check=%s',
+      '%(objecttype)');
+    $future->write(implode("\n", $lines)."\n");
+    list($stdout) = $future->resolvex();
+
+    $lookups = explode("\n", rtrim($stdout, "\n"));
+    if (count($lookups) !== count($lines)) {
+      return true;
+    }
+
+    return self::hasRemovedPath(array_chunk($lookups, count($commits)));
+  }
+
+  /**
+   * Interprets `git cat-file --batch-check=%(objecttype)` output for each path,
+   * looked up at the base and then at each tip: whether any path exists at the
+   * base but not at a tip. Git prints the object type when it finds one.
+   */
+  public static function hasRemovedPath(array $lookups_by_path): bool {
+    $found_types = array('blob', 'tree', 'commit');
+
+    foreach ($lookups_by_path as $lookups) {
+      $base_lookup = array_shift($lookups);
+      if (!in_array($base_lookup, $found_types, true)) {
+        continue;
+      }
+
+      foreach ($lookups as $tip_lookup) {
+        if (!in_array($tip_lookup, $found_types, true)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Lists the files that differ between two commits, as a map from path to its
+   * `git diff-tree` status letter, or returns `null` if the old commit is not
+   * an ancestor of the new one.
+   */
+  public function listChangedPaths(string $old_tip, string $new_tip): ?array {
+    if ($old_tip === $new_tip) {
+      return array();
+    }
+
+    $ancestor_future = $this->newGitFuture(
+      'merge-base --is-ancestor %s %s',
+      $old_tip,
+      $new_tip);
+    list($err) = $ancestor_future->resolve();
+    if ($ancestor_future->getWasKilledByTimeout()) {
+      return null;
+    }
+    if (!self::isAncestorExitCode($err)) {
+      return null;
+    }
+
+    // Without rename detection, a rename lists its old path as deleted and its
+    // new path as added. The output alternates status letters and paths.
+    list($stdout) = $this->newGitFuture(
+      'diff-tree -r -z --name-status --no-renames %s %s',
+      $old_tip,
+      $new_tip)
+      ->resolvex();
+
+    $changed_paths = array();
+    foreach (array_chunk(explode("\0", $stdout), 2) as $fields) {
+      if (count($fields) === 2 && strlen($fields[1])) {
+        list($status, $path) = $fields;
+        $changed_paths[$path] = $status;
+      }
+    }
+
+    return $changed_paths;
+  }
+
+  /**
+   * Whether any changed path could change how the stack merges.
+   * `$changed_paths` maps each path to its `git diff-tree` status, and
+   * `$stack_paths` is a set keyed by path.
+   *
+   * Besides a change to a stack file itself, an added or deleted file matters
+   * when it clashes with a stack file or directory, or sits anywhere in a
+   * directory holding a stack file, where `merge-tree` may detect a directory
+   * rename.
+   */
+  public static function hasRelevantChangedPath(
+    array $changed_paths,
+    array $stack_paths): bool {
+
+    $stack_directories = array();
+    $stack_parent_directories = array();
+    foreach ($stack_paths as $stack_path => $ignored) {
+      $directories = self::getAncestorDirectories($stack_path);
+      if ($directories) {
+        $stack_parent_directories[head($directories)] = true;
+      }
+      foreach ($directories as $directory) {
+        $stack_directories[$directory] = true;
+      }
+    }
+
+    foreach ($changed_paths as $changed_path => $status) {
+      if (isset($stack_paths[$changed_path])) {
+        return true;
+      }
+
+      // Only an addition or deletion changes which directories exist, which
+      // the remaining cases depend on.
+      if ($status !== 'A' && $status !== 'D') {
+        continue;
+      }
+
+      // A file where the stack has a directory.
+      if (isset($stack_directories[$changed_path])) {
+        return true;
+      }
+
+      foreach (self::getAncestorDirectories($changed_path) as $directory) {
+        // A file below a stack file, or anywhere under a stack file's
+        // directory.
+        if (isset($stack_paths[$directory]) ||
+            isset($stack_parent_directories[$directory])) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Returns the directories containing a path, nearest first, leaving out the
+   * repository root.
+   */
+  public static function getAncestorDirectories(string $path): array {
+    $directories = array();
+
+    $separator = strrpos($path, '/');
+    while ($separator) {
+      $path = substr($path, 0, $separator);
+      $directories[] = $path;
+      $separator = strrpos($path, '/');
+    }
+
+    return $directories;
+  }
+
+  /**
+   * Returns the set of paths, keyed by path, that any diff in the stack
+   * touches, including the old path of a moved or copied file.
+   */
+  private function getStackPaths(): array {
+    $changesets = id(new DifferentialChangesetQuery())
+      ->setViewer($this->viewer)
+      ->withDiffs($this->getStackDiffs())
+      ->execute();
+
+    $stack_paths = array();
+    foreach ($changesets as $changeset) {
+      $paths = array($changeset->getFilename(), $changeset->getOldFile());
+      foreach ($paths as $path) {
+        if (phutil_nonempty_string($path)) {
+          $stack_paths[$path] = true;
+        }
+      }
+    }
+
+    return $stack_paths;
   }
 
   /**
