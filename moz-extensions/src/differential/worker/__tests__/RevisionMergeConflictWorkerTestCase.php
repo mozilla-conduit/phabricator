@@ -214,10 +214,6 @@ final class RevisionMergeConflictWorkerTestCase extends PhabricatorTestCase {
         'result should never stop a retry.'));
   }
 
-  /**
-   * A stored `clean` verdict for diff `PHID-DIFF-active`, sitting on one parent
-   * revision, computed against branch tip `ffff...`.
-   */
   private function newTaskRow(
     string $revision_phid,
     string $diff_phid): array {
@@ -229,6 +225,10 @@ final class RevisionMergeConflictWorkerTestCase extends PhabricatorTestCase {
     );
   }
 
+  /**
+   * A stored `clean` verdict for diff `PHID-DIFF-active`, sitting on one parent
+   * revision, computed against branch tip `ffff...`.
+   */
   private function newStoredResult(): array {
     return array(
       DifferentialMergeConflictStatusField::KEY_STATUS =>
