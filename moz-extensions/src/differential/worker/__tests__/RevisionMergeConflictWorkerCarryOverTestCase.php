@@ -62,6 +62,83 @@ EODIFF;
         idx($result, 'reason')));
   }
 
+  public function testChangeToAMovedFileIsNotCarriedOver() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+    $diff = $this->newMoveDiff($path);
+    $stored = $this->newStoredResult($path, $diff);
+
+    Filesystem::writeFile($path.'/a/moved.txt', 'edited');
+    $this->commit($path, 'edit the moved file');
+
+    $this->assertEqual(
+      null,
+      RevisionMergeConflictWorker::newCarriedOverResult(
+        $stored,
+        $diff,
+        $this->newEngine($path, $diff)),
+      pht(
+        'A landing that edits the old path of a file the stack moves should '.
+        'cost a full check.'));
+  }
+
+  public function testFileAddedAtAMoveDestinationIsNotCarriedOver() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+    $diff = $this->newMoveDiff($path);
+    $stored = $this->newStoredResult($path, $diff);
+
+    Filesystem::createDirectory($path.'/b');
+    Filesystem::writeFile($path.'/b/moved.txt', 'added');
+    $this->commit($path, 'add a file where the stack moves one');
+
+    $engine = $this->newEngine($path, $diff);
+
+    $this->assertEqual(
+      null,
+      RevisionMergeConflictWorker::newCarriedOverResult(
+        $stored,
+        $diff,
+        $engine),
+      pht(
+        'A landing that adds a file at the new path of a file the stack '.
+        'moves should cost a full check.'));
+
+    $this->assertEqual(
+      DifferentialMergeConflictStatusField::STATUS_CONFLICT,
+      idx($engine->executeCheck(), 'status'),
+      pht('The full check should find the conflict the landing introduced.'));
+  }
+
+  public function testFileAddedBesideAMovedFileIsNotCarriedOver() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+    $diff = $this->newMoveDiff($path);
+    $stored = $this->newStoredResult($path, $diff);
+
+    Filesystem::writeFile($path.'/a/sibling.txt', 'sibling');
+    $this->commit($path, 'add a file beside the moved file');
+
+    $engine = $this->newEngine($path, $diff);
+
+    $this->assertEqual(
+      null,
+      RevisionMergeConflictWorker::newCarriedOverResult(
+        $stored,
+        $diff,
+        $engine),
+      pht(
+        'A landing that adds a file beside one the stack moves should cost a '.
+        'full check, though it touches no path in the stack.'));
+
+    $this->assertEqual(
+      DifferentialMergeConflictStatusField::STATUS_CONFLICT,
+      idx($engine->executeCheck(), 'status'),
+      pht(
+        'The full check should report the directory rename conflict, since '.
+        'moving the only file out of `a/` renames the directory.'));
+  }
+
   public function testVerdictForAnotherDiffIsNotCarriedOver() {
     $fixture = PhutilDirectoryFixture::newEmptyFixture();
     $path = $fixture->getPath();
