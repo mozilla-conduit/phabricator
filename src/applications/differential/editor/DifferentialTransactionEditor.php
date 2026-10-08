@@ -1324,6 +1324,8 @@ final class DifferentialTransactionEditor
    * Whether merge conflict detection is turned on for this revision's
    * repository. A revision with no repository has no target branch to merge
    * into.
+   *
+   * @phutil-external-symbol class RevisionMergeConflictWorker
    */
   private function shouldCheckMergeConflicts(DifferentialRevision $revision) {
     $repository = $revision->getRepository();

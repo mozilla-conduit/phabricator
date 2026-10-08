@@ -37,30 +37,44 @@ services:
     volumes:
       - phabricator-app:/app
 
-  test_phab:
+  # Runs tests, linters and map rebuilds against the checkout. Use the
+  # `justfile` rather than running this service directly; see
+  # `docker/tools/run.sh`.
+  tools:
     build:
       context: .
       dockerfile: ./Dockerfile
       target: test
-    entrypoint: /app/entrypoint.sh
-    command: test_phab
-    environment: *phab_env
-    restart: on-failure
+    entrypoint: /src/docker/tools/run.sh
+    # Run as the host user so that files written into the checkout (library
+    # and Celerity maps, lint fixes) keep the host user's ownership.
+    user: "${HOST_UID:-10001}:${HOST_GID:-10001}"
+    environment:
+      - MYSQL_HOST=phabdb
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASS=password
+      - HOME=/tmp
+      # The image's `/app/.git` belongs to the image's `app` user.
+      - GIT_CONFIG_COUNT=1
+      - GIT_CONFIG_KEY_0=safe.directory
+      - GIT_CONFIG_VALUE_0=*
     depends_on:
-      - phabdb
-
-  test_phab_local:
-    build:
-      context: .
-      dockerfile: ./Dockerfile
-      target: test
-    entrypoint: /app/entrypoint.sh
-    command: test_phab
-    environment: *phab_env
-    depends_on:
-      - phabdb
+      phabdb:
+        condition: service_healthy
     volumes:
-      - phabricator-moz-extensions-local:/app/moz-extensions
+      - .:/src
+      # In a `git worktree`, `.git` is a file pointing into the main
+      # repository's `.git` directory by absolute path.
+      - ${GIT_COMMON_DIR:-./.git}:${GIT_COMMON_DIR:-/src/.git}
+      - ./bin:/app/phabricator/bin
+      - ./resources:/app/phabricator/resources
+      - ./scripts:/app/phabricator/scripts
+      - ./src:/app/phabricator/src
+      - ./support:/app/phabricator/support
+      - ./webroot:/app/phabricator/webroot
+      - ./moz-extensions:/app/moz-extensions
+      - ./docker/tools/local.json:/app/phabricator/conf/local/local.json:ro
 
   phabdb:
     image: mysql:5.7
@@ -70,6 +84,13 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=password
     restart: on-failure
+    # Check over TCP, since the image's initialization runs a temporary server
+    # that only listens on the socket.
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-ppassword"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
 
   # Other Support Containers
   tinyproxy:
@@ -83,9 +104,3 @@ services:
 volumes:
   phabricator-mysql-db:
   phabricator-app:
-  phabricator-moz-extensions-local:
-    driver: local
-    driver_opts:
-      type: none
-      device: '$PWD/moz-extensions'
-      o: bind

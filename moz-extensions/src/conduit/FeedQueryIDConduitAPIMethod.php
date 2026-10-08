@@ -28,7 +28,7 @@ final class FeedQueryIDConduitAPIMethod extends FeedQueryConduitAPIMethod {
     );
   }
 
-  public function execute(ConduitAPIRequest $request) {
+  protected function execute(ConduitAPIRequest $request) {
     $results = array();
 
     $pager = id(new AphrontCursorPagerView());

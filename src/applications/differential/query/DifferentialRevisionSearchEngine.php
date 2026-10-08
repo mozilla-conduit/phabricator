@@ -149,6 +149,9 @@ final class DifferentialRevisionSearchEngine
     return $names;
   }
 
+  /**
+   * @phutil-external-symbol class DifferentialRevisionRequiredActionWithNeedsChangesResultBucket
+   */
   public function buildSavedQueryFromBuiltin($query_key) {
     $query = $this->newSavedQuery();
     $query->setQueryKey($query_key);

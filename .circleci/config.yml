@@ -58,11 +58,8 @@ jobs:
           name: Build Docker image
           command: docker build --pull -t "$IMAGE_NAME" --target production .
       - run:
-          name: Build test image
-          command: docker compose build test_phab
-      - run:
-          name: Build test local image
-          command: docker compose build test_phab_local
+          name: Build tools image
+          command: docker compose build tools
       - run:
           name: Inspect Docker image ID
           command: docker inspect "$(docker inspect -f '{{.Id}}' "$IMAGE_NAME")"

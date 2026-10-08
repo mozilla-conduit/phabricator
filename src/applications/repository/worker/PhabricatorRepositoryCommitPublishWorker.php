@@ -107,6 +107,8 @@ final class PhabricatorRepositoryCommitPublishWorker
    * would mean a full recheck for every commit of the import. Verdicts go
    * stale across such a window, and `bin/differential recheck-merge-conflicts`
    * is the way back.
+   *
+   * @phutil-external-symbol class RevisionMergeConflictWorker
    */
   private function queueMergeConflictRechecks(
     PhabricatorUser $viewer,
@@ -185,6 +187,8 @@ final class PhabricatorRepositoryCommitPublishWorker
   /**
    * Merge checks always merge against the repository's default branch, so a
    * commit that did not advance that branch cannot change any answer.
+   *
+   * @phutil-external-symbol class RevisionMergeConflictEngine
    */
   private function isCommitOnDefaultBranch(
     PhabricatorRepository $repository,
@@ -598,7 +602,7 @@ final class PhabricatorRepositoryCommitPublishWorker
       $mustCloseRevision = true;
     } else {
       $config = PhabricatorEnv::getEnvConfig('diffusion.legacy-repos-mapping');
-      if (array_key_exists($revisionRepositoryCallsign, $config)) {
+      if ($config && array_key_exists($revisionRepositoryCallsign, $config)) {
         if ($config[$revisionRepositoryCallsign] === $commitRepositoryCallsign) {
           $mustCloseRevision = true;
         }

@@ -44,6 +44,13 @@ final class HarbormasterTargetEngine extends Phobject {
       $object->getHarbormasterBuildablePHID(),
       $object->getHarbormasterContainerPHID());
 
+    // A newly created buildable has no object attached, but its policy (which
+    // `generateBuildTargetMap()` checks) comes from the object. Diffs and
+    // commits are their own buildable objects, so attach them directly.
+    if ($buildable->getBuildablePHID() === $object->getPHID()) {
+      $buildable->attachBuildableObject($object);
+    }
+
     $target_map = $this->generateBuildTargetMap($buildable, $step_map);
 
     return $target_map;

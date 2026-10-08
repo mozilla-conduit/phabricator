@@ -42,15 +42,33 @@ jobs:
 
   phab-tests:
     name: Phabricator Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build image
-        run: docker build --pull -t mozilla/phabricator --target production .
-      - name: Build test image
-        run: docker compose build test_phab
-      - name: Build test local image
-        run: docker compose build test_phab_local
-      - name: Test phabricator extensions
-        run: docker compose run test_phab
+      - name: Install just
+        run: sudo apt-get update && sudo apt-get install --yes just
+
+      - name: Build production image
+        run: just build-production
+      - name: Build tools image
+        run: just build
+      - name: Run tests
+        run: just test
+
+  phab-lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `just lint` lints the changes since `origin/master`.
+          fetch-depth: 0
+
+      - name: Install just
+        run: sudo apt-get update && sudo apt-get install --yes just
+
+      - name: Build tools image
+        run: just build
+      - name: Lint changes
+        run: just lint

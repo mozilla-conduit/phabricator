@@ -85,7 +85,7 @@ final class DifferentialMergeConflictStatusField
     return null;
   }
 
-  public function newCommentAction() {
+  protected function newCommentAction() {
     return null;
   }
 

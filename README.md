@@ -47,22 +47,26 @@ http://phabricator.test/auth/login/password:self/
 
 ## PHP Development:
 
-After adding, renaming, or moving classes, run `arc liberate` to rebuild the
-class map:
+Development commands are in the `justfile` and run in Docker, so you only need
+[`just`](https://github.com/casey/just) and `docker` on the host. Run `just` to
+list them. The most common ones are:
 
-`$ docker compose run --rm test_phab arc_liberate`
+ * `just build`: build the image the other commands run in. Rerun it after
+   changing the `Dockerfile`.
+ * `just test`: run the Phabricator and moz-extensions tests. Pass paths, like
+   `just test moz-extensions/src/email`, to run only the tests under them.
+ * `just lint`: lint the changes since `origin/master`. Pass paths, or
+   `--everything`, to lint more. Only errors fail; much of the upstream code
+   predates some of the warnings.
+ * `just format`: apply the linters' automatic fixes.
+ * `just liberate`: rebuild the class map after adding, removing or renaming
+   classes in `src/`. `arc liberate` can not parse moz-extensions, so its map is
+   edited by hand.
+ * `just celerity`: rebuild the Celerity map after changing CSS or JS.
+ * `just build-production`: build the production Docker image.
 
-To test changes in code:
-
-`$ docker compose run test_phab`
-
-To build the test image:
-
-`$ docker compose build test_phab`
-
-To build the production Docker image:
-
-`$ docker build --pull -t mozilla/phabricator --target production .`
+These run against your checkout through the `tools` Compose service, so there is
+no need to rebuild the image after changing code.
 
 ### Attaching your debugger
 

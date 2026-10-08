@@ -18,17 +18,17 @@ class PhabricatorFeedIDQuery
     );
   }
 
-  public function applyExternalCursorConstraintsToQuery(
+  protected function applyExternalCursorConstraintsToQuery(
     PhabricatorCursorPagedPolicyAwareQuery $subquery,
     $cursor) {
     $subquery->withIDs(array($cursor));
   }
 
-  public function newExternalCursorStringForResult($object) {
+  protected function newExternalCursorStringForResult($object) {
     return $object->getStoryData()->getID();
   }
 
-  public function newPagingMapFromPartialObject($object) {
+  protected function newPagingMapFromPartialObject($object) {
     return array('key' => $object['id'],);
   }
 }
