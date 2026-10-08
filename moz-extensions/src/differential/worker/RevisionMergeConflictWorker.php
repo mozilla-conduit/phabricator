@@ -227,6 +227,14 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
       try {
         $data = phutil_json_decode(idx($task_row, 'data'));
       } catch (PhutilJSONParserException $ex) {
+        // The task can't be told apart from one for another diff, so it
+        // doesn't stand in for a new check.
+        phlog(
+          pht(
+            'Ignoring a waiting merge conflict check for "%s" whose task '.
+            'data could not be decoded: %s',
+            $revision_phid,
+            $ex->getMessage()));
         continue;
       }
 
