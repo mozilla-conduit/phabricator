@@ -337,7 +337,7 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
    * fresh check would use, so recomputing it would produce an identical result.
    *
    * A status checked against an older branch tip still counts if the branch
-   * only moved through commits that changed none of the stack's files.
+   * only moved through commits that can't change how the stack merges.
    */
   private function isResultCurrent(
     DifferentialRevision $revision,
@@ -372,7 +372,10 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
     $stored_tip = idx(
       $stored,
       DifferentialMergeConflictStatusField::KEY_TARGET_COMMIT);
-    if (!is_string($stored_tip)) {
+    $stored_base = idx(
+      $stored,
+      DifferentialMergeConflictStatusField::KEY_BASE_COMMIT);
+    if (!is_string($stored_tip) || !is_string($stored_base)) {
       return false;
     }
 
@@ -386,7 +389,10 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
     }
 
     try {
-      return !$engine->hasRelevantTargetChanges($stored_tip, $current_tip);
+      return !$engine->hasRelevantTargetChanges(
+        $stored_base,
+        $stored_tip,
+        $current_tip);
     } catch (Exception $ex) {
       // A git failure here should cost a full check, not a skipped one.
       phlog($ex);

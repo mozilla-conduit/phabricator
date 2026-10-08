@@ -529,6 +529,7 @@ final class RevisionMergeConflictEngine extends Phobject {
    * matters.
    */
   public function hasRelevantTargetChanges(
+    string $base,
     string $old_tip,
     string $new_tip): bool {
 
@@ -537,9 +538,84 @@ final class RevisionMergeConflictEngine extends Phobject {
       return true;
     }
 
-    return self::hasRelevantChangedPath(
-      $changed_paths,
-      $this->getStackPaths());
+    $stack_paths = $this->getStackPaths();
+    if (self::hasRelevantChangedPath($changed_paths, $stack_paths)) {
+      return true;
+    }
+
+    return $this->hasRemovedStackPath(
+      $stack_paths,
+      $base,
+      array($old_tip, $new_tip));
+  }
+
+  /**
+   * Whether a stack file, or a directory holding one, exists at the base but
+   * not at one of the tips. `merge-tree` may then pair it with a renamed file
+   * or directory the stack doesn't name, so a change to any path could matter.
+   */
+  public function hasRemovedStackPath(
+    array $stack_paths,
+    string $base,
+    array $tips): bool {
+
+    $paths = array();
+    foreach ($stack_paths as $stack_path => $ignored) {
+      $paths[$stack_path] = true;
+      foreach (self::getAncestorDirectories($stack_path) as $directory) {
+        $paths[$directory] = true;
+      }
+    }
+
+    $commits = array_merge(array($base), $tips);
+
+    $lines = array();
+    foreach ($paths as $path => $ignored) {
+      foreach ($commits as $commit) {
+        $lines[] = $commit.':'.$path;
+      }
+    }
+
+    if (!$lines) {
+      return false;
+    }
+
+    $future = $this->newGitFuture(
+      'cat-file --batch-check=%s',
+      '%(objecttype)');
+    $future->write(implode("\n", $lines)."\n");
+    list($stdout) = $future->resolvex();
+
+    $lookups = explode("\n", rtrim($stdout, "\n"));
+    if (count($lookups) !== count($lines)) {
+      return true;
+    }
+
+    return self::hasRemovedPath(array_chunk($lookups, count($commits)));
+  }
+
+  /**
+   * Interprets `git cat-file --batch-check=%(objecttype)` output for each path,
+   * looked up at the base and then at each tip: whether any path exists at the
+   * base but not at a tip. Git prints the object type when it finds one.
+   */
+  public static function hasRemovedPath(array $lookups_by_path): bool {
+    $found_types = array('blob', 'tree', 'commit');
+
+    foreach ($lookups_by_path as $lookups) {
+      $base_lookup = array_shift($lookups);
+      if (!in_array($base_lookup, $found_types, true)) {
+        continue;
+      }
+
+      foreach ($lookups as $tip_lookup) {
+        if (!in_array($tip_lookup, $found_types, true)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   /**

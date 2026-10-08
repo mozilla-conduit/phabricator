@@ -303,6 +303,74 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
       pht('A tip that has not moved should have no changed files.'));
   }
 
+  public function testHasRemovedPath() {
+    $this->assertTrue(
+      RevisionMergeConflictEngine::hasRemovedPath(
+        array(
+          array('blob', 'blob', 'blob'),
+          array('tree', 'tree', 'new-tip:dom missing'),
+        )),
+      pht('A path at the base but missing at a tip should be reported.'));
+
+    $this->assertFalse(
+      RevisionMergeConflictEngine::hasRemovedPath(
+        array(
+          array('blob', 'blob', 'blob'),
+          array('base:new.txt missing', 'tip:new.txt missing', 'blob'),
+        )),
+      pht(
+        'A path missing at the base, like a file the stack adds, should not '.
+        'be reported.'));
+  }
+
+  public function testHasRemovedStackPath() {
+    $fixture = PhutilDirectoryFixture::newEmptyFixture();
+    $path = $fixture->getPath();
+
+    execx('git -C %s init -q -b autoland', $path);
+    Filesystem::createDirectory($path.'/a');
+    Filesystem::writeFile($path.'/a/kept.txt', 'kept');
+    Filesystem::createDirectory($path.'/b');
+    Filesystem::writeFile($path.'/b/renamed.txt', 'renamed');
+    execx('git -C %s add -A', $path);
+    $base = $this->commit($path, 'base');
+
+    execx('git -C %s mv b c', $path);
+    $old_tip = $this->commit($path, 'old tip');
+    $new_tip = $this->commit($path, 'new tip');
+
+    $engine = $this->newEngine($path);
+    $tips = array($old_tip, $new_tip);
+
+    $this->assertFalse(
+      $engine->hasRemovedStackPath(
+        array('a/kept.txt' => true, 'a/added/new.txt' => true),
+        $base,
+        $tips),
+      pht(
+        'Stack files, and directories holding them, that the branch kept or '.
+        'never had should not be reported.'));
+
+    $this->assertTrue(
+      $engine->hasRemovedStackPath(
+        array('b/renamed.txt' => true),
+        $base,
+        $tips),
+      pht(
+        'A stack file the branch renamed before the old tip should be '.
+        'reported, since `merge-tree` pairs it with a path the stack does not '.
+        'name.'));
+
+    $this->assertTrue(
+      $engine->hasRemovedStackPath(
+        array('b/added/new.txt' => true),
+        $base,
+        $tips),
+      pht(
+        'A stack file in a directory the branch renamed should be reported, '.
+        'since `merge-tree` may move it with the directory.'));
+  }
+
   public function testListChangedPathsAfterAForcePush() {
     $fixture = PhutilDirectoryFixture::newEmptyFixture();
     $path = $fixture->getPath();
