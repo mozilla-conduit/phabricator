@@ -196,7 +196,7 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
     return queryfx_all(
       $task_table->establishConnection('r'),
       'SELECT task.objectPHID, data.data FROM %T task
-        JOIN %T data ON data.id = task.dataID
+         JOIN %T data ON data.id = task.dataID
         WHERE task.taskClass = %s
           AND task.objectPHID IN (%Ls)
           AND task.leaseOwner IS NULL
