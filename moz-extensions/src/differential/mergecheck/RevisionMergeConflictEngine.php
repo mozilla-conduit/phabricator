@@ -523,9 +523,10 @@ final class RevisionMergeConflictEngine extends Phobject {
 
   /**
    * Whether the target branch moving from one tip to another could change a
-   * verdict for this stack. A landed commit can only introduce a conflict in
-   * files it changed, so the move only matters if it changed a stack file.
-   * A move that isn't a fast-forward, like a force-push, always matters.
+   * verdict for this stack. A landed commit can only change a verdict through
+   * the paths it changed, so the move only matters if one of them is relevant
+   * to the stack. A move that isn't a fast-forward, like a force-push, always
+   * matters.
    */
   public function hasRelevantTargetChanges(
     string $old_tip,
@@ -536,12 +537,15 @@ final class RevisionMergeConflictEngine extends Phobject {
       return true;
     }
 
-    return self::hasChangedStackPath($changed_paths, $this->getStackPaths());
+    return self::hasRelevantChangedPath(
+      $changed_paths,
+      $this->getStackPaths());
   }
 
   /**
-   * Lists the files that differ between two commits, or returns `null` if the
-   * old commit is not an ancestor of the new one.
+   * Lists the files that differ between two commits, as a map from path to its
+   * `git diff-tree` status letter, or returns `null` if the old commit is not
+   * an ancestor of the new one.
    */
   public function listChangedPaths(string $old_tip, string $new_tip): ?array {
     if ($old_tip === $new_tip) {
@@ -560,31 +564,95 @@ final class RevisionMergeConflictEngine extends Phobject {
       return null;
     }
 
-    // Without rename detection, a rename lists both its old and new path.
+    // Without rename detection, a rename lists its old path as deleted and its
+    // new path as added. The output alternates status letters and paths.
     list($stdout) = $this->newGitFuture(
-      'diff-tree -r -z --name-only --no-renames %s %s',
+      'diff-tree -r -z --name-status --no-renames %s %s',
       $old_tip,
       $new_tip)
       ->resolvex();
 
-    return array_values(array_filter(explode("\0", $stdout), 'strlen'));
+    $changed_paths = array();
+    foreach (array_chunk(explode("\0", $stdout), 2) as $fields) {
+      if (count($fields) === 2 && strlen($fields[1])) {
+        list($status, $path) = $fields;
+        $changed_paths[$path] = $status;
+      }
+    }
+
+    return $changed_paths;
   }
 
   /**
-   * Whether any changed path is one the stack touches. `$stack_paths` is a set
-   * keyed by path.
+   * Whether any changed path could change how the stack merges.
+   * `$changed_paths` maps each path to its `git diff-tree` status, and
+   * `$stack_paths` is a set keyed by path.
+   *
+   * Besides a change to a stack file itself, an added or deleted file matters
+   * when it clashes with a stack file or directory, or sits anywhere in a
+   * directory holding a stack file, where `merge-tree` may detect a directory
+   * rename.
    */
-  public static function hasChangedStackPath(
+  public static function hasRelevantChangedPath(
     array $changed_paths,
     array $stack_paths): bool {
 
-    foreach ($changed_paths as $changed_path) {
+    $stack_directories = array();
+    $stack_parent_directories = array();
+    foreach ($stack_paths as $stack_path => $ignored) {
+      $directories = self::getAncestorDirectories($stack_path);
+      if ($directories) {
+        $stack_parent_directories[head($directories)] = true;
+      }
+      foreach ($directories as $directory) {
+        $stack_directories[$directory] = true;
+      }
+    }
+
+    foreach ($changed_paths as $changed_path => $status) {
       if (isset($stack_paths[$changed_path])) {
         return true;
+      }
+
+      // Only an addition or deletion changes which directories exist, which
+      // the remaining cases depend on.
+      if ($status !== 'A' && $status !== 'D') {
+        continue;
+      }
+
+      // A file where the stack has a directory.
+      if (isset($stack_directories[$changed_path])) {
+        return true;
+      }
+
+      foreach (self::getAncestorDirectories($changed_path) as $directory) {
+        // A file below a stack file, or anywhere under a stack file's
+        // directory.
+        if (isset($stack_paths[$directory]) ||
+            isset($stack_parent_directories[$directory])) {
+          return true;
+        }
       }
     }
 
     return false;
+  }
+
+  /**
+   * Returns the directories containing a path, nearest first, leaving out the
+   * repository root.
+   */
+  public static function getAncestorDirectories(string $path): array {
+    $directories = array();
+
+    $separator = strrpos($path, '/');
+    while ($separator) {
+      $path = substr($path, 0, $separator);
+      $directories[] = $path;
+      $separator = strrpos($path, '/');
+    }
+
+    return $directories;
   }
 
   /**

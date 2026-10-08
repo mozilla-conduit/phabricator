@@ -184,20 +184,82 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
     $engine->closeTemporaryIndex();
   }
 
-  public function testHasChangedStackPath() {
-    $stack_paths = array('dom/base/Document.cpp' => true);
+  public function testHasRelevantChangedPath() {
+    $stack_paths = array(
+      'dom/base/Document.cpp' => true,
+      'moz.configure' => true,
+    );
 
-    $this->assertTrue(
-      RevisionMergeConflictEngine::hasChangedStackPath(
-        array('README.md', 'dom/base/Document.cpp'),
-        $stack_paths),
-      pht('A changed file the stack touches should be relevant.'));
+    $cases = array(
+      array(
+        array('README.md' => 'M', 'dom/base/Document.cpp' => 'M'),
+        true,
+        pht('A changed file the stack touches should be relevant.'),
+      ),
+      array(
+        array('README.md' => 'M', 'dom/base/Document.h' => 'M'),
+        false,
+        pht(
+          'Modifying files the stack does not touch, even beside a stack '.
+          'file, cannot change how the stack merges.'),
+      ),
+      array(
+        array('dom/base/Document.h' => 'A'),
+        true,
+        pht(
+          'A file added beside a stack file can make `merge-tree` detect a '.
+          'directory rename.'),
+      ),
+      array(
+        array('dom/base/test/test_old.html' => 'D'),
+        true,
+        pht(
+          'A file deleted anywhere under a stack file\'s directory can '.
+          'complete a directory rename.'),
+      ),
+      array(
+        array('dom/base' => 'A'),
+        true,
+        pht('A file added where the stack has a directory clashes with it.'),
+      ),
+      array(
+        array('moz.configure/extra' => 'A'),
+        true,
+        pht('A file added below a stack file clashes with it.'),
+      ),
+      array(
+        array('dom/events/Event.cpp' => 'A', 'NEWS' => 'D'),
+        false,
+        pht(
+          'Files added or deleted outside the directories holding stack '.
+          'files are irrelevant, even under a shared parent directory or at '.
+          'the root.'),
+      ),
+    );
 
-    $this->assertFalse(
-      RevisionMergeConflictEngine::hasChangedStackPath(
-        array('README.md', 'dom/base/Document.h'),
-        $stack_paths),
-      pht('Changes only to files the stack does not touch are irrelevant.'));
+    foreach ($cases as $case) {
+      list($changed_paths, $expected, $message) = $case;
+
+      $this->assertEqual(
+        $expected,
+        RevisionMergeConflictEngine::hasRelevantChangedPath(
+          $changed_paths,
+          $stack_paths),
+        $message);
+    }
+  }
+
+  public function testGetAncestorDirectories() {
+    $this->assertEqual(
+      array('dom/base', 'dom'),
+      RevisionMergeConflictEngine::getAncestorDirectories(
+        'dom/base/Document.cpp'),
+      pht('Directories should be listed nearest first.'));
+
+    $this->assertEqual(
+      array(),
+      RevisionMergeConflictEngine::getAncestorDirectories('moz.configure'),
+      pht('A file at the root should have no directories listed.'));
   }
 
   public function testListChangedPathsBetweenTips() {
@@ -206,12 +268,14 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
 
     execx('git -C %s init -q -b autoland', $path);
     Filesystem::writeFile($path.'/kept.txt', 'kept');
+    Filesystem::writeFile($path.'/edited.txt', 'edited');
     Filesystem::writeFile($path.'/renamed.txt', 'renamed');
     execx('git -C %s add -A', $path);
     $old_tip = $this->commit($path, 'old tip');
 
     Filesystem::createDirectory($path.'/dir');
     Filesystem::writeFile($path.'/dir/added.txt', 'added');
+    Filesystem::writeFile($path.'/edited.txt', 'edited again');
     execx('git -C %s add -A', $path);
     execx('git -C %s mv renamed.txt moved.txt', $path);
     $new_tip = $this->commit($path, 'new tip');
@@ -219,14 +283,19 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
     $changed_paths = $this->newEngine($path)->listChangedPaths(
       $old_tip,
       $new_tip);
-    sort($changed_paths);
+    ksort($changed_paths);
 
     $this->assertEqual(
-      array('dir/added.txt', 'moved.txt', 'renamed.txt'),
+      array(
+        'dir/added.txt' => 'A',
+        'edited.txt' => 'M',
+        'moved.txt' => 'A',
+        'renamed.txt' => 'D',
+      ),
       $changed_paths,
       pht(
-        'Changed files should be listed by full path, with both sides of a '.
-        'rename, and unchanged files left out.'));
+        'Changed files should be listed by full path with their status, a '.
+        'rename as a deletion and an addition, and unchanged files left out.'));
 
     $this->assertEqual(
       array(),
