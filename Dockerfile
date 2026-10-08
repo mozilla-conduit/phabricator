@@ -219,10 +219,24 @@ RUN apk --update --no-cache add \
     bash \
     g++ \
     git \
-    make
+    make \
+    nodejs \
+    npm
+
+# Used by the `jshint` linters in `.arclint`.
+RUN npm install --global jshint@2.13.6
 
 USER app
-COPY --chown=app .git .git
+
+# The `phutil-library` linter analyzes arcanist too, and writes its symbol
+# cache into `arcanist/src`. The `tools` Compose service runs as the host user,
+# so build the cache here and let any user update it.
+RUN php arcanist/support/lib/rebuild-map.php arcanist/src \
+    && chmod a+w arcanist/src arcanist/src/.phutil_module_cache
+
+# `arc unit` only runs inside a working copy, but needs none of its history.
+RUN git init --quiet /app
+
 COPY --chown=app .arcunit .arcunit
 COPY --chown=app test-arcconfig .arcconfig
 COPY --chown=app moz-extensions moz-extensions

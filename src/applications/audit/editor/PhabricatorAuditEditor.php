@@ -876,7 +876,7 @@ final class PhabricatorAuditEditor
       if ($object instanceof PhabricatorRepositoryCommit) {
         $commits[] = $object;
       }
-      if ($object instanceof PhabricatorDifferentialRevision) {
+      if ($object instanceof DifferentialRevision) {
         $revisions[] = $object;
       }
     }

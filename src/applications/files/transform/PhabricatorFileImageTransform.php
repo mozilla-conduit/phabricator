@@ -144,8 +144,13 @@ abstract class PhabricatorFileImageTransform extends PhabricatorFileTransform {
     $defaults = array(
       'canCDN' => true,
       'name' => $this->getTransformKey().'-'.$name,
-      'viewPolicy' => $this->file->getViewPolicy(),
     );
+
+    // Transforms inherit the source file's policy. Default thumbnails, which
+    // have no source file, keep the default file policy.
+    if ($this->file) {
+      $defaults['viewPolicy'] = $this->file->getViewPolicy();
+    }
 
     $properties = $this->getFileProperties() + $defaults;
 

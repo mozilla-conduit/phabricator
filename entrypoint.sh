@@ -146,15 +146,6 @@ case "$ARG" in
       check_database
       exit
       ;;
-  "arc_liberate")
-	    cd /app/moz-extensions/
-	    /app/arcanist/bin/arc liberate src/
-	    ;;
-  "test_phab")
-	    # Find all extension tests and call them
-	    cd /app
-	    /app/arcanist/bin/arc unit /app/moz-extensions/src/*/*/__tests__/*php
-	    ;;
   *)
       exec $ARG
       ;;

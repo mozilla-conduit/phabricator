@@ -11,7 +11,7 @@ final class BMOExternalAccountSearchConduitAPIMethod
     return pht('Retrieve external user PHID data based on BMO ID.');
   }
 
-  public function defineParamTypes() {
+  protected function defineParamTypes() {
     return array('accountids' => 'required list<string>');
   }
 

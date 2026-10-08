@@ -81,6 +81,7 @@ final class AphrontApplicationConfiguration
 
   /**
    * @phutil-external-symbol class PhabricatorStartup
+   * @phutil-external-symbol class SentryLoggerPlugin
    */
   public static function runHTTPRequest(AphrontHTTPSink $sink) {
     if (isset($_SERVER['HTTP_X_SETUP_SELFCHECK'])) {

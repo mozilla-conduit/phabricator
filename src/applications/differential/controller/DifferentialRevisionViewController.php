@@ -40,6 +40,9 @@ final class DifferentialRevisionViewController
     return $this;
   }
 
+  /**
+   * @phutil-external-symbol class DifferentialRevisionWarning
+   */
   public function handleRequest(AphrontRequest $request) {
     $viewer = $this->getViewer();
     $this->revisionID = $request->getURIData('id');

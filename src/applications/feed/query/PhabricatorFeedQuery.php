@@ -160,17 +160,17 @@ class PhabricatorFeedQuery
     );
   }
 
-  public function applyExternalCursorConstraintsToQuery(
+  protected function applyExternalCursorConstraintsToQuery(
     PhabricatorCursorPagedPolicyAwareQuery $subquery,
     $cursor) {
     $subquery->withChronologicalKeys(array($cursor));
   }
 
-  public function newExternalCursorStringForResult($object) {
+  protected function newExternalCursorStringForResult($object) {
     return $object->getChronologicalKey();
   }
 
-  public function newPagingMapFromPartialObject($object) {
+  protected function newPagingMapFromPartialObject($object) {
     // This query is unusual, and the "object" is a raw result row.
     return array(
       'key' => $object['chronologicalKey'],

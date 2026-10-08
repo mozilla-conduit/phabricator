@@ -11,7 +11,7 @@ final class BugzillaAccountSearchConduitAPIMethod
     return pht('Retrieve Bugzilla data based on Bugzilla ID or Phabricator PHID.');
   }
 
-  public function defineParamTypes() {
+  protected function defineParamTypes() {
     return array('ids' => 'optional list<string>',
                  'phids' => 'optional list<string>');
   }

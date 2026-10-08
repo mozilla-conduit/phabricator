@@ -54,7 +54,7 @@ class FeedQueryConduitAPIMethod extends FeedConduitAPIMethod {
     return 'nonempty dict';
   }
 
-  public function execute(ConduitAPIRequest $request) {
+  protected function execute(ConduitAPIRequest $request) {
     $results = array();
     $user = $request->getUser();
 

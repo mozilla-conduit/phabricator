@@ -94,7 +94,7 @@ final class PhabricatorFeedEmailIDQuery extends PhabricatorFeedQuery {
     return parent::willFilterPage($data);
   }
 
-  public function newPagingMapFromPartialObject($object) {
+  protected function newPagingMapFromPartialObject($object) {
     // This query is unusual, and the "object" is a raw result row.
     return array(
       'key' => $object['id'],
