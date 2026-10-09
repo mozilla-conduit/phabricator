@@ -370,20 +370,6 @@ final class PhabricatorMarkupEngine extends Phobject {
   /**
    * @task engine
    */
-  public static function newPhameMarkupEngine() {
-    return self::newMarkupEngine(
-      array(
-        'macros' => false,
-        'uri.full' => true,
-        'uri.same-window' => true,
-        'uri.base' => PhabricatorEnv::getURI('/'),
-      ));
-  }
-
-
-  /**
-   * @task engine
-   */
   public static function newFeedMarkupEngine() {
     return self::newMarkupEngine(
       array(

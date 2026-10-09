@@ -37,7 +37,6 @@ final class PhabricatorTranslationSetting
     $group_labels = array(
       'normal' => pht('Translations'),
       'limited' => pht('Limited Translations'),
-      'silly' => pht('Silly Translations'),
       'test' => pht('Developer/Test Translations'),
     );
 
@@ -54,8 +53,8 @@ final class PhabricatorTranslationSetting
       $name = $locale->getLocaleName();
       unset($raw_scope);
 
+      // Joke locales, like Pirate English, are not offered.
       if ($locale->isSillyLocale()) {
-        $groups['silly'][$code] = $name;
         continue;
       }
 
@@ -82,12 +81,6 @@ final class PhabricatorTranslationSetting
       }
 
       $groups[$type][$code] = $name;
-    }
-
-    // Omit silly locales on serious business installs.
-    $is_serious = PhabricatorEnv::getEnvConfig('phabricator.serious-business');
-    if ($is_serious) {
-      unset($groups['silly']);
     }
 
     // Omit limited and test translations if Phabricator is not in developer

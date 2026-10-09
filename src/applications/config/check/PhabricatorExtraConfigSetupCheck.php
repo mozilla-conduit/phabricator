@@ -543,6 +543,11 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
 
       'phd.trace' => $phd_reason,
       'phd.verbose' => $phd_reason,
+
+      'debug.sample-rate' => pht(
+        'Multimeter, which collected these samples, has been removed.'),
+      'debug.profile-rate' => pht(
+        'XHProf, which collected these profiles, has been removed.'),
     );
 
     return $ancient_config;

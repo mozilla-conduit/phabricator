@@ -57,10 +57,6 @@
       "name": "Celerity",
       "include": "(^src/applications/celerity/)"
     },
-    "chatlog": {
-      "name": "Chatlog",
-      "include": "(^src/applications/chatlog/)"
-    },
     "conduit": {
       "name": "Conduit",
       "include": "(^src/applications/conduit/)"
@@ -76,10 +72,6 @@
     "console": {
       "name": "Console",
       "include": "(^src/applications/console/)"
-    },
-    "countdown": {
-      "name": "Countdown",
-      "include": "(^src/applications/countdown/)"
     },
     "customfield": {
       "name": "Custom Fields",
@@ -144,10 +136,6 @@
       "name": "Flags",
       "include": "(^src/applications/flag/)"
     },
-    "fund": {
-      "name": "Fund",
-      "include": "(^src/applications/fund/)"
-    },
     "harbormaster": {
       "name": "Harbormaster",
       "include": "(^src/applications/harbormaster/)"
@@ -168,10 +156,6 @@
       "name": "Legalpad",
       "include": "(^src/applications/legalpad/)"
     },
-    "lipsum": {
-      "name": "Lipsum",
-      "include": "(^src/applications/lipsum/)"
-    },
     "macro": {
       "name": "Macro",
       "include": "(^src/applications/macro/)"
@@ -188,17 +172,9 @@
       "name": "MetaMTA",
       "include": "(^src/applications/metamta/)"
     },
-    "multimeter": {
-      "name": "Multimeter",
-      "include": "(^src/applications/multimeter/)"
-    },
     "notification": {
       "name": "Notifications",
       "include": "(^src/applications/notification/)"
-    },
-    "nuance": {
-      "name": "Nuance",
-      "include": "(^src/applications/nuance/)"
     },
     "oauthserver": {
       "name": "OAuth Server",
@@ -220,33 +196,9 @@
       "name": "People",
       "include": "(^src/applications/people/)"
     },
-    "phame": {
-      "name": "Phame",
-      "include": "(^src/applications/phame/)"
-    },
     "phid": {
       "name": "PHIDs",
       "include": "(^src/applications/phid/)"
-    },
-    "phlux": {
-      "name": "Phlux",
-      "include": "(^src/applications/phlux/)"
-    },
-    "pholio": {
-      "name": "Pholio",
-      "include": "(^src/applications/pholio/)"
-    },
-    "phortune": {
-      "name": "Phortune",
-      "include": "(^src/applications/phortune/)"
-    },
-    "phpast": {
-      "name": "PHPAST",
-      "include": "(^src/applications/phpast/)"
-    },
-    "phrequent": {
-      "name": "Phrequent",
-      "include": "(^src/applications/phrequent/)"
     },
     "phriction": {
       "name": "Phriction",
@@ -259,10 +211,6 @@
     "policy": {
       "name": "Policy",
       "include": "(^src/applications/policy/)"
-    },
-    "ponder": {
-      "name": "Ponder",
-      "include": "(^src/applications/ponder/)"
     },
     "project": {
       "name": "Projects",
@@ -286,10 +234,6 @@
     "settings": {
       "name": "Settings",
       "include": "(^src/applications/settings/)"
-    },
-    "slowvote": {
-      "name": "Slowvote",
-      "include": "(^src/applications/slowvote/)"
     },
     "spaces": {
       "name": "Spaces",
@@ -322,14 +266,6 @@
     "typeahead": {
       "name": "Typeahead",
       "include": "(^src/applications/typeahead/)"
-    },
-    "uiexample": {
-      "name": "UI Examples",
-      "include": "(^src/applications/uiexample/)"
-    },
-    "xhprof": {
-      "name": "XHProf",
-      "include": "(^src/applications/xhprof/)"
     }
   }
 }

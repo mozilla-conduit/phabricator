@@ -160,8 +160,8 @@ abstract class AphrontResponse extends Phobject {
     // "Monospaced Font Preference" setting.
     $csp[] = "style-src {$default} 'unsafe-inline'";
 
-    // On a small number of pages, including the Stripe workflow and the
-    // ReCAPTCHA challenge, we embed external Javascript directly.
+    // On a small number of pages, including the ReCAPTCHA challenge, we embed
+    // external Javascript directly.
     $csp[] = $this->newContentSecurityPolicy('script-src', $default);
 
     // We need to specify that we can connect to ourself in order for AJAX
