@@ -43,10 +43,10 @@ class SentryLoggerPlugin extends Phobject {
   public static function generate_query_str($array) {
     $params = array();
     foreach ($array as $k => $v) {
-      if (is_array($v))
-        $params[] = append_params($v, urlencode($k));
-      else
-        $params[] = urlencode($k) . '=' . urlencode($v);
+      // `parse_query_str()` collects the values of a repeated key in a list.
+      foreach ((array)$v as $value) {
+        $params[] = urlencode($k) . '=' . urlencode($value);
+      }
     }
 
     return implode('&', $params);

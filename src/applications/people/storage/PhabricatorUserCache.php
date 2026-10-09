@@ -33,7 +33,7 @@ final class PhabricatorUserCache extends PhabricatorUserDAO {
   }
 
   public function save() {
-    $this->cacheIndex = Filesystem::digestForIndex($this->getCacheKey());
+    $this->cacheIndex = PhabricatorHash::digestForIndex($this->getCacheKey());
     return parent::save();
   }
 
