@@ -144,6 +144,7 @@ phutil_register_library_map(array(
     'SecureRevisionComments' => 'email/adapter/SecureRevisionComments.php',
     'SentryConfigOptions' => 'logging/SentryConfigOptions.php',
     'SentryLoggerPlugin' => 'logging/SentryLoggerPlugin.php',
+    'SentryLoggerPluginTestCase' => 'logging/__tests__/SentryLoggerPluginTestCase.php',
     'StoryIDQueryResult' => 'email/adapter/StoryIDQueryResult.php',
     'StoryQueryResult' => 'email/adapter/StoryQueryResult.php',
     'TransactionList' => 'email/adapter/TransactionList.php',
@@ -245,6 +246,7 @@ phutil_register_library_map(array(
     'SecureEmailRevisionUpdated' => 'SecureEmailBody',
     'SentryConfigOptions' => 'PhabricatorApplicationConfigOptions',
     'SentryLoggerPlugin' => 'Phobject',
+    'SentryLoggerPluginTestCase' => 'PhabricatorTestCase',
     'UserPhabricatorReviewer' => 'PhabricatorReviewer',
   ),
 ));
