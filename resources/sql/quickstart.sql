@@ -2800,64 +2800,6 @@ CREATE TABLE `edgedata` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `{$NAMESPACE}_doorkeeper` /*!40100 DEFAULT CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} */;
-
-USE `{$NAMESPACE}_doorkeeper`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `doorkeeper_externalobject` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `phid` varbinary(64) NOT NULL,
-  `objectKey` binary(12) NOT NULL,
-  `applicationType` varchar(32) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `applicationDomain` varchar(32) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `objectType` varchar(32) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `objectID` varchar(64) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `objectURI` varchar(128) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} DEFAULT NULL,
-  `importerPHID` varbinary(64) DEFAULT NULL,
-  `properties` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `viewPolicy` varbinary(64) NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_phid` (`phid`),
-  UNIQUE KEY `key_object` (`objectKey`),
-  KEY `key_full` (`applicationType`,`applicationDomain`,`objectType`,`objectID`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_doorkeeper`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `edge` (
-  `src` varbinary(64) NOT NULL,
-  `type` int(10) unsigned NOT NULL,
-  `dst` varbinary(64) NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `seq` int(10) unsigned NOT NULL,
-  `dataID` int(10) unsigned DEFAULT NULL,
-  PRIMARY KEY (`src`,`type`,`dst`),
-  UNIQUE KEY `key_dst` (`dst`,`type`,`src`),
-  KEY `src` (`src`,`type`,`dateCreated`,`seq`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_doorkeeper`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `edgedata` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `data` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `{$NAMESPACE}_draft` /*!40100 DEFAULT CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} */;
 
 USE `{$NAMESPACE}_draft`;

@@ -126,9 +126,6 @@ final class PhabricatorAuthApplication extends PhabricatorApplication {
         ),
       ),
 
-      '/oauth/(?P<provider>\w+)/login/'
-        => 'PhabricatorAuthOldOAuthRedirectController',
-
       '/login/' => array(
         '' => 'PhabricatorAuthStartController',
         'email/' => 'PhabricatorEmailLoginController',

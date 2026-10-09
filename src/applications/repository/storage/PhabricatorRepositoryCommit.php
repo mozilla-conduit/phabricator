@@ -10,8 +10,6 @@ final class PhabricatorRepositoryCommit
     PhabricatorSubscribableInterface,
     PhabricatorMentionableInterface,
     HarbormasterBuildableInterface,
-    HarbormasterCircleCIBuildableInterface,
-    HarbormasterBuildkiteBuildableInterface,
     PhabricatorCustomFieldInterface,
     PhabricatorApplicationTransactionInterface,
     PhabricatorTimelineInterface,
@@ -686,90 +684,6 @@ final class PhabricatorRepositoryCommit
 
   public function newBuildableEngine() {
     return new DiffusionBuildableEngine();
-  }
-
-
-/* -(  HarbormasterCircleCIBuildableInterface  )----------------------------- */
-
-
-  public function getCircleCIGitHubRepositoryURI() {
-    $repository = $this->getRepository();
-
-    $commit_phid = $this->getPHID();
-    $repository_phid = $repository->getPHID();
-
-    if ($repository->isHosted()) {
-      throw new Exception(
-        pht(
-          'This commit ("%s") is associated with a hosted repository '.
-          '("%s"). Repositories must be imported from GitHub to be built '.
-          'with CircleCI.',
-          $commit_phid,
-          $repository_phid));
-    }
-
-    $remote_uri = $repository->getRemoteURI();
-    $path = HarbormasterCircleCIBuildStepImplementation::getGitHubPath(
-      $remote_uri);
-    if (!$path) {
-      throw new Exception(
-        pht(
-          'This commit ("%s") is associated with a repository ("%s") which '.
-          'has a remote URI ("%s") that does not appear to be hosted on '.
-          'GitHub. Repositories must be hosted on GitHub to be built with '.
-          'CircleCI.',
-          $commit_phid,
-          $repository_phid,
-          $remote_uri));
-    }
-
-    return $remote_uri;
-  }
-
-  public function getCircleCIBuildIdentifierType() {
-    return 'revision';
-  }
-
-  public function getCircleCIBuildIdentifier() {
-    return $this->getCommitIdentifier();
-  }
-
-
-/* -(  HarbormasterBuildkiteBuildableInterface  )---------------------------- */
-
-
-  public function getBuildkiteBranch() {
-    $viewer = PhabricatorUser::getOmnipotentUser();
-    $repository = $this->getRepository();
-
-    $branches = DiffusionQuery::callConduitWithDiffusionRequest(
-      $viewer,
-      DiffusionRequest::newFromDictionary(
-        array(
-          'repository' => $repository,
-          'user' => $viewer,
-        )),
-      'diffusion.branchquery',
-      array(
-        'contains' => $this->getCommitIdentifier(),
-        'repository' => $repository->getPHID(),
-      ));
-
-    if (!$branches) {
-      throw new Exception(
-        pht(
-          'Commit "%s" is not an ancestor of any branch head, so it can not '.
-          'be built with Buildkite.',
-          $this->getCommitIdentifier()));
-    }
-
-    $branch = head($branches);
-
-    return 'refs/heads/'.$branch['shortName'];
-  }
-
-  public function getBuildkiteCommit() {
-    return $this->getCommitIdentifier();
   }
 
 
