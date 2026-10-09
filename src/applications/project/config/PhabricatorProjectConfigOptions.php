@@ -26,8 +26,6 @@ final class PhabricatorProjectConfigOptions
     $icons_description = $this->deformat(pht(<<<EOTEXT
 Allows you to change and customize the available project icons.
 
-You can find a list of available icons in {nav UIExamples > Icons and Images}.
-
 Configure a list of icon specifications. Each icon specification should be
 a dictionary, which may contain these keys:
 

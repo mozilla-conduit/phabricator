@@ -108,7 +108,6 @@ final class PhabricatorRemarkupControl
         ));
 
     $phriction_datasource = new PhrictionDocumentDatasource();
-    $phurl_datasource = new PhabricatorPhurlURLDatasource();
 
     Javelin::initBehavior(
       'phabricator-remarkup-assist',
@@ -167,16 +166,6 @@ final class PhabricatorRemarkupControl
               ']',
             ),
             'prefix' => '^\\[',
-          ),
-          40 => array( // "("
-            'datasourceURI' => $phurl_datasource->getDatasourceURI(),
-            'headerIcon' => 'fa-compress',
-            'headerText' => pht('Find Phurl:'),
-            'hintText' => $phurl_datasource->getPlaceholderText(),
-            'cancel' => array(
-              ')',
-            ),
-            'prefix' => '^\\(',
           ),
         ),
       ));

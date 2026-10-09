@@ -1,2 +1,0 @@
-ALTER TABLE {$NAMESPACE}_slowvote.slowvote_poll
-  CHANGE isClosed status VARCHAR(32) NOT NULL COLLATE {$COLLATE_TEXT};

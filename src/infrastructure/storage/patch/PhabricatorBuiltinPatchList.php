@@ -50,9 +50,13 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
         'after' => array( /* First Patch */ ),
       ),
       'db.calendar' => array(),
-      'db.chatlog' => array(),
+      'db.chatlog' => array(
+        'dead' => true,
+      ),
       'db.conduit' => array(),
-      'db.countdown' => array(),
+      'db.countdown' => array(
+        'dead' => true,
+      ),
       'db.daemon' => array(),
       'db.differential' => array(),
       'db.draft' => array(),
@@ -70,48 +74,76 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.pastebin' => array(
         'dead' => true,
       ),
-      'db.phame' => array(),
+      'db.phame' => array(
+        'dead' => true,
+      ),
       'db.phriction' => array(),
       'db.project' => array(),
       'db.repository' => array(),
       'db.search' => array(),
-      'db.slowvote' => array(),
+      'db.slowvote' => array(
+        'dead' => true,
+      ),
       'db.timeline' => array(
         'dead' => true,
       ),
       'db.user' => array(),
       'db.worker' => array(),
-      'db.xhpast' => array(),
+      'db.xhpast' => array(
+        'dead' => true,
+      ),
       'db.xhpastview' => array(
         'dead' => true,
       ),
       'db.cache' => array(),
       'db.fact' => array(),
-      'db.ponder' => array(),
-      'db.xhprof' => array(),
-      'db.pholio' => array(),
+      'db.ponder' => array(
+        'dead' => true,
+      ),
+      'db.xhprof' => array(
+        'dead' => true,
+      ),
+      'db.pholio' => array(
+        'dead' => true,
+      ),
       'db.conpherence' => array(),
       'db.config' => array(),
       'db.token' => array(),
-      'db.phlux' => array(),
-      'db.phortune' => array(),
-      'db.phrequent' => array(),
+      'db.phlux' => array(
+        'dead' => true,
+      ),
+      'db.phortune' => array(
+        'dead' => true,
+      ),
+      'db.phrequent' => array(
+        'dead' => true,
+      ),
       'db.diviner' => array(),
       'db.auth' => array(),
       'db.doorkeeper' => array(),
       'db.legalpad' => array(),
       'db.policy' => array(),
-      'db.nuance' => array(),
+      'db.nuance' => array(
+        'dead' => true,
+      ),
       'db.passphrase' => array(),
       'db.dashboard' => array(),
       'db.system' => array(),
-      'db.fund' => array(),
+      'db.fund' => array(
+        'dead' => true,
+      ),
       'db.almanac' => array(),
-      'db.multimeter' => array(),
+      'db.multimeter' => array(
+        'dead' => true,
+      ),
       'db.spaces' => array(),
-      'db.phurl' => array(),
+      'db.phurl' => array(
+        'dead' => true,
+      ),
       'db.badges' => array(),
-      'db.packages' => array(),
+      'db.packages' => array(
+        'dead' => true,
+      ),
       'db.application' => array(),
       'db.paste' => array(),
       '0000.legacy.sql' => array(
