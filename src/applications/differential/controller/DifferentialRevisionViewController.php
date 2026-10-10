@@ -562,11 +562,21 @@ final class DifferentialRevisionViewController
       ->setHref('/differential/diff/'.$target->getID().'/changesets/')
       ->setIcon('fa-align-left');
 
+    $contents_box_id = celerity_generate_unique_node_id();
+    $float_button = id(new PHUIButtonView())
+      ->setTag('a')
+      ->setText(pht('Float'))
+      ->setHref('#')
+      ->setIcon('fa-window-restore')
+      ->addSigil('differential-revision-contents-float');
+
     $tab_header = id(new PHUIHeaderView())
       ->setHeader(pht('Revision Contents'))
-      ->addActionLink($view_button);
+      ->addActionLink($view_button)
+      ->addActionLink($float_button);
 
     $tab_view = id(new PHUIObjectBoxView())
+      ->setID($contents_box_id)
       ->setHeader($tab_header)
       ->setBackground(PHUIObjectBoxView::BLUE_PROPERTY)
       ->addTabGroup($tab_group);
@@ -590,6 +600,16 @@ final class DifferentialRevisionViewController
             'The content of this revision is hidden until the author has '.
             'signed all of the required legal agreements.'));
     } else {
+      require_celerity_resource('differential-core-view-css');
+      Javelin::initBehavior(
+        'differential-revision-contents-float',
+        array(
+          'boxID' => $contents_box_id,
+          'floatLabel' => pht('Float'),
+          'dockLabel' => pht('Dock'),
+          'shortcutLabel' => pht('Float or dock the revision contents.'),
+        ));
+
       $anchor = id(new PhabricatorAnchorView())
         ->setAnchorName('toc')
         ->setNavigationMarker(true);
