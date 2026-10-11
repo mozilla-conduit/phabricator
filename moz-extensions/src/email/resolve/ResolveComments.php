@@ -143,9 +143,7 @@ class ResolveComments {
         $context = new EmailCodeContext($diffLines);
       }
 
-      $contentState = $comment->newInlineCommentObject()->getContentState();
-      $hasSuggestion = $contentState->getContentHasSuggestion();
-      $suggestionText = $contentState->getContentSuggestionText();
+      [$hasSuggestion, $suggestionText] = self::extractSuggestion($comment);
 
       $commentLineNumber = $comment->getLineNumber();
       $rawMessage = $rawTransaction->getComment()->getContent();
@@ -188,5 +186,12 @@ class ResolveComments {
       ->setConfig('uri.base', PhabricatorEnv::getProductionURI('/'))
       ->setConfig('uri.full', true)
       ->setMode($mode);
+  }
+
+  public static function extractSuggestion(DifferentialTransactionComment $comment): array {
+    $inlineState = $comment->getAttribute('inline.state');
+    $hasSuggestion = is_array($inlineState) ? (bool)idx($inlineState, 'hasSuggestion', false) : false;
+    $suggestionText = is_array($inlineState) ? (string)idx($inlineState, 'suggestionText', '') : '';
+    return [$hasSuggestion, $suggestionText];
   }
 }
