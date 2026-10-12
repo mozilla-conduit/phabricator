@@ -25,4 +25,28 @@ final class SentryLoggerPluginTestCase extends PhabricatorTestCase {
       pht('`generate_query_str()` should repeat the key for each value.'));
   }
 
+  public function testFilterValuesMasksRepeatedKey() {
+    $params = SentryLoggerPlugin::filter_values(
+      SentryLoggerPlugin::parse_query_str('token=a&token=b&id=1&id=2'));
+
+    $this->assertEqual(
+      'token=%2A%2A%2A%2A%2A%2A%2A%2A&id=1&id=2',
+      SentryLoggerPlugin::generate_query_str($params),
+      pht('`filter_values()` should mask every value of a repeated `token` key.'));
+  }
+
+  public function testFilterValuesMasksNestedValues() {
+    $this->assertEqual(
+      array(
+        'token' => '********',
+        'nested' => array('__csrf__' => '********', 'id' => 1),
+      ),
+      SentryLoggerPlugin::filter_values(
+        array(
+          'token' => array('a' => 1),
+          'nested' => array('__csrf__' => 'x', 'id' => 1),
+        )),
+      pht('`filter_values()` should mask matching keys at any depth.'));
+  }
+
 }

@@ -57,17 +57,16 @@ class SentryLoggerPlugin extends Phobject {
       $fields_re = '/^(__csrf__|token)$/i';
     }
 
-    $sanitize = function(&$item, $key, $fields_re) {
-      if (empty($key)) {
-        return;
-      }
-      if (preg_match($fields_re, $key)) {
-        $item = '********';
-      }
-    };
-
     if (is_array($array)) {
-      array_walk_recursive($array, $sanitize, $fields_re);
+      foreach ($array as $key => $value) {
+        // Mask the whole value of a matching key, so the values of a repeated
+        // query key or a nested object are masked too.
+        if (is_string($key) && preg_match($fields_re, $key)) {
+          $array[$key] = '********';
+        } else if (is_array($value)) {
+          $array[$key] = self::filter_values($value, $fields_re);
+        }
+      }
     } else {
       if (preg_match($fields_re, $array)) {
         $array = '********';
