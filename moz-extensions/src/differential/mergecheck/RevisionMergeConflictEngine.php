@@ -350,7 +350,8 @@ final class RevisionMergeConflictEngine extends Phobject {
   /**
    * Returns the commit to merge the stack from: the bottom of the stack's
    * recorded base if it is present in the repository, otherwise the commit that
-   * closed the parent revision the stack walk stopped at.
+   * closed the parent revision the stack walk stopped at, otherwise the first
+   * public ancestor moz-phab recorded.
    */
   private function resolveBaseCommit(): string {
     $recorded = head($this->getStackDiffs())->getSourceControlBaseRevision();
@@ -366,6 +367,16 @@ final class RevisionMergeConflictEngine extends Phobject {
     $landed = $this->resolveLandedParentCommit();
     if ($landed !== null) {
       return $landed;
+    }
+
+    // A recorded base that never reached the server is usually a local commit
+    // the author didn't submit. moz-phab records the stack's first public
+    // ancestor, which is the closest base we can merge from.
+    if ($this->stackStopReason === null) {
+      $public = $this->loadFirstPublicParent(head($this->getStackDiffs()));
+      if ($public !== null && $this->commitExists($public)) {
+        return $public;
+      }
     }
 
     if (!phutil_nonempty_string($recorded)) {
@@ -433,6 +444,41 @@ final class RevisionMergeConflictEngine extends Phobject {
       if ($this->commitExists($identifier)) {
         $this->baseFromLandedParent = $parent;
         return $identifier;
+      }
+    }
+
+    return null;
+  }
+
+  private function loadFirstPublicParent(DifferentialDiff $diff): ?string {
+    $property = id(new DifferentialDiffProperty())->loadOneWhere(
+      'diffID = %d AND name = %s',
+      $diff->getID(),
+      'local:commits');
+    if (!$property) {
+      return null;
+    }
+
+    return self::getFirstPublicParent($property->getData());
+  }
+
+  /**
+   * Returns the `firstPublicParent` moz-phab recorded in a diff's
+   * `local:commits` property, or `null` if it recorded none.
+   */
+  public static function getFirstPublicParent($local_commits): ?string {
+    if (!is_array($local_commits)) {
+      return null;
+    }
+
+    foreach ($local_commits as $commit) {
+      if (!is_array($commit)) {
+        continue;
+      }
+
+      $public = idx($commit, 'firstPublicParent');
+      if (is_string($public) && phutil_nonempty_string($public)) {
+        return $public;
       }
     }
 
