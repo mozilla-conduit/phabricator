@@ -83,6 +83,35 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
         'same as a base that is not on the target branch.'));
   }
 
+  public function testGetFirstPublicParent() {
+    $cases = array(
+      'recorded' => array(
+        array('abc123' => array('firstPublicParent' => 'def456')),
+        'def456',
+      ),
+      'missing key' => array(
+        array('abc123' => array('commit' => 'abc123')),
+        null,
+      ),
+      'empty string' => array(
+        array('abc123' => array('firstPublicParent' => '')),
+        null,
+      ),
+      'no commits' => array(array(), null),
+      'null data' => array(null, null),
+      'non-array data' => array('abc123', null),
+      'non-array entry' => array(array('abc123' => 'def456'), null),
+    );
+
+    foreach ($cases as $name => $case) {
+      list($input, $expected) = $case;
+      $this->assertEqual(
+        $expected,
+        RevisionMergeConflictEngine::getFirstPublicParent($input),
+        pht('Reading firstPublicParent: %s.', $name));
+    }
+  }
+
   public function testBaseOnTargetBranchIsAccepted() {
     $fixture = PhutilDirectoryFixture::newEmptyFixture();
     $path = $fixture->getPath();
