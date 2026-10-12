@@ -9,5 +9,6 @@ return array(
     'NewChangesLinkEventListener',
     'RiskAnalyzerEventListener',
     'ReviewHelperEventListener',
+    'TestingPolicyEventListener',
   )
 );

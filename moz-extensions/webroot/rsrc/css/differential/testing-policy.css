@@ -1,0 +1,12 @@
+/**
+ * @provides testing-policy-css
+ */
+
+.testing-policy-notice {
+  background-color: {$sh-yellowbackground};
+  border: 1px solid {$sh-yellowborder};
+  color: {$darkgreytext};
+  text-align: center;
+  padding: 12px;
+  margin-bottom: 12px;
+}

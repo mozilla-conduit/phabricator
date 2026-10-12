@@ -18,6 +18,8 @@ JX.behavior('comment-actions', function(config) {
   var place_node = JX.$(config.placeID);
 
   var rows = {};
+  // MOZILLA: Whether saved draft actions are being restored.
+  var restoring = false;
 
   JX.DOM.listen(action_node, 'change', null, function() {
     var option = find_option(action_node.value);
@@ -57,6 +59,35 @@ JX.behavior('comment-actions', function(config) {
 
     var button_node = JX.DOM.find(form_node, 'button', 'submit-transactions');
     JX.DOM.setContent(button_node, button_text);
+
+    notify_change();
+  }
+
+  // MOZILLA: Let other behaviors (like the testing policy check in
+  // moz-extensions) react to the stacked actions changing. Restoring drafts
+  // only notifies once, with the restored actions, so listeners don't mistake
+  // each restored action for one the user just picked.
+  function notify_change() {
+    if (restoring) {
+      return;
+    }
+
+    var actions = {};
+    for (var k in rows) {
+      actions[k] = {
+        node: rows[k].node,
+        value: rows[k].control.getValue()
+      };
+    }
+
+    JX.Stratcom.invoke(
+      'comment-actions-change',
+      null,
+      {
+        formNode: form_node,
+        actionNode: action_node,
+        actions: actions
+      });
   }
 
   function remove_action(key) {
@@ -100,6 +131,7 @@ JX.behavior('comment-actions', function(config) {
     var option;
     var control;
 
+    restoring = true;
     for (var ii = 0; ii < drafts.length; ii++) {
       draft = drafts[ii];
 
@@ -110,6 +142,7 @@ JX.behavior('comment-actions', function(config) {
 
       control = add_row(option);
     }
+    restoring = false;
 
     redraw();
   }
@@ -231,6 +264,11 @@ JX.behavior('comment-actions', function(config) {
 
     place_node.parentNode.insertBefore(node, place_node);
 
+    var tokenizer = control.getTokenizer();
+    if (tokenizer) {
+      tokenizer.listen('change', notify_change);
+    }
+
     redraw();
 
     force_preview();
@@ -285,5 +323,9 @@ JX.behavior('comment-actions', function(config) {
   }
 
   restore_draft_actions(config.drafts || []);
+
+  // Behaviors initialized alongside this one aren't listening yet while the
+  // drafts are restored, so notify them again once they are.
+  setTimeout(notify_change, 0);
 
 });
