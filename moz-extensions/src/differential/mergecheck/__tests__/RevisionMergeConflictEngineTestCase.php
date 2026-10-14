@@ -112,6 +112,87 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
     }
   }
 
+  public function testBasePrecedence() {
+    $some = function (string $commit) {
+      return function () use ($commit) {
+        return $commit;
+      };
+    };
+    $none = function () {
+      return null;
+    };
+
+    $cases = array(
+      'recorded base wins' => array(
+        false,
+        $some('recorded'),
+        $some('landed'),
+        $some('public'),
+        array(RevisionMergeConflictEngine::BASE_RECORDED, 'recorded'),
+      ),
+      'landed parent beats first public parent' => array(
+        false,
+        $none,
+        $some('landed'),
+        $some('public'),
+        array(RevisionMergeConflictEngine::BASE_LANDED_PARENT, 'landed'),
+      ),
+      'first public parent is the last resort' => array(
+        false,
+        $none,
+        $none,
+        $some('public'),
+        array(RevisionMergeConflictEngine::BASE_FIRST_PUBLIC_PARENT, 'public'),
+      ),
+      'stopped walk skips first public parent' => array(
+        true,
+        $none,
+        $none,
+        $some('public'),
+        null,
+      ),
+      'stopped walk still uses landed parent' => array(
+        true,
+        $none,
+        $some('landed'),
+        $some('public'),
+        array(RevisionMergeConflictEngine::BASE_LANDED_PARENT, 'landed'),
+      ),
+      'no candidates' => array(false, $none, $none, $none, null),
+    );
+
+    foreach ($cases as $name => $case) {
+      list($stopped, $recorded, $landed, $public, $expected) = $case;
+      $this->assertEqual(
+        $expected,
+        RevisionMergeConflictEngine::selectBaseCommit(
+          $stopped,
+          $recorded,
+          $landed,
+          $public),
+        pht('Selecting the merge base: %s.', $name));
+    }
+  }
+
+  public function testLaterBaseCandidatesAreNotLoaded() {
+    $fail = function () {
+      throw new Exception(pht('Should not have been loaded.'));
+    };
+
+    $this->assertEqual(
+      array(RevisionMergeConflictEngine::BASE_RECORDED, 'recorded'),
+      RevisionMergeConflictEngine::selectBaseCommit(
+        false,
+        function () {
+          return 'recorded';
+        },
+        $fail,
+        $fail),
+      pht(
+        'A recorded base present in the repository should not load the '.
+        'landed parent or the diff properties.'));
+  }
+
   public function testBaseOnTargetBranchIsAccepted() {
     $fixture = PhutilDirectoryFixture::newEmptyFixture();
     $path = $fixture->getPath();

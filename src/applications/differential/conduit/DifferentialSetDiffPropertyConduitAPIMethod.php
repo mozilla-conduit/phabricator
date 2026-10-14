@@ -73,7 +73,7 @@ final class DifferentialSetDiffPropertyConduitAPIMethod
     self::updateDiffProperty($diff_id, $name, $data);
 
     if ($revision_id && $name === 'local:commits') {
-      self::queueMergeConflictChecks($revision, $diff);
+      self::queueMergeConflictChecks($revision, $diff, $data);
     }
   }
 
@@ -82,11 +82,19 @@ final class DifferentialSetDiffPropertyConduitAPIMethod
    * check queued by that edit may already have run without the stack's first
    * public ancestor. Check again now that it's here.
    *
+   * @phutil-external-symbol class RevisionMergeConflictEngine
    * @phutil-external-symbol class RevisionMergeConflictWorker
    */
   private static function queueMergeConflictChecks(
     DifferentialRevision $revision,
-    DifferentialDiff $diff) {
+    DifferentialDiff $diff,
+    $local_commits) {
+
+    // Without a first public ancestor, the check has nothing new to use.
+    if (RevisionMergeConflictEngine::getFirstPublicParent($local_commits) ===
+        null) {
+      return;
+    }
 
     $repository = $revision->getRepository();
     if (!$repository ||
