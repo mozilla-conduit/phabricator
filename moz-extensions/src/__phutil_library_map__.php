@@ -147,6 +147,7 @@ phutil_register_library_map(array(
     'SentryLoggerPluginTestCase' => 'logging/__tests__/SentryLoggerPluginTestCase.php',
     'StoryIDQueryResult' => 'email/adapter/StoryIDQueryResult.php',
     'StoryQueryResult' => 'email/adapter/StoryQueryResult.php',
+    'TestingPolicyEventListener' => 'differential/events/TestingPolicyEventListener.php',
     'TransactionList' => 'email/adapter/TransactionList.php',
     'UserPhabricatorReviewer' => 'email/adapter/UserPhabricatorReviewer.php',
   ),
@@ -247,6 +248,7 @@ phutil_register_library_map(array(
     'SentryConfigOptions' => 'PhabricatorApplicationConfigOptions',
     'SentryLoggerPlugin' => 'Phobject',
     'SentryLoggerPluginTestCase' => 'PhabricatorTestCase',
+    'TestingPolicyEventListener' => 'PhabricatorEventListener',
     'UserPhabricatorReviewer' => 'PhabricatorReviewer',
   ),
 ));

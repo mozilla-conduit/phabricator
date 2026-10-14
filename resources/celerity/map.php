@@ -10,7 +10,7 @@ return array(
     'conpherence.pkg.css' => '0e3cf785',
     'conpherence.pkg.js' => '020aebcf',
     'core.pkg.css' => '3895dcad',
-    'core.pkg.js' => '994b5954',
+    'core.pkg.js' => '076a1cd9',
     'dark-console.pkg.js' => '187792c2',
     'differential.pkg.css' => 'd86d0880',
     'differential.pkg.js' => '603acc6f',
@@ -437,7 +437,7 @@ return array(
     'rsrc/js/application/repository/repository-crossreference.js' => '44d48cd1',
     'rsrc/js/application/search/behavior-reorder-profile-menu-items.js' => 'e5bdb730',
     'rsrc/js/application/search/behavior-reorder-queries.js' => 'b86f297f',
-    'rsrc/js/application/transactions/behavior-comment-actions.js' => '4dffaeb2',
+    'rsrc/js/application/transactions/behavior-comment-actions.js' => 'feb146fd',
     'rsrc/js/application/transactions/behavior-reorder-configs.js' => '4842f137',
     'rsrc/js/application/transactions/behavior-reorder-fields.js' => '0ad8d31f',
     'rsrc/js/application/transactions/behavior-show-older-transactions.js' => '8b5c7d65',
@@ -604,7 +604,7 @@ return array(
     'javelin-behavior-bulk-job-reload' => '3829a3cf',
     'javelin-behavior-calendar-month-view' => '158c64e0',
     'javelin-behavior-choose-control' => '04f8a1e3',
-    'javelin-behavior-comment-actions' => '4dffaeb2',
+    'javelin-behavior-comment-actions' => 'feb146fd',
     'javelin-behavior-config-reorder-fields' => '2539f834',
     'javelin-behavior-conpherence-menu' => '8c2ed2bf',
     'javelin-behavior-conpherence-participant-pane' => '43ba89a2',
@@ -1376,15 +1376,6 @@ return array(
     '4bcc1f78' => array(
       'javelin-install',
       'javelin-dom',
-    ),
-    '4dffaeb2' => array(
-      'javelin-behavior',
-      'javelin-stratcom',
-      'javelin-workflow',
-      'javelin-dom',
-      'phuix-form-control-view',
-      'phuix-icon-view',
-      'javelin-behavior-phabricator-gesture',
     ),
     '4e61fa88' => array(
       'javelin-behavior',
@@ -2206,6 +2197,15 @@ return array(
     ),
     'fdc13e4e' => array(
       'javelin-install',
+    ),
+    'feb146fd' => array(
+      'javelin-behavior',
+      'javelin-stratcom',
+      'javelin-workflow',
+      'javelin-dom',
+      'phuix-form-control-view',
+      'phuix-icon-view',
+      'javelin-behavior-phabricator-gesture',
     ),
     'ff688a7a' => array(
       'owners-path-editor',
