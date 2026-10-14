@@ -26,7 +26,7 @@ final class PhabricatorSystemReadOnlyController
           'has been turned on by rolling your chair away from your desk and '.
           'yelling "Hey! Why is %s in read-only mode??!" using '.
           'your very loudest outside voice.',
-          PlatformSymbols::getPlatformServerSymbol());
+          PlatformSymbols::getPlatformServerName());
         $body[] = pht(
           'This mode is active because it is enabled in the configuration '.
           'option "%s".',

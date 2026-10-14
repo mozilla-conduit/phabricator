@@ -18,7 +18,10 @@ class SentryLoggerPlugin extends Phobject {
     # loop through each pair
     foreach ($pairs as $i) {
       # split into name and value
-      list($name,$value) = explode('=', $i, 2);
+      // A bare key like `flag` has no `=`, so its value is `null`.
+      $parts = explode('=', $i, 2);
+      $name = $parts[0];
+      $value = idx($parts, 1);
 
       # if name already exists
       if( isset($arr[$name]) ) {
@@ -43,10 +46,11 @@ class SentryLoggerPlugin extends Phobject {
   public static function generate_query_str($array) {
     $params = array();
     foreach ($array as $k => $v) {
-      if (is_array($v))
-        $params[] = append_params($v, urlencode($k));
-      else
-        $params[] = urlencode($k) . '=' . urlencode($v);
+      // `parse_query_str()` collects the values of a repeated key in a list.
+      // Avoid `(array)` here, since it turns a bare key's `null` into `array()`.
+      foreach (is_array($v) ? $v : array($v) as $value) {
+        $params[] = urlencode($k) . '=' . urlencode($value);
+      }
     }
 
     return implode('&', $params);
@@ -57,17 +61,16 @@ class SentryLoggerPlugin extends Phobject {
       $fields_re = '/^(__csrf__|token)$/i';
     }
 
-    $sanitize = function(&$item, $key, $fields_re) {
-      if (empty($key)) {
-        return;
-      }
-      if (preg_match($fields_re, $key)) {
-        $item = '********';
-      }
-    };
-
     if (is_array($array)) {
-      array_walk_recursive($array, $sanitize, $fields_re);
+      foreach ($array as $key => $value) {
+        // Mask the whole value of a matching key, so the values of a repeated
+        // query key or a nested object are masked too.
+        if (is_string($key) && preg_match($fields_re, $key)) {
+          $array[$key] = '********';
+        } else if (is_array($value)) {
+          $array[$key] = self::filter_values($value, $fields_re);
+        }
+      }
     } else {
       if (preg_match($fields_re, $array)) {
         $array = '********';
