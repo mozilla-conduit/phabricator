@@ -79,6 +79,11 @@ final class RevisionMergeConflictEngine extends Phobject {
   // instead of holding it until the task lease expires two hours later.
   const GIT_TIMEOUT_SECONDS = 300;
 
+  // Where the merge base came from, as returned by `selectBaseCommit`.
+  const BASE_RECORDED = 'recorded';
+  const BASE_LANDED_PARENT = 'landed-parent';
+  const BASE_FIRST_PUBLIC_PARENT = 'first-public-parent';
+
   private ?PhabricatorUser $viewer = null;
   private ?DifferentialRevision $revision = null;
   private ?DifferentialDiff $diff = null;
@@ -94,6 +99,7 @@ final class RevisionMergeConflictEngine extends Phobject {
   private ?string $stackStopReason = null;
   private ?string $stackStopReasonCode = null;
   private ?DifferentialRevision $baseFromLandedParent = null;
+  private bool $baseFromFirstPublicParent = false;
 
   public function setViewer(PhabricatorUser $viewer): self {
     $this->viewer = $viewer;
@@ -354,29 +360,34 @@ final class RevisionMergeConflictEngine extends Phobject {
    * public ancestor moz-phab recorded.
    */
   private function resolveBaseCommit(): string {
-    $recorded = head($this->getStackDiffs())->getSourceControlBaseRevision();
+    $bottom_diff = head($this->getStackDiffs());
+    $recorded = $bottom_diff->getSourceControlBaseRevision();
 
-    if (phutil_nonempty_string($recorded) && $this->commitExists($recorded)) {
-      return $recorded;
-    }
+    $base = self::selectBaseCommit(
+      $this->stackStopReason !== null,
+      function () use ($recorded) {
+        if (phutil_nonempty_string($recorded) &&
+            $this->commitExists($recorded)) {
+          return $recorded;
+        }
+        return null;
+      },
+      function () {
+        return $this->resolveLandedParentCommit();
+      },
+      function () use ($bottom_diff) {
+        $public = $this->loadFirstPublicParent($bottom_diff);
+        if ($public !== null && $this->commitExists($public)) {
+          return $public;
+        }
+        return null;
+      });
 
-    // A missing base usually means a partially-landed stack, where the recorded
-    // base is the parent's pre-land commit. Landing rewrites that commit's
-    // message but not its tree, so the commit that closed the parent is what the
-    // rest of the stack was written on top of.
-    $landed = $this->resolveLandedParentCommit();
-    if ($landed !== null) {
-      return $landed;
-    }
-
-    // A recorded base that never reached the server is usually a local commit
-    // the author didn't submit. moz-phab records the stack's first public
-    // ancestor, which is the closest base we can merge from.
-    if ($this->stackStopReason === null) {
-      $public = $this->loadFirstPublicParent(head($this->getStackDiffs()));
-      if ($public !== null && $this->commitExists($public)) {
-        return $public;
-      }
+    if ($base !== null) {
+      list($source, $commit) = $base;
+      $this->baseFromFirstPublicParent =
+        ($source === self::BASE_FIRST_PUBLIC_PARENT);
+      return $commit;
     }
 
     if (!phutil_nonempty_string($recorded)) {
@@ -397,6 +408,51 @@ final class RevisionMergeConflictEngine extends Phobject {
         'The stack is based on commit "%s", which is not present in the '.
         'repository.',
         $recorded));
+  }
+
+  /**
+   * Picks the commit to merge the stack from, returning the kind of base
+   * (`BASE_*`) and the commit, or `null` if no candidate can serve. Each
+   * candidate is a callable returning a commit present in the repository or
+   * `null`, so the later ones are only loaded when the earlier ones fail.
+   *
+   * - The recorded base of the bottom of the stack.
+   * - The commit that closed the parent revision the walk stopped at. A
+   *   missing base usually means a partially-landed stack, where the recorded
+   *   base is the parent's pre-land commit. Landing rewrites that commit's
+   *   message but not its tree, so this is what the rest of the stack was
+   *   written on top of.
+   * - The stack's first public ancestor, as recorded by moz-phab. A recorded
+   *   base that never reached the server is usually a local commit the author
+   *   didn't submit. This is skipped when the walk stopped at a parent
+   *   revision, since the missing base is then that parent's commit and the
+   *   reason the walk stopped explains it better than a verdict that silently
+   *   leaves the parent out.
+   */
+  public static function selectBaseCommit(
+    bool $walk_stopped,
+    callable $recorded,
+    callable $landed_parent,
+    callable $first_public_parent): ?array {
+
+    $commit = $recorded();
+    if ($commit !== null) {
+      return array(self::BASE_RECORDED, $commit);
+    }
+
+    $commit = $landed_parent();
+    if ($commit !== null) {
+      return array(self::BASE_LANDED_PARENT, $commit);
+    }
+
+    if (!$walk_stopped) {
+      $commit = $first_public_parent();
+      if ($commit !== null) {
+        return array(self::BASE_FIRST_PUBLIC_PARENT, $commit);
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -954,6 +1010,34 @@ final class RevisionMergeConflictEngine extends Phobject {
         $target_name,
         $base_name,
         $this->baseFromLandedParent->getMonogram(),
+        new PhutilNumber($parent_count));
+    }
+
+    // Name the recorded base too, so a reader comparing this with the diff can
+    // see why the merge started somewhere else.
+    if ($this->baseFromFirstPublicParent) {
+      $recorded = head($this->getStackDiffs())->getSourceControlBaseRevision();
+      $recorded_name = phutil_nonempty_string($recorded)
+        ? $this->formatCommitName($recorded)
+        : pht('(none)');
+
+      if (!$parent_count) {
+        return pht(
+          'merged against target branch tip %s, starting from %s, the first '.
+          'public ancestor of the stack, since its recorded base %s is not in '.
+          'the repository',
+          $target_name,
+          $base_name,
+          $recorded_name);
+      }
+
+      return pht(
+        'merged against target branch tip %s, starting from %s, the first '.
+        'public ancestor of the stack, since its recorded base %s is not in '.
+        'the repository, with %s parent revision(s) applied first',
+        $target_name,
+        $base_name,
+        $recorded_name,
         new PhutilNumber($parent_count));
     }
 
