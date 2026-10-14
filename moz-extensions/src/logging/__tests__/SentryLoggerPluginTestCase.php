@@ -32,6 +32,14 @@ final class SentryLoggerPluginTestCase extends PhabricatorTestCase {
       pht('`parse_query_str()` should give a bare key a `null` value.'));
   }
 
+  public function testQueryStringWithBareKey() {
+    $this->assertEqual(
+      'flag=&a=1',
+      SentryLoggerPlugin::generate_query_str(
+        SentryLoggerPlugin::parse_query_str('flag&a=1')),
+      pht('A bare key without a value should be kept as `flag=`.'));
+  }
+
   public function testFilterValuesMasksRepeatedKey() {
     $params = SentryLoggerPlugin::filter_values(
       SentryLoggerPlugin::parse_query_str('token=a&token=b&id=1&id=2'));

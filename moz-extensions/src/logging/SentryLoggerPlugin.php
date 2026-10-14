@@ -47,7 +47,8 @@ class SentryLoggerPlugin extends Phobject {
     $params = array();
     foreach ($array as $k => $v) {
       // `parse_query_str()` collects the values of a repeated key in a list.
-      foreach ((array)$v as $value) {
+      // Avoid `(array)` here, since it turns a bare key's `null` into `array()`.
+      foreach (is_array($v) ? $v : array($v) as $value) {
         $params[] = urlencode($k) . '=' . urlencode($value);
       }
     }
