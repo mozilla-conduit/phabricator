@@ -1,0 +1,445 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Cannot unset offset ''Authorization''\|''Host'' on list\<array\{non\-falsy\-string, mixed\}\>\.$#'
+			identifier: unset.offset
+			count: 1
+			path: src/aphront/AphrontRequest.php
+
+		-
+			message: '#^Method AphrontApplicationConfiguration\:\:routePath\(\) should return pair\<AphrontController, dict\> but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/aphront/configuration/AphrontApplicationConfiguration.php
+
+		-
+			message: '#^Result of method PhutilTestCase\:\:tryTestCaseMap\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 3
+			path: src/aphront/sink/__tests__/AphrontHTTPSinkTestCase.php
+
+		-
+			message: '#^Access to an undefined property PhabricatorAuthPasswordException\:\:\$confirmError\.$#'
+			identifier: property.notFound
+			count: 2
+			path: src/applications/auth/password/PhabricatorAuthPasswordException.php
+
+		-
+			message: '#^Call to an undefined method PhabricatorOAuthAuthProvider\:\:configureAdapter\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/auth/provider/PhabricatorOAuthAuthProvider.php
+
+		-
+			message: '#^Call to an undefined method PhabricatorDashboardPanelListController\:\:getApplication\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: src/applications/dashboard/controller/panel/PhabricatorDashboardPanelListController.php
+
+		-
+			message: '#^Call to an undefined method PhabricatorDashboardPortalProfileMenuEngine\:\:newEmptyValue\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/dashboard/engine/PhabricatorDashboardPortalProfileMenuEngine.php
+
+		-
+			message: '#^Method DifferentialCoreCustomField\:\:readValueFromObject\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/applications/differential/customfield/DifferentialCoreCustomField.php
+
+		-
+			message: '#^Call to an undefined method DifferentialChangesetRenderer\:\:getRowScaffoldForInline\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/differential/render/DifferentialChangesetRenderer.php
+
+		-
+			message: '#^Call to an undefined method DiffusionRepositoryClusterEngine\:\:getDisplayName\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/diffusion/protocol/DiffusionRepositoryClusterEngine.php
+
+		-
+			message: '#^Instantiated class wild not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/applications/diffusion/request/DiffusionRequest.php
+
+		-
+			message: '#^Call to an undefined static method DivinerDAO\:\:getTitle\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/applications/diviner/storage/DivinerLiveSymbol.php
+
+		-
+			message: '#^Call to an undefined static method DoorkeeperDAO\:\:getObjectKey\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/applications/doorkeeper/storage/DoorkeeperExternalObject.php
+
+		-
+			message: '#^Method DrydockBlueprintCoreCustomField\:\:readValueFromObject\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/applications/drydock/customfield/DrydockBlueprintCoreCustomField.php
+
+		-
+			message: '#^Call to an undefined static method DrydockDAO\:\:setStatus\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/applications/drydock/storage/DrydockLease.php
+
+		-
+			message: '#^Call to an undefined method PhabricatorIconSet\:\:newIcons\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/files/iconset/PhabricatorIconSet.php
+
+		-
+			message: '#^Method HarbormasterBuildStepCoreCustomField\:\:readValueFromObject\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/applications/harbormaster/customfield/HarbormasterBuildStepCoreCustomField.php
+
+		-
+			message: '#^Call to an undefined method HarbormasterManagementRestartWorkflow\:\:logSkip\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/harbormaster/management/HarbormasterManagementRestartWorkflow.php
+
+		-
+			message: '#^Call to an undefined static method HarbormasterDAO\:\:getVariables\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/applications/harbormaster/storage/build/HarbormasterBuildTarget.php
+
+		-
+			message: '#^Call to an undefined static method HarbormasterDAO\:\:getName\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/applications/harbormaster/storage/configuration/HarbormasterBuildPlan.php
+
+		-
+			message: '#^Call to an undefined method HarbormasterBuildMessageRestartTransaction\:\:isFailed\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/harbormaster/xaction/build/HarbormasterBuildMessageRestartTransaction.php
+
+		-
+			message: '#^Call to an undefined method HeraldAdapter\:\:setObject\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/herald/adapter/HeraldAdapter.php
+
+		-
+			message: '#^Result of method PhabricatorObjectMailReceiver\:\:loadObject\(\) \(void\) is used\.$#'
+			identifier: method.void
+			count: 2
+			path: src/applications/metamta/receiver/PhabricatorObjectMailReceiver.php
+
+		-
+			message: '#^Method PhabricatorUserBlurbField\:\:readValueFromObject\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/applications/people/customfield/PhabricatorUserBlurbField.php
+
+		-
+			message: '#^Method PhabricatorUserIconField\:\:readValueFromObject\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/applications/people/customfield/PhabricatorUserIconField.php
+
+		-
+			message: '#^Method PhabricatorUserRealNameField\:\:readValueFromObject\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/applications/people/customfield/PhabricatorUserRealNameField.php
+
+		-
+			message: '#^Method PhabricatorUserTitleField\:\:readValueFromObject\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/applications/people/customfield/PhabricatorUserTitleField.php
+
+		-
+			message: '#^Method PhabricatorUserEmail\:\:sendOldPrimaryEmail\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/applications/people/storage/PhabricatorUserEmail.php
+
+		-
+			message: '#^Call to an undefined method PhrictionDocumentTitleTransaction\:\:renderHandleLink\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/phriction/xaction/PhrictionDocumentTitleTransaction.php
+
+		-
+			message: '#^Cannot unset offset wild on array\<mixed\>\.$#'
+			identifier: unset.offset
+			count: 1
+			path: src/applications/policy/controller/PhabricatorPolicyEditController.php
+
+		-
+			message: '#^Call to an undefined static method PhabricatorProjectDAO\:\:setRuleset\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/applications/project/storage/PhabricatorProjectTrigger.php
+
+		-
+			message: '#^Call to an undefined static method PhabricatorRepositoryDAO\:\:setLocalPath\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/applications/repository/storage/PhabricatorRepository.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''猫'' \(\$mao, "猫"\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/applications/search/compiler/__tests__/PhutilSearchQueryCompilerTestCase.php
+
+		-
+			message: '#^Class PhabricatorElasticsearchQueryBuilder does not have a constructor and must be instantiated without any parameters\.$#'
+			identifier: new.noConstructor
+			count: 1
+			path: src/applications/search/fulltextstorage/PhabricatorElasticFulltextStorageEngine.php
+
+		-
+			message: '#^Call to an undefined static method PhabricatorSystemDAO\:\:setActorIdentity\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/applications/system/storage/PhabricatorSystemActionLog.php
+
+		-
+			message: '#^Call to an undefined method PhabricatorEditorExtension\:\:newError\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/applications/transactions/engineextension/PhabricatorEditorExtension.php
+
+		-
+			message: '#^Undefined variable\: \$board_phid$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/applications/transactions/storage/PhabricatorApplicationTransaction.php
+
+		-
+			message: '#^Undefined variable\: \$to_column$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/applications/transactions/storage/PhabricatorApplicationTransaction.php
+
+		-
+			message: '#^Call to an undefined static method PhabricatorSearchDAO\:\:setBuiltinKey\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: src/applications/transactions/storage/PhabricatorEditEngineConfiguration.php
+
+		-
+			message: '#^Method PhutilKeyValueCacheStack\:\:deleteKeys\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/infrastructure/cache/PhutilKeyValueCacheStack.php
+
+		-
+			message: '#^Method PhutilKeyValueCacheStack\:\:destroyCache\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/infrastructure/cache/PhutilKeyValueCacheStack.php
+
+		-
+			message: '#^Method PhutilKeyValueCacheStack\:\:setKeys\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/infrastructure/cache/PhutilKeyValueCacheStack.php
+
+		-
+			message: '#^Method PhabricatorWorker\:\:flushTaskQueue\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/infrastructure/daemon/workers/PhabricatorWorker.php
+
+		-
+			message: '#^Call to an undefined method PhabricatorInlineCommentController\:\:canEditInlineComment\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/infrastructure/diff/PhabricatorInlineCommentController.php
+
+		-
+			message: '#^Call to an undefined method PhabricatorInlineComment\:\:getTransactionCommentForSave\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/infrastructure/diff/interface/PhabricatorInlineComment.php
+
+		-
+			message: '#^Call to an undefined method PHUIDiffTableOfContentsItemView\:\:renderChangesetLink\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/infrastructure/diff/view/PHUIDiffTableOfContentsItemView.php
+
+		-
+			message: '#^Method PhabricatorEdgeEditor\:\:save\(\) should return this but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: src/infrastructure/edges/editor/PhabricatorEdgeEditor.php
+
+		-
+			message: '#^Function phabricator_read_config_file not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/env/PhabricatorConfigFileSource.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value '''' \('''', \\null\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/infrastructure/env/__tests__/PhabricatorEnvTestCase.php
+
+		-
+			message: '#^Access to constant TYPE_NUMERIC on an unknown class PHPExcel_Cell_DataType\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/infrastructure/export/field/PhabricatorDoubleExportField.php
+
+		-
+			message: '#^Access to constant FORMAT_DATE_YYYYMMDD2 on an unknown class PHPExcel_Style_NumberFormat\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/infrastructure/export/field/PhabricatorEpochExportField.php
+
+		-
+			message: '#^Access to constant TYPE_STRING on an unknown class PHPExcel_Cell_DataType\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/infrastructure/export/field/PhabricatorExportField.php
+
+		-
+			message: '#^Access to constant TYPE_NUMERIC on an unknown class PHPExcel_Cell_DataType\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/infrastructure/export/field/PhabricatorIntExportField.php
+
+		-
+			message: '#^Access to constant TYPE_STRING on an unknown class PHPExcel_Cell_DataType\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/infrastructure/export/format/PhabricatorExcelExportFormat.php
+
+		-
+			message: '#^Call to static method createWriter\(\) on an unknown class PHPExcel_IOFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/infrastructure/export/format/PhabricatorExcelExportFormat.php
+
+		-
+			message: '#^Call to static method stringFromColumnIndex\(\) on an unknown class PHPExcel_Cell\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/infrastructure/export/format/PhabricatorExcelExportFormat.php
+
+		-
+			message: '#^Instantiated class PHPExcel not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/infrastructure/export/format/PhabricatorExcelExportFormat.php
+
+		-
+			message: '#^Path in include_once\(\) "PHPExcel\.php" is not a file or it does not exist\.$#'
+			identifier: includeOnce.fileNotFound
+			count: 2
+			path: src/infrastructure/export/format/PhabricatorExcelExportFormat.php
+
+		-
+			message: '#^Function fb_parallel_query not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_affected_rows not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_close not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_errno not found\.$#'
+			identifier: function.notFound
+			count: 2
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_error not found\.$#'
+			identifier: function.notFound
+			count: 2
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_fetch_assoc not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_fetch_result not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_free_result not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_insert_id not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_more_results not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_next_result not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_query not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_real_escape_string not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_select_db not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Function mysql_set_charset not found\.$#'
+			identifier: function.notFound
+			count: 2
+			path: src/infrastructure/storage/connection/mysql/AphrontMySQLDatabaseConnection.php
+
+		-
+			message: '#^Call to an undefined method AphrontTypeaheadTemplateView\:\:renderToken\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: src/view/control/AphrontTypeaheadTemplateView.php
