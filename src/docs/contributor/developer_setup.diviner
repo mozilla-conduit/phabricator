@@ -96,17 +96,3 @@ do not normally need any kind of special configuration.
 
 You may also need to add `/etc/hosts` entries for the domains themselves.
 
-
-Creating Test Data
-==================
-
-You can create test objects with the "Lipsum" utility:
-
-```
-phabricator/ $ ./bin/lipsum help generate
-phabricator/ $ ./bin/lipsum generate ...
-```
-
-Test data can make your local install feel a little more realistic. With
-`--quickly`, you can generate a large amount of test data to help test issues
-with performance or scale.

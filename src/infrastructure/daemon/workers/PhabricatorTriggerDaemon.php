@@ -16,10 +16,6 @@ final class PhabricatorTriggerDaemon
   private $garbageCollectors;
   private $nextCollection;
 
-  private $anyNuanceData;
-  private $nuanceSources;
-  private $nuanceCursors;
-
   private $calendarEngine;
 
   protected function run() {
@@ -105,7 +101,6 @@ final class PhabricatorTriggerDaemon
       $lock->unlock();
 
       $sleep_duration = $this->getSleepDuration();
-      $sleep_duration = $this->runNuanceImportCursors($sleep_duration);
       $sleep_duration = $this->runGarbageCollection($sleep_duration);
       $sleep_duration = $this->runCalendarNotifier($sleep_duration);
 
@@ -391,77 +386,6 @@ final class PhabricatorTriggerDaemon
     }
 
     return false;
-  }
-
-
-/* -(  Nuance Importers  )--------------------------------------------------- */
-
-
-  private function runNuanceImportCursors($duration) {
-    $run_until = (PhabricatorTime::getNow() + $duration);
-
-    do {
-      $more_data = $this->updateNuanceImportCursors();
-      if (!$more_data) {
-        break;
-      }
-    } while (PhabricatorTime::getNow() <= $run_until);
-
-    $remaining = max(0, $run_until - PhabricatorTime::getNow());
-
-    return $remaining;
-  }
-
-
-  private function updateNuanceImportCursors() {
-    $nuance_app = 'PhabricatorNuanceApplication';
-    if (!PhabricatorApplication::isClassInstalled($nuance_app)) {
-      return false;
-    }
-
-    // If we haven't loaded sources yet, load them first.
-    if (!$this->nuanceSources && !$this->nuanceCursors) {
-      $this->anyNuanceData = false;
-
-      $sources = id(new NuanceSourceQuery())
-        ->setViewer($this->getViewer())
-        ->withIsDisabled(false)
-        ->withHasImportCursors(true)
-        ->execute();
-      if (!$sources) {
-        return false;
-      }
-
-      $this->nuanceSources = array_reverse($sources);
-    }
-
-    // If we don't have any cursors, move to the next source and generate its
-    // cursors.
-    if (!$this->nuanceCursors) {
-      $source = array_pop($this->nuanceSources);
-
-      $definition = $source->getDefinition()
-        ->setViewer($this->getViewer())
-        ->setSource($source);
-
-      $cursors = $definition->getImportCursors();
-      $this->nuanceCursors = array_reverse($cursors);
-    }
-
-    // Update the next cursor.
-    $cursor = array_pop($this->nuanceCursors);
-    if ($cursor) {
-      $more_data = $cursor->importFromSource();
-      if ($more_data) {
-        $this->anyNuanceData = true;
-      }
-    }
-
-    if (!$this->nuanceSources && !$this->nuanceCursors) {
-      return $this->anyNuanceData;
-    }
-
-    return true;
   }
 
 

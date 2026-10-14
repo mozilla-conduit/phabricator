@@ -1,6 +1,6 @@
 <?php
 
-final class PhabricatorMacroEditController extends PhameBlogController {
+final class PhabricatorMacroEditController extends PhabricatorMacroController {
 
   public function handleRequest(AphrontRequest $request) {
     return id(new PhabricatorMacroEditEngine())

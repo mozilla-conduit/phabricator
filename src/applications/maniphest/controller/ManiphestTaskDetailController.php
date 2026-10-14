@@ -33,7 +33,6 @@ final class ManiphestTaskDetailController extends ManiphestController {
     $edge_types = array(
       ManiphestTaskHasCommitEdgeType::EDGECONST,
       ManiphestTaskHasRevisionEdgeType::EDGECONST,
-      ManiphestTaskHasMockEdgeType::EDGECONST,
       PhabricatorObjectMentionedByObjectEdgeType::EDGECONST,
       PhabricatorObjectMentionsObjectEdgeType::EDGECONST,
       ManiphestTaskHasDuplicateTaskEdgeType::EDGECONST,
@@ -153,7 +152,6 @@ final class ManiphestTaskDetailController extends ManiphestController {
         ->appendChild($graph_table);
     }
 
-    $related_tabs[] = $this->newMocksTab($task, $query);
     $related_tabs[] = $this->newMentionsTab($task, $query);
     $related_tabs[] = $this->newDuplicatesTab($task, $query);
 
@@ -424,31 +422,6 @@ final class ManiphestTaskDetailController extends ManiphestController {
     }
 
     return $section;
-  }
-
-  private function newMocksTab(
-    ManiphestTask $task,
-    PhabricatorEdgeQuery $edge_query) {
-
-    $mock_type = ManiphestTaskHasMockEdgeType::EDGECONST;
-    $mock_phids = $edge_query->getDestinationPHIDs(array(), array($mock_type));
-    if (!$mock_phids) {
-      return null;
-    }
-
-    $viewer = $this->getViewer();
-    $handles = $viewer->loadHandles($mock_phids);
-
-    // TODO: It would be nice to render this as pinboard-style thumbnails,
-    // similar to "{M123}", instead of a list of links.
-
-    $view = id(new PHUIPropertyListView())
-      ->addProperty(pht('Mocks'), $handles->renderList());
-
-    return id(new PHUITabView())
-      ->setName(pht('Mocks'))
-      ->setKey('mocks')
-      ->appendChild($view);
   }
 
   private function newMentionsTab(

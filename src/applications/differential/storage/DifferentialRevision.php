@@ -6,7 +6,6 @@ final class DifferentialRevision extends DifferentialDAO
     PhabricatorPolicyInterface,
     PhabricatorExtendedPolicyInterface,
     PhabricatorFlaggableInterface,
-    PhrequentTrackableInterface,
     HarbormasterBuildableInterface,
     PhabricatorSubscribableInterface,
     PhabricatorCustomFieldInterface,

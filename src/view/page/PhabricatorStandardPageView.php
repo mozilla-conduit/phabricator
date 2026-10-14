@@ -332,9 +332,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       require_celerity_resource('aphront-dark-console-css');
 
       $headers = array();
-      if (DarkConsoleXHProfPluginAPI::isProfilerStarted()) {
-        $headers[DarkConsoleXHProfPluginAPI::getProfilerHeader()] = 'page';
-      }
       if (DarkConsoleServicesPlugin::isQueryAnalyzerRequested()) {
         $headers[DarkConsoleServicesPlugin::getQueryAnalyzerHeader()] = true;
       }
@@ -663,9 +660,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     $user = $this->getRequest()->getUser();
 
     $headers = array();
-    if (DarkConsoleXHProfPluginAPI::isProfilerStarted()) {
-      $headers[DarkConsoleXHProfPluginAPI::getProfilerHeader()] = 'page';
-    }
     if (DarkConsoleServicesPlugin::isQueryAnalyzerRequested()) {
       $headers[DarkConsoleServicesPlugin::getQueryAnalyzerHeader()] = true;
     }
@@ -850,16 +844,14 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       $blacklist[] = $application->getQuicksandURIPatternBlacklist();
     }
 
-    // See T4340. Currently, Phortune and Auth both require pulling in external
-    // Javascript (for Stripe card management and Recaptcha, respectively).
-    // This can put us in a position where the user loads a page with a
-    // restrictive Content-Security-Policy, then uses Quicksand to navigate to
-    // a page which needs to load external scripts. For now, just blacklist
-    // these entire applications since we aren't giving up anything
+    // See T4340. Currently, Auth requires pulling in external Javascript (for
+    // Recaptcha). This can put us in a position where the user loads a page
+    // with a restrictive Content-Security-Policy, then uses Quicksand to
+    // navigate to a page which needs to load external scripts. For now, just
+    // blacklist the entire application since we aren't giving up anything
     // significant by doing so.
 
     $blacklist[] = array(
-      '/phortune/.*',
       '/auth/.*',
     );
 

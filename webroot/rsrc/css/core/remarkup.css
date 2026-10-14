@@ -626,14 +626,6 @@ var.remarkup-assist-textarea {
   background-color: {$sh-redbackground};
 }
 
-.remarkup-cowsay {
-  white-space: pre-wrap;
-}
-
-.remarkup-figlet {
-  white-space: pre-wrap;
-}
-
 .remarkup-assist {
   width: 14px;
   height: 14px;

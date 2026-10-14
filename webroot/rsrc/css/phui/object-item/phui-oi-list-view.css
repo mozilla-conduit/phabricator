@@ -568,20 +568,6 @@ ul.phui-oi-list-view .phui-oi-selected
   left: 0;
 }
 
-/* - Countdowns ------------------------------------------------------------ */
-
-.phui-oi-col0.phui-oi-countdown {
-  width: 52px;
-  padding: 0;
-}
-
-.phui-oi-countdown .phui-oi-countdown-number {
-  border-right: 1px solid {$thinblueborder};
-  text-align: center;
-  color: {$bluetext};
-}
-
-
 /* - Dashboards ------------------------------------------------------------ */
 
 .phui-object-box .phui-oi-list-view .phui-oi-frame {

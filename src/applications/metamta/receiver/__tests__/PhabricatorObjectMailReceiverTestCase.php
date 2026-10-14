@@ -78,9 +78,18 @@ final class PhabricatorObjectMailReceiverTestCase
   private function buildMail($style) {
     $user = $this->generateNewTestUser();
 
-    $task = id(new PhabricatorManiphestTaskTestDataGenerator())
-      ->setViewer($user)
-      ->generateObject();
+    $task = ManiphestTask::initializeNewTask($user);
+    id(new ManiphestTransactionEditor())
+      ->setActor($user)
+      ->setContentSource($this->newContentSource())
+      ->applyTransactions(
+        $task,
+        array(
+          id(new ManiphestTransaction())
+            ->setTransactionType(
+              ManiphestTaskTitleTransaction::TRANSACTIONTYPE)
+            ->setNewValue(pht('Mail Receiver Test Task')),
+        ));
 
     $is_public = ($style === 'public');
     $is_bad_hash = ($style == 'badhash');

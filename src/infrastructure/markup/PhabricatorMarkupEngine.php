@@ -42,7 +42,7 @@ final class PhabricatorMarkupEngine extends Phobject {
   private $objects = array();
   private $viewer;
   private $contextObject;
-  private $version = 21;
+  private $version = 22;
   private $engineCaches = array();
   private $auxiliaryConfig = array();
 
@@ -364,20 +364,6 @@ final class PhabricatorMarkupEngine extends Phobject {
     return self::newMarkupEngine(array(
       'header.generate-toc' => true,
     ));
-  }
-
-
-  /**
-   * @task engine
-   */
-  public static function newPhameMarkupEngine() {
-    return self::newMarkupEngine(
-      array(
-        'macros' => false,
-        'uri.full' => true,
-        'uri.same-window' => true,
-        'uri.base' => PhabricatorEnv::getURI('/'),
-      ));
   }
 
 
