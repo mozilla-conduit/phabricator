@@ -18,7 +18,10 @@ class SentryLoggerPlugin extends Phobject {
     # loop through each pair
     foreach ($pairs as $i) {
       # split into name and value
-      list($name,$value) = explode('=', $i, 2);
+      // A bare key like `flag` has no `=`, so its value is `null`.
+      $parts = explode('=', $i, 2);
+      $name = $parts[0];
+      $value = idx($parts, 1);
 
       # if name already exists
       if( isset($arr[$name]) ) {
