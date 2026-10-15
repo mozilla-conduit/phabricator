@@ -631,7 +631,6 @@ final class DifferentialRevisionViewController
     $footer[] = $comment_view;
 
     $monogram = $revision->getMonogram();
-    $operations_box = $this->buildOperationsBox($revision);
 
     $crumbs = $this->buildApplicationCrumbs();
     $crumbs->addTextCrumb($monogram);
@@ -647,7 +646,6 @@ final class DifferentialRevisionViewController
       ->setCurtain($curtain)
       ->setMainColumn(
         array(
-          $operations_box,
           $moz_warnings,
           $info_view,
           $details,
@@ -829,29 +827,6 @@ final class DifferentialRevisionViewController
     $relationship_submenu = $relationship_list->newActionMenu();
     if ($relationship_submenu) {
       $curtain->addAction($relationship_submenu);
-    }
-
-    $repository = $revision->getRepository();
-    if ($repository && $repository->canPerformAutomation()) {
-      $revision_id = $revision->getID();
-
-      $op = new DrydockLandRepositoryOperation();
-      $barrier = $op->getBarrierToLanding($viewer, $revision);
-
-      if ($barrier) {
-        $can_land = false;
-      } else {
-        $can_land = true;
-      }
-
-      $action = id(new PhabricatorActionView())
-        ->setName(pht('Land Revision'))
-        ->setIcon('fa-fighter-jet')
-        ->setHref("/differential/revision/operation/{$revision_id}/")
-        ->setWorkflow(true)
-        ->setDisabled(!$can_land);
-
-      $curtain->addAction($action);
     }
 
     return $curtain;
@@ -1254,55 +1229,6 @@ final class DifferentialRevisionViewController
     }
 
     return $view;
-  }
-
-  private function buildOperationsBox(DifferentialRevision $revision) {
-    $viewer = $this->getViewer();
-
-    // Save a query if we can't possibly have pending operations.
-    $repository = $revision->getRepository();
-    if (!$repository || !$repository->canPerformAutomation()) {
-      return null;
-    }
-
-    $operations = id(new DrydockRepositoryOperationQuery())
-      ->setViewer($viewer)
-      ->withObjectPHIDs(array($revision->getPHID()))
-      ->withIsDismissed(false)
-      ->withOperationTypes(
-        array(
-          DrydockLandRepositoryOperation::OPCONST,
-        ))
-      ->execute();
-    if (!$operations) {
-      return null;
-    }
-
-    $state_fail = DrydockRepositoryOperation::STATE_FAIL;
-
-    // We're going to show the oldest operation which hasn't failed, or the
-    // most recent failure if they're all failures.
-    $operations = msort($operations, 'getID');
-    foreach ($operations as $operation) {
-      if ($operation->getOperationState() != $state_fail) {
-        break;
-      }
-    }
-
-    // If we found a completed operation, don't render anything. We don't want
-    // to show an older error after the thing worked properly.
-    if ($operation->isDone()) {
-      return null;
-    }
-
-    $box_view = id(new PHUIObjectBoxView())
-      ->setHeaderText(pht('Active Operations'))
-      ->setBackground(PHUIObjectBoxView::BLUE_PROPERTY);
-
-    return id(new DrydockRepositoryOperationStatusView())
-      ->setUser($viewer)
-      ->setBoxView($box_view)
-      ->setOperation($operation);
   }
 
   private function buildUnitMessagesView(

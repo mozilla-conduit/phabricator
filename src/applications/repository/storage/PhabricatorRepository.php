@@ -2596,33 +2596,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   }
 
 
-/* -(  Automation  )--------------------------------------------------------- */
-
-
-  public function supportsAutomation() {
-    return $this->isGit();
-  }
-
-  public function canPerformAutomation() {
-    if (!$this->supportsAutomation()) {
-      return false;
-    }
-
-    if (!$this->getAutomationBlueprintPHIDs()) {
-      return false;
-    }
-
-    return true;
-  }
-
-  public function getAutomationBlueprintPHIDs() {
-    if (!$this->supportsAutomation()) {
-      return array();
-    }
-    return $this->getDetail('automation.blueprintPHIDs', array());
-  }
-
-
 /* -(  PhabricatorApplicationTransactionInterface  )------------------------- */
 
 

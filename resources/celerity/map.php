@@ -360,7 +360,6 @@ return array(
     'rsrc/js/application/diffusion/behavior-commit-graph.js' => 'ac10c917',
     'rsrc/js/application/diffusion/behavior-locate-file.js' => '87428eb2',
     'rsrc/js/application/diffusion/behavior-pull-lastmodified.js' => 'c715c123',
-    'rsrc/js/application/drydock/drydock-live-operation-status.js' => '47a0728b',
     'rsrc/js/application/files/behavior-document-engine.js' => '243d6c22',
     'rsrc/js/application/files/behavior-icon-composer.js' => '38a6cedb',
     'rsrc/js/application/files/behavior-launch-icon-composer.js' => 'a17b84f1',
@@ -564,7 +563,6 @@ return array(
     'javelin-behavior-diffusion-locate-file' => '87428eb2',
     'javelin-behavior-diffusion-pull-lastmodified' => 'c715c123',
     'javelin-behavior-document-engine' => '243d6c22',
-    'javelin-behavior-drydock-live-operation-status' => '47a0728b',
     'javelin-behavior-editengine-reorder-configs' => '4842f137',
     'javelin-behavior-editengine-reorder-fields' => '0ad8d31f',
     'javelin-behavior-event-all-day' => '0b1bc990',
@@ -1206,11 +1204,6 @@ return array(
       'javelin-router',
       'javelin-util',
       'phabricator-busy',
-    ),
-    '47a0728b' => array(
-      'javelin-behavior',
-      'javelin-dom',
-      'javelin-request',
     ),
     '4842f137' => array(
       'javelin-behavior',

@@ -100,10 +100,6 @@
       "name": "Draft",
       "include": "(^src/applications/draft/)"
     },
-    "drydock": {
-      "name": "Drydock",
-      "include": "(^src/applications/drydock/)"
-    },
     "edges": {
       "name": "Edges",
       "include": "(^src/infrastructure/edges/)"

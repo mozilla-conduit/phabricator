@@ -60,7 +60,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.daemon' => array(),
       'db.differential' => array(),
       'db.draft' => array(),
-      'db.drydock' => array(),
+      'db.drydock' => array(
+        'dead' => true,
+      ),
       'db.feed' => array(),
       'db.file' => array(),
       'db.flag' => array(),
