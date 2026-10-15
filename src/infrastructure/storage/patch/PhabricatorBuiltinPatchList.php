@@ -77,7 +77,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.phame' => array(
         'dead' => true,
       ),
-      'db.phriction' => array(),
+      'db.phriction' => array(
+        'dead' => true,
+      ),
       'db.project' => array(),
       'db.repository' => array(),
       'db.search' => array(),

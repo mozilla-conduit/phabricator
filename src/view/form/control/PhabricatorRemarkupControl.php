@@ -107,8 +107,6 @@ final class PhabricatorRemarkupControl
           'autocomplete' => 1,
         ));
 
-    $phriction_datasource = new PhrictionDocumentDatasource();
-
     Javelin::initBehavior(
       'phabricator-remarkup-assist',
       array(
@@ -154,18 +152,6 @@ final class PhabricatorRemarkupControl
               '-',
               '/',
             ),
-          ),
-          91 => array( // "["
-            'datasourceURI' => $phriction_datasource->getDatasourceURI(),
-            'headerIcon' => 'fa-book',
-            'headerText' => pht('Find Document:'),
-            'hintText' => $phriction_datasource->getPlaceholderText(),
-            'cancel' => array(
-              ':', // Cancel on "http:" and similar.
-              '|',
-              ']',
-            ),
-            'prefix' => '^\\[',
           ),
         ),
       ));

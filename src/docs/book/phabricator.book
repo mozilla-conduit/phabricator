@@ -192,10 +192,6 @@
       "name": "PHIDs",
       "include": "(^src/applications/phid/)"
     },
-    "phriction": {
-      "name": "Phriction",
-      "include": "(^src/applications/phriction/)"
-    },
     "phui": {
       "name": "PHUI",
       "include": "(^src/view/phui/)"
