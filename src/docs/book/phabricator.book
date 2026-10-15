@@ -116,10 +116,6 @@
       "name": "Events",
       "include": "(^src/infrastructure/events/)"
     },
-    "fact": {
-      "name": "Fact",
-      "include": "(^src/applications/fact/)"
-    },
     "feed": {
       "name": "Feed",
       "include": "(^src/applications/feed/)"

@@ -98,7 +98,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
         'dead' => true,
       ),
       'db.cache' => array(),
-      'db.fact' => array(),
+      'db.fact' => array(
+        'dead' => true,
+      ),
       'db.ponder' => array(
         'dead' => true,
       ),

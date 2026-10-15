@@ -5,7 +5,6 @@
  * @task  ui    UI Integration
  * @task  uri   URI Routing
  * @task  mail  Email integration
- * @task  fact  Fact Integration
  * @task  meta  Application Management
  */
 abstract class PhabricatorApplication
@@ -290,14 +289,6 @@ abstract class PhabricatorApplication
   public function getAppEmailBlurb() {
     throw new PhutilMethodNotImplementedException();
   }
-
-/* -(  Fact Integration  )--------------------------------------------------- */
-
-
-  public function getFactObjectsForAnalysis() {
-    return array();
-  }
-
 
 /* -(  UI Integration  )----------------------------------------------------- */
 
