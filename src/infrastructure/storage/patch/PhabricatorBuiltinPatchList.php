@@ -147,7 +147,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
         'dead' => true,
       ),
       'db.application' => array(),
-      'db.paste' => array(),
+      'db.paste' => array(
+        'dead' => true,
+      ),
       '0000.legacy.sql' => array(
         'legacy' => 0,
       ),

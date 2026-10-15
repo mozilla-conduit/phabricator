@@ -184,10 +184,6 @@
       "name": "Passphrase",
       "include": "(^src/applications/passphrase/)"
     },
-    "paste": {
-      "name": "Paste",
-      "include": "(^src/applications/paste/)"
-    },
     "people": {
       "name": "People",
       "include": "(^src/applications/people/)"
