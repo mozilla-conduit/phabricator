@@ -717,10 +717,6 @@ final class PhabricatorMainMenuView extends AphrontView {
       return false;
     }
 
-    if (!$session->getSignedLegalpadDocuments()) {
-      return false;
-    }
-
     $mfa_key = 'security.require-multi-factor-auth';
     $need_mfa = PhabricatorEnv::getEnvConfig($mfa_key);
     if ($need_mfa) {

@@ -53,10 +53,6 @@ abstract class PhabricatorController extends AphrontController {
     return PhabricatorEnv::getEnvConfig('security.require-multi-factor-auth');
   }
 
-  public function shouldAllowLegallyNonCompliantUsers() {
-    return false;
-  }
-
   public function isGlobalDragAndDropUploadEnabled() {
     return false;
   }
@@ -155,15 +151,6 @@ abstract class PhabricatorController extends AphrontController {
         $this->setCurrentApplication($auth_application);
         return $this->delegateToController($login_controller);
       }
-    }
-
-    // Require users sign Legalpad documents before we check if they have
-    // MFA. If we don't do this, they can get stuck in a state where they
-    // can't add MFA until they sign, and can't sign until they add MFA.
-    // See T13024 and PHI223.
-    $result = $this->requireLegalpadSignatures();
-    if ($result !== null) {
-      return $result;
     }
 
     // Check if the user needs to configure MFA.
@@ -550,83 +537,6 @@ abstract class PhabricatorController extends AphrontController {
     // by using controller delegation, or make it properly public.
     return $this->buildApplicationCrumbs();
   }
-
-  private function requireLegalpadSignatures() {
-    if (!$this->shouldRequireLogin()) {
-      return null;
-    }
-
-    if ($this->shouldAllowLegallyNonCompliantUsers()) {
-      return null;
-    }
-
-    $viewer = $this->getViewer();
-
-    if (!$viewer->hasSession()) {
-      return null;
-    }
-
-    $session = $viewer->getSession();
-    if ($session->getIsPartial()) {
-      // If the user hasn't made it through MFA yet, require they survive
-      // MFA first.
-      return null;
-    }
-
-    if ($session->getSignedLegalpadDocuments()) {
-      return null;
-    }
-
-    if (!$viewer->isLoggedIn()) {
-      return null;
-    }
-
-    $must_sign_docs = array();
-    $sign_docs = array();
-
-    $legalpad_class = 'PhabricatorLegalpadApplication';
-    $legalpad_installed = PhabricatorApplication::isClassInstalledForViewer(
-      $legalpad_class,
-      $viewer);
-    if ($legalpad_installed) {
-      $sign_docs = id(new LegalpadDocumentQuery())
-        ->setViewer($viewer)
-        ->withSignatureRequired(1)
-        ->needViewerSignatures(true)
-        ->setOrder('oldest')
-        ->execute();
-
-      foreach ($sign_docs as $sign_doc) {
-        if (!$sign_doc->getUserSignature($viewer->getPHID())) {
-          $must_sign_docs[] = $sign_doc;
-        }
-      }
-    }
-
-    if (!$must_sign_docs) {
-      // If nothing needs to be signed (either because there are no documents
-      // which require a signature, or because the user has already signed
-      // all of them) mark the session as good and continue.
-      $engine = id(new PhabricatorAuthSessionEngine())
-        ->signLegalpadDocuments($viewer, $sign_docs);
-
-      return null;
-    }
-
-    $request = $this->getRequest();
-    $request->setURIMap(
-      array(
-        'id' => head($must_sign_docs)->getID(),
-      ));
-
-    $application = PhabricatorApplication::getByClass($legalpad_class);
-    $this->setCurrentApplication($application);
-
-    $controller = new LegalpadDocumentSignController();
-    $controller->setIsSessionGate(true);
-    return $this->delegateToController($controller);
-  }
-
 
 /* -(  Deprecated  )--------------------------------------------------------- */
 

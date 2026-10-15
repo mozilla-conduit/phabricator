@@ -148,10 +148,6 @@
       "name": "Home",
       "include": "(^src/applications/home/)"
     },
-    "legalpad": {
-      "name": "Legalpad",
-      "include": "(^src/applications/legalpad/)"
-    },
     "macro": {
       "name": "Macro",
       "include": "(^src/applications/macro/)"
