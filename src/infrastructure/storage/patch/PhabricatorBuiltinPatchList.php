@@ -110,7 +110,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       ),
       'db.conpherence' => array(),
       'db.config' => array(),
-      'db.token' => array(),
+      'db.token' => array(
+        'dead' => true,
+      ),
       'db.phlux' => array(
         'dead' => true,
       ),

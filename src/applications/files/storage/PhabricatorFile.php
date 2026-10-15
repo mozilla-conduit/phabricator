@@ -23,7 +23,6 @@
 final class PhabricatorFile extends PhabricatorFileDAO
   implements
     PhabricatorApplicationTransactionInterface,
-    PhabricatorTokenReceiverInterface,
     PhabricatorSubscribableInterface,
     PhabricatorFlaggableInterface,
     PhabricatorPolicyInterface,
@@ -1688,16 +1687,6 @@ final class PhabricatorFile extends PhabricatorFileDAO
 
   public function isAutomaticallySubscribed($phid) {
     return ($this->authorPHID == $phid);
-  }
-
-
-/* -(  PhabricatorTokenReceiverInterface  )---------------------------------- */
-
-
-  public function getUsersToNotifyOfTokenGiven() {
-    return array(
-      $this->getAuthorPHID(),
-    );
   }
 
 

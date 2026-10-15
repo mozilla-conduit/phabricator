@@ -154,7 +154,6 @@ return array(
 
     'sprite-login-css',
     'sprite-tokens-css',
-    'tokens-css',
     'auth-css',
 
     'phui-status-list-view-css',

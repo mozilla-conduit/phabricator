@@ -239,10 +239,6 @@
       "name": "System",
       "include": "(^src/applications/system/)"
     },
-    "tokens": {
-      "name": "Tokens",
-      "include": "(^src/applications/tokens/)"
-    },
     "transactions": {
       "name": "Transactions",
       "include": "(^src/applications/transactions/)"

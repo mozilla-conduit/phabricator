@@ -6734,65 +6734,6 @@ CREATE TABLE `system_destructionlog` (
   KEY `key_epoch` (`epoch`)
 ) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `{$NAMESPACE}_token` /*!40100 DEFAULT CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} */;
-
-USE `{$NAMESPACE}_token`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `token_count` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `objectPHID` varbinary(64) NOT NULL,
-  `tokenCount` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_objectPHID` (`objectPHID`),
-  KEY `key_count` (`tokenCount`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_token`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `token_given` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `objectPHID` varbinary(64) NOT NULL,
-  `authorPHID` varbinary(64) NOT NULL,
-  `tokenPHID` varbinary(64) NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_all` (`objectPHID`,`authorPHID`),
-  KEY `key_author` (`authorPHID`),
-  KEY `key_token` (`tokenPHID`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_token`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `token_token` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `phid` varbinary(64) NOT NULL,
-  `name` varchar(64) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `flavor` varchar(128) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `status` varchar(32) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `builtinKey` varchar(32) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} DEFAULT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  `creatorPHID` varbinary(64) NOT NULL,
-  `tokenImagePHID` varbinary(64) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_phid` (`phid`),
-  UNIQUE KEY `key_builtin` (`builtinKey`),
-  KEY `key_creator` (`creatorPHID`,`dateModified`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `{$NAMESPACE}_user` /*!40100 DEFAULT CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} */;
 
 USE `{$NAMESPACE}_user`;
