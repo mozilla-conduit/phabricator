@@ -84,10 +84,28 @@ final class RevisionMergeConflictEngineTestCase extends PhabricatorTestCase {
   }
 
   public function testGetFirstPublicParent() {
+    $hash = str_repeat('0123456789', 3).'abcdef0123';
+
     $cases = array(
       'recorded' => array(
-        array('abc123' => array('firstPublicParent' => 'def456')),
-        'def456',
+        array('abc123' => array('firstPublicParent' => $hash)),
+        $hash,
+      ),
+      'abbreviated hash' => array(
+        array('abc123' => array('firstPublicParent' => substr($hash, 0, 12))),
+        null,
+      ),
+      'ref name' => array(
+        array('abc123' => array('firstPublicParent' => 'autoland')),
+        null,
+      ),
+      'uppercase hash' => array(
+        array('abc123' => array('firstPublicParent' => strtoupper($hash))),
+        null,
+      ),
+      'trailing newline' => array(
+        array('abc123' => array('firstPublicParent' => $hash."\n")),
+        null,
       ),
       'missing key' => array(
         array('abc123' => array('commit' => 'abc123')),

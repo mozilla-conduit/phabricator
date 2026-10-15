@@ -533,7 +533,7 @@ final class RevisionMergeConflictEngine extends Phobject {
       }
 
       $public = idx($commit, 'firstPublicParent');
-      if (is_string($public) && phutil_nonempty_string($public)) {
+      if (is_string($public) && preg_match('/^[0-9a-f]{40}\z/', $public)) {
         return $public;
       }
     }
