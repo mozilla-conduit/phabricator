@@ -257,7 +257,6 @@
 }
 
 .phui-timeline-title .phui-timeline-value,
-.conpherence-transaction-content .phui-timeline-value,
 .phui-feed-story-head .phui-timeline-value {
   font-style: italic;
   color: {$blacktext};

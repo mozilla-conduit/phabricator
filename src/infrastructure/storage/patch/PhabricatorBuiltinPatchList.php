@@ -110,7 +110,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.pholio' => array(
         'dead' => true,
       ),
-      'db.conpherence' => array(),
+      'db.conpherence' => array(
+        'dead' => true,
+      ),
       'db.config' => array(),
       'db.token' => array(
         'dead' => true,

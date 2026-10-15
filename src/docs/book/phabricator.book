@@ -65,10 +65,6 @@
       "name": "Config",
       "include": "(^src/applications/config/)"
     },
-    "conpherence": {
-      "name": "Conpherence",
-      "include": "(^src/applications/conpherence/)"
-    },
     "console": {
       "name": "Console",
       "include": "(^src/applications/console/)"
