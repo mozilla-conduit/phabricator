@@ -144,7 +144,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.phurl' => array(
         'dead' => true,
       ),
-      'db.badges' => array(),
+      'db.badges' => array(
+        'dead' => true,
+      ),
       'db.packages' => array(
         'dead' => true,
       ),

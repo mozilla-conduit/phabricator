@@ -52,7 +52,6 @@ final class PhabricatorUser
   private $preferences = null;
   private $omnipotent = false;
   private $customFields = self::ATTACHABLE;
-  private $badgePHIDs = self::ATTACHABLE;
 
   private $alternateCSRFString = self::ATTACHABLE;
   private $session = self::ATTACHABLE;
@@ -549,11 +548,6 @@ final class PhabricatorUser
     return $this->requireCacheData($message_key);
   }
 
-  public function getRecentBadgeAwards() {
-    $badges_key = PhabricatorUserBadgesCacheType::KEY_BADGES;
-    return $this->requireCacheData($badges_key);
-  }
-
   public function getFullName() {
     if (strlen($this->getRealName())) {
       return $this->getUsername().' ('.$this->getRealName().')';
@@ -935,15 +929,6 @@ final class PhabricatorUser
    */
   public function renderHandleList(array $phids) {
     return $this->loadHandles($phids)->renderList();
-  }
-
-  public function attachBadgePHIDs(array $phids) {
-    $this->badgePHIDs = $phids;
-    return $this;
-  }
-
-  public function getBadgePHIDs() {
-    return $this->assertAttached($this->badgePHIDs);
   }
 
 /* -(  CSRF  )--------------------------------------------------------------- */
