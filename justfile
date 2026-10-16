@@ -37,6 +37,14 @@ lint *args:
 format *args:
     {{tools_without_db}} format {{args}}
 
+# Find references to missing classes, functions and methods with PHPStan.
+phpstan *args:
+    {{tools_without_db}} phpstan {{args}}
+
+# Accept PHPStan's current errors, e.g. after deleting code they were in.
+phpstan-baseline:
+    {{tools_without_db}} phpstan-baseline
+
 # Rebuild the class maps. Run after adding, removing or renaming PHP classes.
 liberate:
     {{tools_without_db}} liberate
@@ -48,8 +56,8 @@ celerity:
 # Rebuild every generated map.
 maps: liberate celerity
 
-# Run the tests, and lint the changes since `origin/master`.
-check: test lint
+# Run the tests, lint the changes since `origin/master`, and run PHPStan.
+check: test lint phpstan
 
 # Open a shell in the `tools` container.
 shell:

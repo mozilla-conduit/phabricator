@@ -59,9 +59,13 @@ list them. The most common ones are:
    `--everything`, to lint more. Only errors fail; much of the upstream code
    predates some of the warnings.
  * `just format`: apply the linters' automatic fixes.
- * `just liberate`: rebuild the class map after adding, removing or renaming
-   classes in `src/`. `arc liberate` can not parse moz-extensions, so its map is
-   edited by hand.
+ * `just phpstan`: find references to classes, functions and methods that do
+   not exist, which is what breaks when code is deleted. Errors from before it
+   was added are in `phpstan-baseline.neon`; run `just phpstan-baseline` to
+   accept the current errors, such as after deleting code that had some.
+ * `just liberate`: rebuild the class maps after adding, removing or renaming
+   classes. `arc liberate` can not parse moz-extensions, so its map is built by
+   `MozExtensionsLibraryMapBuilder` instead.
  * `just celerity`: rebuild the Celerity map after changing CSS or JS.
  * `just build-production`: build the production Docker image.
 

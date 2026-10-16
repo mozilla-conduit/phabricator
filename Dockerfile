@@ -228,6 +228,13 @@ RUN npm install --global jshint@2.13.6
 
 USER app
 
+# Used by `just phpstan`. `COMPOSER_VENDOR_DIR` points at Phabricator's own
+# dependencies, so unset it to keep PHPStan out of them.
+RUN mkdir /app/phpstan \
+    && env -u COMPOSER_VENDOR_DIR composer require \
+        --working-dir=/app/phpstan --no-interaction --no-progress \
+        phpstan/phpstan:2.2.16
+
 # The `phutil-library` linter analyzes arcanist too, and writes its symbol
 # cache into `arcanist/src`. The `tools` Compose service runs as the host user,
 # so build the cache here and let any user update it.
