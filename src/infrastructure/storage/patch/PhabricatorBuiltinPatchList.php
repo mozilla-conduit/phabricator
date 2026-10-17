@@ -120,7 +120,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       ),
       'db.diviner' => array(),
       'db.auth' => array(),
-      'db.doorkeeper' => array(),
+      'db.doorkeeper' => array(
+        'dead' => true,
+      ),
       'db.legalpad' => array(),
       'db.policy' => array(),
       'db.nuance' => array(

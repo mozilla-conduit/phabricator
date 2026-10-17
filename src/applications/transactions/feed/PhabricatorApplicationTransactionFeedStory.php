@@ -214,19 +214,4 @@ class PhabricatorApplicationTransactionFeedStory
     return PhabricatorEnv::getProductionURI($handle->getURI());
   }
 
-  public function renderAsTextForDoorkeeper(
-    DoorkeeperFeedStoryPublisher $publisher) {
-
-    $xactions = array();
-    $xaction_phids = $this->getValue('transactionPHIDs');
-    foreach ($xaction_phids as $xaction_phid) {
-      $xaction = $this->getObject($xaction_phid);
-      $xaction->setHandles($this->getHandles());
-      $xactions[] = $xaction;
-    }
-
-    $primary = $this->getPrimaryTransaction();
-    return $primary->renderAsTextForDoorkeeper($publisher, $this, $xactions);
-  }
-
 }
