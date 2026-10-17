@@ -89,49 +89,78 @@ final class DifferentialInlineCommentEditType
       }
     }
 
-    $path = idx($value, 'path');
-    $diff_ref = idx($value, 'diff');
-
-    if ($path === null) {
-      // A reply without a path goes on the same lines as the comment it
-      // replies to.
-      if (!$reply_to) {
-        throw new Exception(
-          pht('Inline comment must have a "path".'));
-      }
-
-      if ($diff_ref !== null) {
-        throw new Exception(
-          pht('Inline comment with a "diff" must also have a "path".'));
-      }
-
-      $changeset_id = $reply_to->getChangesetID();
-      $default_line = (int)$reply_to->getLineNumber();
-      $default_length = (int)$reply_to->getLineLength() + 1;
-      $default_is_new = (bool)$reply_to->getIsNewFile();
+    if ($reply_to) {
+      $location = $this->readReplyLocation($reply_to, $value);
     } else {
-      if (!is_string($path) || !strlen($path)) {
-        throw new Exception(
-          pht('Inline comment "path" must be a nonempty string.'));
-      }
-
-      $diff = $this->loadDiff($revision, $diff_ref);
-      $changeset = $this->findChangeset($diff, $path);
-      if (!$changeset) {
-        throw new Exception(
-          pht(
-            'Inline comment "path" ("%s") is not a file changed by diff %s.',
-            $path,
-            $diff->getID()));
-      }
-
-      $changeset_id = $changeset->getID();
-      $default_line = null;
-      $default_length = 1;
-      $default_is_new = true;
+      $location = $this->readLocation($revision, $value);
     }
 
-    $line = $this->readInt(idx($value, 'line', $default_line));
+    return array(
+      'location' => $location,
+      'content' => $content,
+      'suggestionText' => $suggestion_text,
+      'replyTo' => $reply_to,
+    );
+  }
+
+  /**
+   * Put a reply on the same lines as the comment it replies to.
+   */
+  private function readReplyLocation(
+    DifferentialTransactionComment $reply_to,
+    array $value) {
+
+    // Like the web UI, keep a reply with its parent so the two stay together
+    // when they are ported to other diffs. See T10562.
+    $location_keys = array(
+      'diff',
+      'path',
+      'line',
+      'length',
+      'isNewFile',
+    );
+    $sent_keys = array_intersect($location_keys, array_keys($value));
+    if ($sent_keys) {
+      throw new Exception(
+        pht(
+          'Inline comment replies go on the same lines as the comment they '.
+          'reply to, so they can not have these keys: %s.',
+          implode(', ', $sent_keys)));
+    }
+
+    return array(
+      'changesetID' => $reply_to->getChangesetID(),
+      'isNewFile' => (bool)$reply_to->getIsNewFile(),
+      'lineNumber' => (int)$reply_to->getLineNumber(),
+      'lineLength' => (int)$reply_to->getLineLength(),
+    );
+  }
+
+  /**
+   * Read the file and lines a new (non-reply) comment goes on.
+   */
+  private function readLocation(DifferentialRevision $revision, array $value) {
+    $path = idx($value, 'path');
+    if ($path === null) {
+      throw new Exception(
+        pht('Inline comment must have a "path".'));
+    }
+    if (!is_string($path) || !strlen($path)) {
+      throw new Exception(
+        pht('Inline comment "path" must be a nonempty string.'));
+    }
+
+    $diff = $this->loadDiff($revision, idx($value, 'diff'));
+    $changeset = $this->findChangeset($diff, $path);
+    if (!$changeset) {
+      throw new Exception(
+        pht(
+          'Inline comment "path" ("%s") is not a file changed by diff %s.',
+          $path,
+          $diff->getID()));
+    }
+
+    $line = $this->readInt(idx($value, 'line'));
     if ($line === null) {
       throw new Exception(
         pht('Inline comment must have a "line".'));
@@ -141,28 +170,25 @@ final class DifferentialInlineCommentEditType
         pht('Inline comment "line" must be a positive integer.'));
     }
 
-    $length = $this->readInt(idx($value, 'length', $default_length));
+    $length = $this->readInt(idx($value, 'length', 1));
     if (!is_int($length) || $length < 1) {
       throw new Exception(
         pht('Inline comment "length" must be a positive integer.'));
     }
 
-    $is_new = $this->readBool(idx($value, 'isNewFile', $default_is_new));
+    $is_new = $this->readBool(idx($value, 'isNewFile', true));
     if ($is_new === null) {
       throw new Exception(
         pht('Inline comment "isNewFile" must be a boolean.'));
     }
 
     return array(
-      'changesetID' => $changeset_id,
+      'changesetID' => $changeset->getID(),
       'isNewFile' => $is_new,
       'lineNumber' => $line,
       // Storage counts the lines after the first, like "transaction.search"
       // reports "length" as this value plus one.
       'lineLength' => $length - 1,
-      'content' => $content,
-      'suggestionText' => $suggestion_text,
-      'replyTo' => $reply_to,
     );
   }
 
@@ -175,14 +201,15 @@ final class DifferentialInlineCommentEditType
     $revision = $field->getObject();
 
     $value = $spec['value'];
+    $location = $value['location'];
     $reply_to = $value['replyTo'];
 
     $inline = id(new DifferentialInlineComment())
       ->setRevision($revision)
-      ->setChangesetID($value['changesetID'])
-      ->setIsNewFile((int)$value['isNewFile'])
-      ->setLineNumber($value['lineNumber'])
-      ->setLineLength($value['lineLength']);
+      ->setChangesetID($location['changesetID'])
+      ->setIsNewFile((int)$location['isNewFile'])
+      ->setLineNumber($location['lineNumber'])
+      ->setLineLength($location['lineLength']);
 
     if ($reply_to) {
       $inline->setReplyToCommentPHID($reply_to->getPHID());

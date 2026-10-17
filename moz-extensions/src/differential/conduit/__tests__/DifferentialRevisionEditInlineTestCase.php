@@ -49,8 +49,8 @@ final class DifferentialRevisionEditInlineTestCase extends PhabricatorTestCase {
     $this->assertEqual(true, $fields['hasSuggestion']);
     $this->assertEqual("banana\ncherry", $fields['suggestionText']);
 
-    // A reply without a path goes on the same lines as its parent. The
-    // author's own inlines start out as "Done".
+    // A reply goes on the same lines as its parent. The author's own inlines
+    // start out as "Done".
     $parent_phid = $inline['comments'][0]['phid'];
     $this->editRevision($author, $revision, array(
       array(
@@ -189,6 +189,59 @@ final class DifferentialRevisionEditInlineTestCase extends PhabricatorTestCase {
     }
 
     $this->assertEqual(array(), $this->loadInlines($author, $revision));
+  }
+
+  public function testRejectReplyLocation() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $this->editRevision($reviewer, $revision, array(
+      array(
+        'type' => 'inline',
+        'value' => array(
+          'path' => 'fruit',
+          'line' => 2,
+          'content' => 'Is this spelled right?',
+        ),
+      ),
+    ));
+    $parent = head($this->loadInlines($author, $revision));
+    $parent_phid = $parent['comments'][0]['phid'];
+
+    // A reply can not move away from the comment it replies to, even to the
+    // same lines.
+    $cases = array(
+      'path' => array('path' => 'fruit'),
+      'line' => array('line' => 1),
+      'length' => array('length' => 2),
+      'isNewFile' => array('isNewFile' => true),
+      'diff' => array('diff' => $parent['fields']['diff']['id']),
+    );
+
+    foreach ($cases as $key => $location) {
+      $caught = null;
+      try {
+        $this->editRevision($author, $revision, array(
+          array(
+            'type' => 'inline',
+            'value' => $location + array(
+              'replyToCommentPHID' => $parent_phid,
+              'content' => 'Fixed.',
+            ),
+          ),
+        ));
+      } catch (Exception $ex) {
+        $caught = $ex;
+      }
+      $this->assertTrue($caught instanceof Exception, $key);
+      $this->assertTrue(
+        strpos($caught->getMessage(), 'can not have these keys: '.$key)
+          !== false,
+        pht('%s: %s', $key, $caught->getMessage()));
+    }
+
+    $this->assertEqual(1, count($this->loadInlines($author, $revision)));
   }
 
   private function newRevision(PhabricatorUser $author) {

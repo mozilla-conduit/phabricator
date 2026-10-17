@@ -333,33 +333,26 @@ final class DifferentialRevisionEditEngine
   private function getInlineConduitDocumentation() {
     return pht(<<<EOREMARKUP
 Use the `inline` transaction to publish an inline comment on a file changed by
-the revision. The value is a dictionary with these keys:
+the revision. The value is a dictionary. Inline comments are published
+immediately, as part of the same edit. They can not be added while creating a
+revision.
 
-  - `path` (string): Path of the changed file. Required, unless replying.
-  - `line` (int): First line the comment applies to. Required, unless
-    replying.
-  - `length` (optional int): Number of lines the comment applies to. Defaults
-    to `1`.
-  - `isNewFile` (optional bool): `true` to comment on the new version of the
+Every comment needs at least one of these keys, with a nonempty value:
+
+  - `content` (string): Text of the comment.
+  - `suggestionText` (string): Replacement text for the commented lines. An
+    empty string suggests deleting them, but then `content` is required.
+
+**New comment.** Say where the comment goes with these keys:
+
+  - `path` (string, required): Path of the changed file.
+  - `line` (int, required): First line the comment applies to.
+  - `length` (int, optional): Number of lines the comment applies to.
+    Defaults to `1`.
+  - `isNewFile` (bool, optional): `true` to comment on the new version of the
     file, `false` for the old version. Defaults to `true`.
-  - `diff` (optional int or phid): ID or PHID of the diff to comment on.
+  - `diff` (int or phid, optional): ID or PHID of the diff to comment on.
     Defaults to the active diff.
-  - `content` (optional string): Text of the comment.
-  - `suggestionText` (optional string): Replacement text for the commented
-    lines. An empty string suggests deleting them.
-  - `replyToCommentPHID` (optional phid): PHID of a published inline comment
-    on this revision to reply to.
-
-The comment must have a nonempty `content` or `suggestionText`.
-
-When replying, you may omit `path` to place the reply on the same lines as the
-comment it replies to. The other location keys then default to the values of
-that comment.
-
-Inline comments are published immediately, as part of the same edit. They can
-not be added while creating a revision.
-
-For example:
 
 ```lang=json
 {
@@ -369,6 +362,24 @@ For example:
     "line": 12,
     "length": 2,
     "content": "This could overflow."
+  }
+}
+```
+
+**Reply.** Give the comment to reply to instead:
+
+  - `replyToCommentPHID` (phid, required): PHID of a published inline comment
+    on this revision.
+
+A reply always goes on the same lines as the comment it replies to, so it can
+not have `path`, `line`, `length`, `isNewFile` or `diff`.
+
+```lang=json
+{
+  "type": "inline",
+  "value": {
+    "replyToCommentPHID": "PHID-XCMT-abcdefghijklmnopqrst",
+    "content": "Fixed."
   }
 }
 ```
