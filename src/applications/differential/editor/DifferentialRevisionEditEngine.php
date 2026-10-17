@@ -314,6 +314,47 @@ final class DifferentialRevisionEditEngine
       ->setConduitTypeDescription(pht('New "Hold as Draft" setting.'))
       ->setValue($object->getHoldAsDraft());
 
+    $inline_documentation = pht(<<<EODOCS
+Publish an inline comment on a changed line. The comment is published along
+with the other transactions in the call, so inline comments, a comment and a
+review action like `accept` can be sent together. The value uses the same
+keys that `transaction.search` reports for inline comments:
+
+  - `diff` //Optional string.// PHID of the diff to comment on. Defaults to
+    the active diff.
+  - `path` //Required string.// Path of the changed file.
+  - `line` //Required int.// First line of the comment.
+  - `length` //Optional int.// Number of lines the comment covers. Defaults
+    to 1.
+  - `isNewFile` //Required bool.// `true` to comment on the new version of
+    the file, `false` for the old version.
+  - `content` //String.// Comment text. May be empty only if the comment has
+    a suggestion.
+  - `replyToCommentPHID` //Optional string.// PHID of a published inline
+    comment to reply to. A reply is placed where the parent comment is, so
+    `diff`, `path`, `line`, `length` and `isNewFile` may be omitted. If they
+    are given, they must match the parent comment.
+  - `suggestionText` //Optional string.// Replacement text for the commented
+    lines, shown as a suggested edit. An empty string suggests deleting them.
+  - `hasSuggestion` //Optional bool.// Whether the comment has a suggestion.
+    Defaults to whether `suggestionText` was given.
+EODOCS
+      );
+
+    $fields[] = id(new DifferentialRevisionInlineEditField())
+      ->setKey('inline')
+      ->setLabel(pht('Inline Comment'))
+      ->setIsFormField(false)
+      ->setTransactionType(DifferentialTransaction::TYPE_INLINE)
+      ->setDescription(pht('Publish an inline comment.'))
+      ->setConduitDescription(
+        pht('Publish an inline comment on a changed line.'))
+      ->setConduitTypeDescription(pht('Inline comment to publish.'))
+      ->setConduitDocumentation($inline_documentation)
+      ->setIsReorderable(false)
+      ->setIsDefaultable(false)
+      ->setIsLockable(false);
+
     return $fields;
   }
 
