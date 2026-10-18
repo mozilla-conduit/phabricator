@@ -53,7 +53,7 @@ EOPHP;
         Filesystem::readFile($this->root.'/'.$path));
 
       foreach ($declarations['class'] as $class_name => $parents) {
-        $library_map['class'][$class_name] = $path;
+        $this->addSymbol($library_map, 'class', $class_name, $path);
         if (count($parents) == 1) {
           $library_map['xmap'][$class_name] = head($parents);
         } else if ($parents) {
@@ -62,7 +62,7 @@ EOPHP;
       }
 
       foreach ($declarations['function'] as $function_name) {
-        $library_map['function'][$function_name] = $path;
+        $this->addSymbol($library_map, 'function', $function_name, $path);
       }
     }
 
@@ -72,6 +72,26 @@ EOPHP;
     }
 
     return $library_map;
+  }
+
+  /**
+   * Map a symbol to the file declaring it, failing if another file already
+   * declares it, as `PhutilLibraryMapBuilder` does.
+   */
+  private function addSymbol(array &$library_map, $type, $name, $path) {
+    $existing_path = idx($library_map[$type], $name);
+    if ($existing_path !== null) {
+      throw new Exception(
+        pht(
+          "Definition of %s '%s' in file '%s' duplicates prior definition ".
+          "in file '%s'. You can not declare the same symbol twice.",
+          $type,
+          $name,
+          $path,
+          $existing_path));
+    }
+
+    $library_map[$type][$name] = $path;
   }
 
   /**
