@@ -106,6 +106,52 @@ final class RevisionMergeConflictWorkerTestCase extends PhabricatorTestCase {
         'it, so the daemon log says why the check ran.'));
   }
 
+  public function testWaitingCheckForTheSameDiffIsReused() {
+    $waiting_phids = RevisionMergeConflictWorker::findWaitingRevisionPHIDs(
+      array(
+        $this->newTaskRow('PHID-DREV-1', 'PHID-DIFF-1'),
+      ),
+      array(
+        'PHID-DREV-1' => 'PHID-DIFF-1',
+        'PHID-DREV-2' => 'PHID-DIFF-2',
+      ));
+
+    $this->assertEqual(
+      array('PHID-DREV-1' => true),
+      $waiting_phids,
+      pht(
+        'A revision with a waiting check for the same diff should not get '.
+        'another one, and a revision without one should.'));
+  }
+
+  public function testWaitingCheckForAnOlderDiffIsNotReused() {
+    $waiting_phids = RevisionMergeConflictWorker::findWaitingRevisionPHIDs(
+      array(
+        $this->newTaskRow('PHID-DREV-1', 'PHID-DIFF-old'),
+      ),
+      array('PHID-DREV-1' => 'PHID-DIFF-new'));
+
+    $this->assertEqual(
+      array(),
+      $waiting_phids,
+      pht(
+        'A waiting check pinned to an older diff is dropped when it runs, so '.
+        'it should not stand in for a check of the new diff.'));
+  }
+
+  public function testUndecodableTaskDataIsIgnored() {
+    $waiting_phids = RevisionMergeConflictWorker::findWaitingRevisionPHIDs(
+      array(
+        array('objectPHID' => 'PHID-DREV-1', 'data' => '{not json'),
+      ),
+      array('PHID-DREV-1' => 'PHID-DIFF-1'));
+
+    $this->assertEqual(
+      array(),
+      $waiting_phids,
+      pht('A task whose data cannot be read should not suppress a check.'));
+  }
+
   public function testStoredResultIsCurrentForUnchangedInputs() {
     $this->assertTrue(
       RevisionMergeConflictWorker::isStoredResultCurrent(
@@ -166,6 +212,17 @@ final class RevisionMergeConflictWorkerTestCase extends PhabricatorTestCase {
       pht(
         'Only a definitive result records a target commit, so an `unknown` '.
         'result should never stop a retry.'));
+  }
+
+  private function newTaskRow(
+    string $revision_phid,
+    string $diff_phid): array {
+
+    return array(
+      'objectPHID' => $revision_phid,
+      'data' => phutil_json_encode(
+        RevisionMergeConflictWorker::newTaskData($revision_phid, $diff_phid)),
+    );
   }
 
   /**

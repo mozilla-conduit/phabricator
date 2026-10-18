@@ -118,17 +118,17 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
       ->needActiveDiffs(true)
       ->execute();
 
+    $diff_phids = array();
     foreach ($revisions as $revision) {
       $active_diff = $revision->getActiveDiff();
       if (!$active_diff) {
         continue;
       }
 
-      self::queueCheck(
-        $revision->getPHID(),
-        $active_diff->getPHID(),
-        $trigger_commit);
+      $diff_phids[$revision->getPHID()] = $active_diff->getPHID();
     }
+
+    self::queueChecksForDiffs($diff_phids, $trigger_commit);
   }
 
   /**
@@ -141,16 +141,122 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
     string $diff_phid,
     ?string $trigger_commit = null): void {
 
-    self::scheduleTask(
-      'RevisionMergeConflictWorker',
-      self::newTaskData($revision_phid, $diff_phid, $trigger_commit),
-      array(
-        'objectPHID' => $revision_phid,
-        // Run at bulk priority so a wide fan-out (a commit touching a popular
-        // file, or a tall stack) doesn't starve more important queued work
-        // like mail, commit import and Herald.
-        'priority' => self::PRIORITY_BULK,
-      ));
+    self::queueChecksForDiffs(
+      array($revision_phid => $diff_phid),
+      $trigger_commit);
+  }
+
+  /**
+   * Queues a check for each revision in a map of revision PHIDs to the diff
+   * PHID to check, skipping revisions that already have one waiting.
+   */
+  private static function queueChecksForDiffs(
+    array $diff_phids,
+    ?string $trigger_commit = null): void {
+
+    if (!$diff_phids) {
+      return;
+    }
+
+    $waiting_phids = self::findWaitingRevisionPHIDs(
+      self::loadWaitingTaskRows(array_keys($diff_phids)),
+      $diff_phids);
+
+    foreach ($diff_phids as $revision_phid => $diff_phid) {
+      if (isset($waiting_phids[$revision_phid])) {
+        continue;
+      }
+
+      self::scheduleTask(
+        'RevisionMergeConflictWorker',
+        self::newTaskData($revision_phid, $diff_phid, $trigger_commit),
+        array(
+          'objectPHID' => $revision_phid,
+          // Run at bulk priority so a wide fan-out (a commit touching a
+          // popular file, or a tall stack) doesn't starve more important
+          // queued work like mail, commit import and Herald.
+          'priority' => self::PRIORITY_BULK,
+        ));
+    }
+  }
+
+  /**
+   * Loads the checks queued for the given revisions that no taskmaster has
+   * leased yet, as rows with `objectPHID` and the task's JSON `data`.
+   *
+   * Leased tasks are left out, since one may have resolved the branch tip
+   * before the change that is queueing this check. Tasks queued at a lower
+   * priority than ours are left out too, so a backfill can't hold back a
+   * check for a new commit or diff.
+   */
+  private static function loadWaitingTaskRows(array $revision_phids): array {
+    $task_table = new PhabricatorWorkerActiveTask();
+    $data_table = new PhabricatorWorkerTaskData();
+
+    return queryfx_all(
+      $task_table->establishConnection('r'),
+      'SELECT task.objectPHID, data.data FROM %T task
+         JOIN %T data ON data.id = task.dataID
+        WHERE task.taskClass = %s
+          AND task.objectPHID IN (%Ls)
+          AND task.leaseOwner IS NULL
+          AND task.priority <= %d',
+      $task_table->getTableName(),
+      $data_table->getTableName(),
+      __CLASS__,
+      $revision_phids,
+      self::PRIORITY_BULK);
+  }
+
+  /**
+   * Returns the revisions that already have a waiting check for the same diff
+   * we would queue.
+   *
+   * A waiting check resolves the branch tip when it runs, so it already covers
+   * whatever change is queueing another one. A check pinned to an older diff
+   * doesn't, since the worker drops it once a newer diff is attached.
+   *
+   * @param list<map<string, string>> $task_rows Waiting tasks, as returned by
+   *   `loadWaitingTaskRows`: each has the revision PHID in `objectPHID` and the
+   *   task data, as JSON, in `data`.
+   * @param map<string, string> $diff_phids Map of revision PHID to the diff
+   *   PHID we would queue a check for.
+   * @return map<string, bool> Set of revision PHIDs, mapped to `true`, that
+   *   should not get another check.
+   */
+  public static function findWaitingRevisionPHIDs(
+    array $task_rows,
+    array $diff_phids): array {
+
+    $waiting_phids = array();
+    foreach ($task_rows as $task_row) {
+      $revision_phid = idx($task_row, 'objectPHID');
+
+      try {
+        $data = phutil_json_decode(idx($task_row, 'data'));
+      } catch (PhutilJSONParserException $ex) {
+        // The task can't be told apart from one for another diff, so it
+        // doesn't stand in for a new check.
+        phlog(
+          pht(
+            'Ignoring a waiting merge conflict check for "%s" whose task '.
+            'data could not be decoded: %s',
+            $revision_phid,
+            $ex->getMessage()));
+        continue;
+      }
+
+      $wanted_diff_phid = idx($diff_phids, $revision_phid);
+      if ($wanted_diff_phid === null) {
+        continue;
+      }
+
+      if (idx($data, 'diffPHID') === $wanted_diff_phid) {
+        $waiting_phids[$revision_phid] = true;
+      }
+    }
+
+    return $waiting_phids;
   }
 
   /**
@@ -233,11 +339,16 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
     // branch can queue many tasks for the same revision; since each task
     // resolves the branch tip live, they would otherwise all recompute the
     // same answer.
-    if ($this->isResultCurrent($revision, $active_diff, $engine)) {
+    $stored = id(new DifferentialMergeConflictStatusField())
+      ->readStoredValueForObject($revision->getPHID());
+    if ($this->isResultCurrent($stored, $active_diff, $engine)) {
       return;
     }
 
-    $result = $engine->executeCheck();
+    $result = self::newCarriedOverResult($stored, $active_diff, $engine);
+    if ($result === null) {
+      $result = $engine->executeCheck();
+    }
 
     $this->writeResult($revision, $active_diff, $engine, $result);
   }
@@ -247,13 +358,11 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
    * fresh check would use, so recomputing it would produce an identical result.
    */
   private function isResultCurrent(
-    DifferentialRevision $revision,
+    ?array $stored,
     DifferentialDiff $diff,
     RevisionMergeConflictEngine $engine): bool {
 
-    $stored = id(new DifferentialMergeConflictStatusField())
-      ->readStoredValueForObject($revision->getPHID());
-    if (!is_array($stored)) {
+    if ($stored === null) {
       return false;
     }
 
@@ -271,6 +380,73 @@ final class RevisionMergeConflictWorker extends PhabricatorWorker {
       $diff->getPHID(),
       $current_stack,
       $current_tip);
+  }
+
+  /**
+   * Returns the stored status restated against the current branch tip, or
+   * `null` if a full check is needed. A status checked against an older tip
+   * still holds if the branch only moved through commits that can't change how
+   * the stack merges, and recording the new tip keeps "last checked" current.
+   */
+  public static function newCarriedOverResult(
+    ?array $stored,
+    DifferentialDiff $diff,
+    RevisionMergeConflictEngine $engine): ?array {
+
+    if ($stored === null) {
+      return null;
+    }
+
+    $stored_status = idx(
+      $stored,
+      DifferentialMergeConflictStatusField::KEY_STATUS);
+    $stored_tip = idx(
+      $stored,
+      DifferentialMergeConflictStatusField::KEY_TARGET_COMMIT);
+    $stored_base = idx(
+      $stored,
+      DifferentialMergeConflictStatusField::KEY_BASE_COMMIT);
+    if (!is_string($stored_status) ||
+        !is_string($stored_tip) ||
+        !is_string($stored_base)) {
+      return null;
+    }
+
+    try {
+      $current_stack = $engine->getStackDiffPHIDs();
+      $current_tip = $engine->resolveTargetTip();
+    } catch (Exception $ex) {
+      return null;
+    }
+
+    // Compare everything but the tip by checking against the stored tip.
+    $is_current_except_tip = self::isStoredResultCurrent(
+      $stored,
+      $diff->getPHID(),
+      $current_stack,
+      $stored_tip);
+    if (!$is_current_except_tip) {
+      return null;
+    }
+
+    try {
+      $has_relevant_changes = $engine->hasRelevantTargetChanges(
+        $stored_base,
+        $stored_tip,
+        $current_tip);
+      if ($has_relevant_changes) {
+        return null;
+      }
+
+      return $engine->newCarriedOverResult(
+        $stored_status,
+        $stored_base,
+        $current_tip);
+    } catch (Exception $ex) {
+      // A git failure here should cost a full check, not a skipped one.
+      phlog($ex);
+      return null;
+    }
   }
 
   /**
