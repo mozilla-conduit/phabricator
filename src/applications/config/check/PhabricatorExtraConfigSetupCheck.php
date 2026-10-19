@@ -310,8 +310,7 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
       'homepage customization. See T11533 for more details.');
 
     $elastic_reason = pht(
-      'Elasticsearch is now configured with "%s".',
-      'cluster.search');
+      'Elasticsearch is no longer supported.');
 
     $mailers_reason = pht(
       'Inbound and outbound mail is now configured with "cluster.mailers".');
