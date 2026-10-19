@@ -1,0 +1,22 @@
+# Static analysis, run with `just phpstan`. Level 0 catches references to
+# classes, functions and methods that don't exist, which is what breaks when
+# code is deleted. Paths outside the checkout are in the `tools` image.
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 0
+    phpVersion: 70400
+    paths:
+        - src
+        - moz-extensions/src
+        - docker/tools
+    excludePaths:
+        analyseAndScan:
+            - */__tests__/data/*
+    scanDirectories:
+        - /app/arcanist/src
+        - /app/arcanist/externals
+        - /app/phabricator/externals
+        - support/startup
+    tmpDir: .cache/phpstan
