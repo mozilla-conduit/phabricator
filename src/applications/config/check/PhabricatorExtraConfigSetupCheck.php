@@ -324,6 +324,9 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
     $phd_reason = pht(
       'Use "bin/phd debug ..." to get a detailed daemon execution log.');
 
+    $asana_reason = pht(
+      'The Asana integration has been removed.');
+
     $ancient_config += array(
       'phid.external-loaders' =>
         pht(
@@ -550,6 +553,9 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
         'XHProf, which collected these profiles, has been removed.'),
       'phurl.short-uri' => pht(
         'Phurl, which served these short URIs, has been removed.'),
+
+      'asana.workspace-id' => $asana_reason,
+      'asana.project-ids' => $asana_reason,
     );
 
     return $ancient_config;
