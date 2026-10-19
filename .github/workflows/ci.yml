@@ -72,3 +72,5 @@ jobs:
         run: just build
       - name: Lint changes
         run: just lint
+      - name: Run PHPStan
+        run: just phpstan
