@@ -69,7 +69,8 @@
       "type": "text",
       "exclude": [
         "(^src/(.*/)?__tests__/[^/]+/.*\\.(txt|json|expect))",
-        "(^resources/sql/quickstart\\.sql$)"
+        "(^resources/sql/quickstart\\.sql$)",
+        "(^phpstan-baseline\\.neon$)"
       ]
     },
     "text-without-length": {

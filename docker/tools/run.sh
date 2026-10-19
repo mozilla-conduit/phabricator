@@ -11,7 +11,9 @@ set -eu
 ARC=/app/arcanist/bin/arc
 
 usage() {
-    echo "usage: $0 test|lint|format|liberate|celerity|shell [args...]" >&2
+    echo "usage: $0 COMMAND [args...]" >&2
+    echo "commands: test lint format phpstan phpstan-baseline liberate" \
+        "celerity shell" >&2
     exit 64
 }
 
@@ -90,9 +92,22 @@ case "$command" in
         cd /src
         exec "$ARC" lint --apply-patches "$@"
         ;;
+    phpstan)
+        cd /src
+        exec /app/phpstan/vendor/bin/phpstan analyse --memory-limit=4G "$@"
+        ;;
+    phpstan-baseline)
+        cd /src
+        # PHPStan refuses to load a baseline naming deleted files, so start
+        # from an empty one.
+        printf 'parameters:\n\tignoreErrors: []\n' > phpstan-baseline.neon
+        exec /app/phpstan/vendor/bin/phpstan analyse --memory-limit=4G \
+            --generate-baseline
+        ;;
     liberate)
         cd /src
-        exec "$ARC" liberate -- src/
+        "$ARC" liberate -- src/
+        exec php /src/docker/tools/liberate-moz-extensions.php
         ;;
     celerity)
         cd /app/phabricator
