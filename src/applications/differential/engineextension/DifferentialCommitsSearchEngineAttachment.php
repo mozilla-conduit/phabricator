@@ -45,11 +45,12 @@ final class DifferentialCommitsSearchEngineAttachment
 
       $author_name = idx($commit, 'author');
       $author_email = idx($commit, 'authorEmail');
-      if (strlen($author_name) && strlen($author_email)) {
+      if (phutil_nonempty_string($author_name) &&
+          phutil_nonempty_string($author_email)) {
         $author_raw = (string)id(new PhutilEmailAddress())
           ->setDisplayName($author_name)
           ->setAddress($author_email);
-      } else if (strlen($author_email)) {
+      } else if (phutil_nonempty_string($author_email)) {
         $author_raw = $author_email;
       } else {
         $author_raw = $author_name;

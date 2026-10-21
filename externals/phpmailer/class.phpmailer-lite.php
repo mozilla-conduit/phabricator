@@ -143,6 +143,12 @@ class PHPMailerLite {
   /////////////////////////////////////////////////
 
   /**
+   * Adapter which sends mail when `Mailer` is "amazon-ses".
+   * @var PhabricatorMailAmazonSESAdapter
+   */
+  public $customMailer;
+
+  /**
    * Email priority (1 = High, 3 = Normal, 5 = low).
    * @var int
    */
