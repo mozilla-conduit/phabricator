@@ -35,7 +35,8 @@ RUN apk --no-cache --update add \
     py3-pygments \
     python3-dev
 
-# Build PHP extensions
+# Build PHP extensions. `zip` comes with PHP's source, so only APCu needs PECL,
+# and pecl.php.net sometimes answers with an HTTP 500, so retry it.
 RUN apk --no-cache add --virtual build-dependencies \
         $PHPIZE_DEPS \
         freetype-dev \
@@ -50,10 +51,12 @@ RUN apk --no-cache add --virtual build-dependencies \
         gd \
         mysqli \
         pcntl \
-    && pecl install apcu-5.1.27 \
+        zip \
+    && for try in 1 2 3; do \
+        pecl install apcu-5.1.27 && break; \
+        [ "$try" -lt 3 ] && sleep 10 || exit 1; \
+    done \
     && docker-php-ext-enable apcu \
-    && pecl install zip-1.22.6 \
-    && docker-php-ext-enable zip \
     && apk del build-dependencies
 
 RUN wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.1/dumb-init_1.2.1_amd64 \
@@ -166,8 +169,12 @@ RUN /app/assert-git.sh
 FROM base AS development
 
 USER root
+# pecl.php.net sometimes answers with an HTTP 500, so retry.
 RUN apk add --no-cache $PHPIZE_DEPS linux-headers \
-    && pecl install xdebug-3.4.5 \
+    && for try in 1 2 3; do \
+        pecl install xdebug-3.4.5 && break; \
+        [ "$try" -lt 3 ] && sleep 10 || exit 1; \
+    done \
     && docker-php-ext-enable xdebug
 
 RUN { \
