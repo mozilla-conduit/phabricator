@@ -234,7 +234,9 @@ final class PhabricatorPolicyFilter extends Phobject {
         if ($object instanceof PhabricatorProject) {
           $project_phid = $object->getPHID();
           if (isset($need_projects[$project_phid])) {
-            $is_member = $object->isUserMember($viewer_phid);
+            // Logged-out viewers are never members, and
+            // `PhabricatorProjectQuery` does not attach their membership.
+            $is_member = $viewer_phid && $object->isUserMember($viewer_phid);
             $this->userProjects[$viewer_phid][$project_phid] = $is_member;
             unset($need_projects[$project_phid]);
           }
