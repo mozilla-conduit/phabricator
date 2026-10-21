@@ -23,7 +23,7 @@ final class PhabricatorWebServerSetupCheck extends PhabricatorSetupCheck {
     }
 
     $base_uri = PhabricatorEnv::getEnvConfig('phabricator.base-uri');
-    if (!strlen($base_uri)) {
+    if (!$base_uri) {
       // If `phabricator.base-uri` is not set then we can't really do
       // anything.
       return;
@@ -43,7 +43,7 @@ final class PhabricatorWebServerSetupCheck extends PhabricatorSetupCheck {
       ->replaceQueryParam($expect_key, $expect_value);
 
     $self_future = id(new HTTPSFuture($base_uri))
-      ->addHeader('X-Setup-SelfCheck', 1)
+      ->addHeader('X-Setup-SelfCheck', '1')
       ->addHeader('Accept-Encoding', 'gzip')
       ->setDisableContentDecoding(true)
       ->setHTTPBasicAuthCredentials(
@@ -56,7 +56,7 @@ final class PhabricatorWebServerSetupCheck extends PhabricatorSetupCheck {
       $gzip_compressed = gzencode($gzip_uncompressed);
 
       $gzip_future = id(new HTTPSFuture($base_uri))
-        ->addHeader('X-Setup-SelfCheck', 1)
+        ->addHeader('X-Setup-SelfCheck', '1')
         ->addHeader('Content-Encoding', 'gzip')
         ->setTimeout(5)
         ->setData($gzip_compressed);

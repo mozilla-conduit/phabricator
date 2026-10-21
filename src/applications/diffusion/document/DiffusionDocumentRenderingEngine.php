@@ -65,7 +65,7 @@ final class DiffusionDocumentRenderingEngine
 
   protected function addApplicationCrumbs(
     PHUICrumbsView $crumbs,
-    PhabricatorDocumentRef $ref = null) {
+    ?PhabricatorDocumentRef $ref = null) {
     return;
   }
 
@@ -87,7 +87,7 @@ final class DiffusionDocumentRenderingEngine
     $ref->setSymbolMetadata($this->getSymbolMetadata());
 
     $coverage = $drequest->loadCoverage();
-    if (strlen($coverage)) {
+    if (phutil_nonempty_string($coverage)) {
       $ref->addCoverage($coverage);
     }
   }

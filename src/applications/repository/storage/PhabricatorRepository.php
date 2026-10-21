@@ -217,7 +217,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     $monograms[] = 'R'.$this->getID();
 
     $callsign = $this->getCallsign();
-    if (strlen($callsign)) {
+    if (phutil_nonempty_string($callsign)) {
       $monograms[] = 'r'.$callsign;
     }
 
@@ -250,7 +250,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   }
 
   public function attachMostRecentCommit(
-    PhabricatorRepositoryCommit $commit = null) {
+    ?PhabricatorRepositoryCommit $commit = null) {
     $this->mostRecentCommit = $commit;
     return $this;
   }
@@ -345,12 +345,12 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
     // Make some reasonable effort to produce reasonable default directory
     // names from repository names.
-    if (!strlen($name)) {
+    if (!phutil_nonempty_string($name)) {
       $name = $this->getName();
       $name = phutil_utf8_strtolower($name);
       $name = preg_replace('@[ -/:->]+@', '-', $name);
       $name = trim($name, '-');
-      if (!strlen($name)) {
+      if (!phutil_nonempty_string($name)) {
         $name = $this->getCallsign();
       }
     }
@@ -779,15 +779,15 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
         break;
       case 'compare':
         $uri = $this->getPathURI("/{$action}/");
-        if (strlen($head)) {
+        if (phutil_nonempty_scalar($head)) {
           $query['head'] = $head;
-        } else if (strlen($raw_commit)) {
+        } else if (phutil_nonempty_scalar($raw_commit)) {
           $query['commit'] = $raw_commit;
-        } else if (strlen($raw_branch)) {
+        } else if (phutil_nonempty_scalar($raw_branch)) {
           $query['head'] = $raw_branch;
         }
 
-        if (strlen($against)) {
+        if (phutil_nonempty_scalar($against)) {
           $query['against'] = $against;
         }
         break;
@@ -1160,7 +1160,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
    */
   public function getRemoteURIObject() {
     $raw_uri = $this->getDetail('remote-uri');
-    if (!strlen($raw_uri)) {
+    if (!phutil_nonempty_string($raw_uri)) {
       return new PhutilURI('');
     }
 
@@ -2480,7 +2480,8 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       $has_https = false;
     }
 
-    $has_ssh = (bool)strlen(PhabricatorEnv::getEnvConfig('phd.user'));
+    $phd_user = PhabricatorEnv::getEnvConfig('phd.user');
+    $has_ssh = phutil_nonempty_string($phd_user);
 
     $protocol_map = array(
       PhabricatorRepositoryURI::BUILTIN_PROTOCOL_SSH => $has_ssh,
@@ -2818,7 +2819,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     $permanent_rules = $this->getStringListForConduit($permanent_rules);
 
     $default_branch = $this->getDefaultBranch();
-    if (!strlen($default_branch)) {
+    if (!phutil_nonempty_string($default_branch)) {
       $default_branch = null;
     }
 

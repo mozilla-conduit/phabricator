@@ -49,7 +49,7 @@ class SentryLoggerPlugin extends Phobject {
       // `parse_query_str()` collects the values of a repeated key in a list.
       // Avoid `(array)` here, since it turns a bare key's `null` into `array()`.
       foreach (is_array($v) ? $v : array($v) as $value) {
-        $params[] = urlencode($k) . '=' . urlencode($value);
+        $params[] = urlencode($k) . '=' . urlencode($value ?? '');
       }
     }
 
@@ -80,7 +80,21 @@ class SentryLoggerPlugin extends Phobject {
     return $array;
   }
 
+  public static function filter_headers($headers) {
+    // Take the CSRF header's name from `AphrontRequest`, so it can't drift.
+    $fields_re = sprintf(
+      '/^(Cookie|%s)$/i',
+      preg_quote(AphrontRequest::getCSRFHeaderName(), '/'));
+
+    return self::filter_values($headers, $fields_re);
+  }
+
   public static function handleError($event, $value, $metadata) {
+    // PHP deprecation warnings are only logged, and would flood Sentry.
+    if ($event === PhutilErrorHandler::DEPRECATED) {
+      return;
+    }
+
     $sentry_dsn = PhabricatorEnv::getEnvConfigIfExists('sentry.dsn');
 
     if (empty($sentry_dsn)) {
@@ -92,27 +106,36 @@ class SentryLoggerPlugin extends Phobject {
     require_once $root . '/externals/extensions/autoload.php';
 
     $before_send = function(Sentry\Event $event) {
-      $integration = new Sentry\Integration\RequestIntegration(new Sentry\Options());
-      Sentry\Integration\RequestIntegration::applyToEvent($integration, $event);
       $request = $event->getRequest();
 
-      // Sanitize HTTP POST data
-      $request['data'] = self::filter_values($request['data']);
+      // `RequestIntegration` leaves out the parts a request doesn't have.
 
-      if (is_array($request['data']) && array_key_exists('params', $request['data'])) {
-        try {
-          $params = phutil_json_decode($request['data']['params']);
-          $params = self::filter_values($params);
-          $request['data']['params'] = phutil_json_encode($params);
-        } catch (PhutilJSONParserException $ex) {
-          // data['params'] wasn't JSON, so we're finished sanitizing the request data.
+      // Sanitize HTTP POST data
+      if (isset($request['data'])) {
+        $request['data'] = self::filter_values($request['data']);
+
+        if (is_array($request['data']) &&
+            is_string(idx($request['data'], 'params'))) {
+          try {
+            $params = phutil_json_decode($request['data']['params']);
+            $params = self::filter_values($params);
+            $request['data']['params'] = phutil_json_encode($params);
+          } catch (PhutilJSONParserException $ex) {
+            // data['params'] wasn't JSON, so we're finished sanitizing the request data.
+          }
         }
       }
 
-      // Sanitize query string
-      $query_data = self::parse_query_str($request['query_string']);
-      $query_data = self::filter_values($query_data);
-      $request['query_string'] = self::generate_query_str($query_data);
+      // Sanitize query string. The URL includes it too, unsanitized, so drop
+      // it there and leave it to `query_string`.
+      if (isset($request['url'])) {
+        $request['url'] = head(explode('?', $request['url'], 2));
+      }
+      if (isset($request['query_string'])) {
+        $query_data = self::parse_query_str($request['query_string']);
+        $query_data = self::filter_values($query_data);
+        $request['query_string'] = self::generate_query_str($query_data);
+      }
 
       // Sanitize cookie data
       if (isset($request['cookies'])) {
@@ -120,26 +143,36 @@ class SentryLoggerPlugin extends Phobject {
       }
 
       // Sanitize header data
-      $request['headers'] = self::filter_values($request['headers'], '/^(Cookie|X-Phabricator-Csfr)$/i');
+      if (isset($request['headers'])) {
+        $request['headers'] = self::filter_headers($request['headers']);
+      }
 
       $event->setRequest($request);
       return $event;
     };
 
-    // Configure the client
-    $clientBuilder = Sentry\ClientBuilder::create(['dsn' => $sentry_dsn]);
-    $client = $clientBuilder->getClient();
-    $options = $client->getOptions();
-    $options->setBeforeSendCallback($before_send);
+    // Configure the client. The default integrations would also install
+    // Sentry's own PHP error and exception handlers, but errors reach Sentry
+    // through `PhutilErrorHandler`, which calls this.
+    Sentry\init(array(
+      'dsn' => $sentry_dsn,
+      'before_send' => $before_send,
+      'default_integrations' => false,
+      'integrations' => array(
+        new Sentry\Integration\RequestIntegration(),
+        new Sentry\Integration\EnvironmentIntegration(),
+        new Sentry\Integration\FrameContextifierIntegration(),
+      ),
+    ));
 
     switch ($event) {
       case PhutilErrorHandler::EXCEPTION:
         // $value is of type Exception
-        $client->captureException($value);
+        Sentry\captureException($value);
         break;
       case PhutilErrorHandler::ERROR:
         // $value is a simple string
-        $client->captureMessage($value);
+        Sentry\captureMessage($value);
         break;
       default:
         error_log(pht('Unknown event: %s', $event));

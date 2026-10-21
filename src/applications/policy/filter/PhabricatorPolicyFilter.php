@@ -234,7 +234,9 @@ final class PhabricatorPolicyFilter extends Phobject {
         if ($object instanceof PhabricatorProject) {
           $project_phid = $object->getPHID();
           if (isset($need_projects[$project_phid])) {
-            $is_member = $object->isUserMember($viewer_phid);
+            // Logged-out viewers are never members, and
+            // `PhabricatorProjectQuery` does not attach their membership.
+            $is_member = $viewer_phid && $object->isUserMember($viewer_phid);
             $this->userProjects[$viewer_phid][$project_phid] = $is_member;
             unset($need_projects[$project_phid]);
           }
@@ -399,7 +401,7 @@ final class PhabricatorPolicyFilter extends Phobject {
           $object = $ref_objects[$object_phid];
         }
 
-        $phid = $object->getPHID();
+        $phid = $object->getPHID() ?? '';
 
         $key_map[$phid][] = $extended_key;
         $objects_in[$phid] = $object;
@@ -754,7 +756,7 @@ final class PhabricatorPolicyFilter extends Phobject {
 
   private function loadCustomPolicies(array $map) {
     $viewer = $this->viewer;
-    $viewer_phid = $viewer->getPHID();
+    $viewer_phid = $viewer->getPHID() ?? 'ANONYMOUS';
 
     $custom_policies = id(new PhabricatorPolicyQuery())
       ->setViewer($viewer)
@@ -803,7 +805,7 @@ final class PhabricatorPolicyFilter extends Phobject {
       $this->customPolicies[$viewer_phid] = array();
     }
 
-    $this->customPolicies[$viewer->getPHID()] += $custom_policies;
+    $this->customPolicies[$viewer_phid] += $custom_policies;
   }
 
   private function checkObjectPolicy(
@@ -829,7 +831,7 @@ final class PhabricatorPolicyFilter extends Phobject {
     PhabricatorPolicyInterface $object) {
 
     $viewer = $this->viewer;
-    $viewer_phid = $viewer->getPHID();
+    $viewer_phid = $viewer->getPHID() ?? 'ANONYMOUS';
 
     $policy = idx($this->customPolicies[$viewer_phid], $policy_phid);
     if (!$policy) {

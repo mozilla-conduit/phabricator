@@ -290,8 +290,8 @@ final class DifferentialChangeset
   }
 
   public function getAbsoluteRepositoryPath(
-    PhabricatorRepository $repository = null,
-    DifferentialDiff $diff = null) {
+    ?PhabricatorRepository $repository = null,
+    ?DifferentialDiff $diff = null) {
 
     $base = '/';
     if ($diff && $diff->getSourceControlPath()) {
@@ -325,14 +325,16 @@ final class DifferentialChangeset
 
   public function getOldStatePathVector() {
     $path = $this->getOldFile();
-    if (!strlen($path)) {
+    if (!phutil_nonempty_string($path)) {
       $path = $this->getFilename();
     }
 
-    $path = trim($path, '/');
-    $path = explode('/', $path);
+    if (!phutil_nonempty_string($path)) {
+      return null;
+    }
 
-    return $path;
+    $path = trim($path, '/');
+    return explode('/', $path);
   }
 
   public function getNewStatePathVector() {
@@ -548,7 +550,7 @@ final class DifferentialChangeset
   }
 
   public function newComparisonChangeset(
-    DifferentialChangeset $against = null) {
+    ?DifferentialChangeset $against = null) {
 
     $left = $this;
     $right = $against;

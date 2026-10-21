@@ -282,4 +282,28 @@ abstract class PhabricatorTestCase extends PhutilTestCase {
         $expect_substring));
   }
 
+  /**
+   * Asserts that a callable raises no deprecation warnings, and returns its
+   * result. `PhutilErrorHandler` only logs deprecations, so tests pass anyway.
+   */
+  final protected function assertNoDeprecations($callable, $message) {
+    $deprecations = array();
+    set_error_handler(
+      function ($errno, $errstr, $errfile, $errline) use (&$deprecations) {
+        $deprecations[] = pht('%s at [%s:%d]', $errstr, $errfile, $errline);
+        return true;
+      },
+      E_DEPRECATED);
+
+    try {
+      $result = $callable();
+    } finally {
+      restore_error_handler();
+    }
+
+    $this->assertEqual(array(), $deprecations, $message);
+
+    return $result;
+  }
+
 }

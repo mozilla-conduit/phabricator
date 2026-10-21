@@ -29,6 +29,7 @@ abstract class PhabricatorLiskDAO extends LiskDAO {
 
   /**
    * @task config
+   * @return string
    */
   public static function getDefaultStorageNamespace() {
     return PhabricatorEnv::getEnvConfig('storage.default-namespace');
@@ -36,10 +37,11 @@ abstract class PhabricatorLiskDAO extends LiskDAO {
 
   /**
    * @task config
+   * @return string
    */
   public static function getStorageNamespace() {
     $namespace = end(self::$namespaceStack);
-    if (!strlen($namespace)) {
+    if (!phutil_nonempty_scalar($namespace)) {
       $namespace = self::getDefaultStorageNamespace();
     }
     if (!strlen($namespace)) {
@@ -159,7 +161,7 @@ abstract class PhabricatorLiskDAO extends LiskDAO {
         $database));
   }
 
-  private function raiseUnreachable($database, Exception $proxy = null) {
+  private function raiseUnreachable($database, ?Exception $proxy = null) {
     $message = pht(
       'Unable to establish a connection to any database host '.
       '(while trying "%s"). All masters and replicas are completely '.
@@ -290,12 +292,12 @@ abstract class PhabricatorLiskDAO extends LiskDAO {
   }
 
   protected function getUTF8StringFromStorage($string, $encoding) {
-    if ($encoding == 'utf8') {
+    if ($encoding == 'utf8' || !phutil_nonempty_string($string)) {
       return $string;
     }
 
     if (function_exists('mb_detect_encoding')) {
-      if (strlen($encoding)) {
+      if (phutil_nonempty_string($encoding)) {
         $try_encodings = array(
           $encoding,
         );
@@ -322,26 +324,28 @@ abstract class PhabricatorLiskDAO extends LiskDAO {
   protected function willReadData(array &$data) {
     parent::willReadData($data);
 
-    static $custom;
-    if ($custom === null) {
-      $custom = $this->getConfigOption(self::CONFIG_APPLICATION_SERIALIZERS);
+    static $custom = array();
+    if (!isset($custom[static::class])) {
+      $custom[static::class] = $this->getConfigOption(
+        self::CONFIG_APPLICATION_SERIALIZERS);
     }
 
-    if ($custom) {
-      foreach ($custom as $key => $serializer) {
+    if (!empty($custom[static::class])) {
+      foreach ($custom[static::class] as $key => $serializer) {
         $data[$key] = $serializer->willReadValue($data[$key]);
       }
     }
   }
 
   protected function willWriteData(array &$data) {
-    static $custom;
-    if ($custom === null) {
-      $custom = $this->getConfigOption(self::CONFIG_APPLICATION_SERIALIZERS);
+    static $custom = array();
+    if (!isset($custom[static::class])) {
+      $custom[static::class] = $this->getConfigOption(
+        self::CONFIG_APPLICATION_SERIALIZERS);
     }
 
-    if ($custom) {
-      foreach ($custom as $key => $serializer) {
+    if (!empty($custom[static::class])) {
+      foreach ($custom[static::class] as $key => $serializer) {
         $data[$key] = $serializer->willWriteValue($data[$key]);
       }
     }

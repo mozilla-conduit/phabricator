@@ -49,7 +49,7 @@ abstract class PhabricatorDocumentRenderingEngine
     $engines = PhabricatorDocumentEngine::getEnginesForRef($viewer, $ref);
 
     $engine_key = $this->getSelectedDocumentEngineKey();
-    if (!isset($engines[$engine_key])) {
+    if ($engine_key === null || !isset($engines[$engine_key])) {
       $engine_key = head_key($engines);
     }
     $engine = $engines[$engine_key];
@@ -60,12 +60,12 @@ abstract class PhabricatorDocumentRenderingEngine
     }
 
     $encode_setting = $request->getStr('encode');
-    if (strlen($encode_setting)) {
+    if (phutil_nonempty_string($encode_setting)) {
       $engine->setEncodingConfiguration($encode_setting);
     }
 
     $highlight_setting = $request->getStr('highlight');
-    if (strlen($highlight_setting)) {
+    if (phutil_nonempty_string($highlight_setting)) {
       $engine->setHighlightingConfiguration($highlight_setting);
     }
 
@@ -208,12 +208,12 @@ abstract class PhabricatorDocumentRenderingEngine
     $this->activeEngine = $engine;
 
     $encode_setting = $request->getStr('encode');
-    if (strlen($encode_setting)) {
+    if (phutil_nonempty_string($encode_setting)) {
       $engine->setEncodingConfiguration($encode_setting);
     }
 
     $highlight_setting = $request->getStr('highlight');
-    if (strlen($highlight_setting)) {
+    if (phutil_nonempty_string($highlight_setting)) {
       $engine->setHighlightingConfiguration($highlight_setting);
     }
 
@@ -329,7 +329,7 @@ abstract class PhabricatorDocumentRenderingEngine
 
   protected function addApplicationCrumbs(
     PHUICrumbsView $crumbs,
-    PhabricatorDocumentRef $ref = null) {
+    ?PhabricatorDocumentRef $ref = null) {
     return;
   }
 

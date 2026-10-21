@@ -1311,11 +1311,6 @@ class PHPMailerLite {
       if (!is_readable($path)) {
         throw new phpmailerException($this->Lang('file_open') . $path, self::STOP_CONTINUE);
       }
-      if (function_exists('get_magic_quotes')) {
-        function get_magic_quotes() {
-          return false;
-        }
-      }
       if (PHP_VERSION < 6) {
         $magic_quotes = get_magic_quotes_runtime();
         set_magic_quotes_runtime(0);
@@ -1492,7 +1487,7 @@ class PHPMailerLite {
     $eol = "\r\n";
     $escape = '=';
     $output = '';
-    while( list(, $line) = each($lines) ) {
+    foreach ($lines as $line) {
       $linlen = strlen($line);
       $newline = '';
       for($i = 0; $i < $linlen; $i++) {
@@ -1523,7 +1518,7 @@ class PHPMailerLite {
         $newline .= $c;
       } // end of for
       $output .= $newline.$eol;
-    } // end of while
+    } // end of foreach
     return $output;
   }
 

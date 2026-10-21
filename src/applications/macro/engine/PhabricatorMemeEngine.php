@@ -182,7 +182,8 @@ final class PhabricatorMemeEngine extends Phobject {
     // changes to the image.
     $above_text = $this->getAboveText();
     $below_text = $this->getBelowText();
-    if (!strlen(trim($above_text)) && !strlen(trim($below_text))) {
+    if (($above_text === null || !phutil_nonempty_string(trim($above_text))) &&
+        ($below_text === null || !phutil_nonempty_string(trim($below_text)))) {
       return $template_data;
     }
 
@@ -272,7 +273,7 @@ final class PhabricatorMemeEngine extends Phobject {
     $size = $metrics['size'];
 
     $above = $this->getAboveText();
-    if (strlen($above)) {
+    if ($above !== null && phutil_nonempty_string(trim($above))) {
       $x = (int)floor(($dx - $metrics['text']['above']['width']) / 2);
       $y = $metrics['text']['above']['height'] + 12;
 
@@ -280,7 +281,7 @@ final class PhabricatorMemeEngine extends Phobject {
     }
 
     $below = $this->getBelowText();
-    if (strlen($below)) {
+    if ($below !== null && phutil_nonempty_string(trim($below))) {
       $x = (int)floor(($dx - $metrics['text']['below']['width']) / 2);
       $y = $dy - 12 - $metrics['text']['below']['descend'];
 
@@ -331,27 +332,29 @@ final class PhabricatorMemeEngine extends Phobject {
         $all_fit = true;
         $text_metrics = array();
         foreach ($texts as $key => $text) {
-          $box = imagettfbbox($cursor, 0, $font, $text);
-          $height = abs($box[3] - $box[5]);
-          $width = abs($box[0] - $box[2]);
+          if (phutil_nonempty_string($text)) {
+            $box = imagettfbbox($cursor, 0, $font, $text);
+            $height = abs($box[3] - $box[5]);
+            $width = abs($box[0] - $box[2]);
 
-          // This is the number of pixels below the baseline that the
-          // text extends, for example if it has a "y".
-          $descend = $box[3];
+            // This is the number of pixels below the baseline that the
+            // text extends, for example if it has a "y".
+            $descend = $box[3];
 
-          if (($height + $margin_y) > $dim_y) {
-            $all_fit = false;
-            break;
+            if (($height + $margin_y) > $dim_y) {
+              $all_fit = false;
+              break;
+            }
+
+            if (($width + $margin_x) > $dim_x) {
+              $all_fit = false;
+              break;
+            }
+
+            $text_metrics[$key]['width'] = $width;
+            $text_metrics[$key]['height'] = $height;
+            $text_metrics[$key]['descend'] = $descend;
           }
-
-          if (($width + $margin_x) > $dim_x) {
-            $all_fit = false;
-            break;
-          }
-
-          $text_metrics[$key]['width'] = $width;
-          $text_metrics[$key]['height'] = $height;
-          $text_metrics[$key]['descend'] = $descend;
         }
 
         if ($all_fit || $best === null) {

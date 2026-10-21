@@ -10,6 +10,10 @@ final class DifferentialChangesetViewController extends DifferentialController {
     $viewer = $this->getViewer();
 
     $rendering_reference = $request->getStr('ref');
+    if ($rendering_reference === null) {
+      return new Aphront404Response();
+    }
+
     $parts = explode('/', $rendering_reference);
     if (count($parts) == 2) {
       list($id, $vs) = $parts;
@@ -451,10 +455,9 @@ final class DifferentialChangesetViewController extends DifferentialController {
         continue;
       }
       $coverage_data = idx($test_coverage, $changeset->getFileName());
-      if (!strlen($coverage_data)) {
-        continue;
+      if (phutil_nonempty_string($coverage_data)) {
+        $coverage[] = $coverage_data;
       }
-      $coverage[] = $coverage_data;
     }
 
     if (!$coverage) {

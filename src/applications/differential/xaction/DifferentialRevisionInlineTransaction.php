@@ -46,12 +46,16 @@ final class DifferentialRevisionInlineTransaction
         break;
     }
 
+    // "suggestionText" is null when there is no suggestion, so it can not be
+    // confused with an empty suggestion, which deletes the commented lines.
+    $suggestion_text = $comment->getSuggestionText();
+    $has_suggestion = ($suggestion_text !== null);
+
     // A removed comment has its content withheld (see
-    // "TransactionSearchConduitAPIMethod"), so withhold any suggestion too.
+    // "TransactionSearchConduitAPIMethod"), so withhold the suggestion text
+    // too. Whether it had a suggestion is still reported.
     if ($comment->getIsDeleted()) {
       $suggestion_text = null;
-    } else {
-      $suggestion_text = $comment->getSuggestionText();
     }
 
     return array(
@@ -65,8 +69,8 @@ final class DifferentialRevisionInlineTransaction
       'isNewFile' => (bool)$comment->getIsNewFile(),
       'replyToCommentPHID' => $comment->getReplyToCommentPHID(),
       'isDone' => $is_done,
-      'hasSuggestion' => ($suggestion_text !== null),
-      'suggestionText' => (string)$suggestion_text,
+      'hasSuggestion' => $has_suggestion,
+      'suggestionText' => $suggestion_text,
     );
   }
 

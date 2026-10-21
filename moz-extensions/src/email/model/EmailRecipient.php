@@ -10,7 +10,8 @@ class EmailRecipient {
   public function __construct(string $email, string $username, DateTimeZone $timezone, bool $isActor) {
     $this->email = $email;
     $this->username = $username;
-    $this->timezoneOffset = $timezone->getOffset(new DateTime(null, $timezone));
+    $this->timezoneOffset = $timezone->getOffset(
+      new DateTime('now', $timezone));
     $this->isActor = $isActor;
   }
 
