@@ -73,7 +73,7 @@ final class DifferentialLocalCommitsView extends AphrontView {
 
       $message = idx($commit, 'message');
 
-      $summary = idx($commit, 'summary');
+      $summary = idx($commit, 'summary', '');
       $summary = id(new PhutilUTF8StringTruncator())
         ->setMaximumGlyphs(80)
         ->truncateString($summary);

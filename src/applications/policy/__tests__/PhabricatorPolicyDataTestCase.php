@@ -30,6 +30,40 @@ final class PhabricatorPolicyDataTestCase extends PhabricatorTestCase {
     $this->assertEqual(0, count($results));
   }
 
+  public function testProjectPolicyMembershipWhenPublic() {
+    // With public access, logged-out viewers reach the project membership
+    // check in `PhabricatorPolicyFilter` without a viewer PHID.
+    $env = PhabricatorEnv::beginScopedEnv();
+    $env->overrideEnvConfig('policy.allow-public', true);
+
+    // Other tests may have cached that logged-out viewers can't see Projects.
+    PhabricatorCaches::destroyRequestCache();
+
+    $author = $this->generateNewTestUser();
+
+    $proj_a = PhabricatorProject::initializeNewProject($author)
+      ->setName('A')
+      ->save();
+    $proj_b = PhabricatorProject::initializeNewProject($author)
+      ->setName('B')
+      ->save();
+
+    $proj_a->setViewPolicy($proj_b->getPHID())->save();
+    $proj_b->setViewPolicy(PhabricatorPolicies::POLICY_PUBLIC)->save();
+
+    $results = id(new PhabricatorProjectQuery())
+      ->setViewer(new PhabricatorUser())
+      ->withPHIDs(array($proj_a->getPHID(), $proj_b->getPHID()))
+      ->execute();
+
+    $this->assertEqual(
+      array($proj_b->getPHID()),
+      array_values(mpull($results, 'getPHID')),
+      pht(
+        'A logged-out viewer should see only the public project, not the '.
+        'project visible to members of the public project.'));
+  }
+
   public function testCustomPolicyRuleUser() {
     $user_a = $this->generateNewTestUser();
     $user_b = $this->generateNewTestUser();
