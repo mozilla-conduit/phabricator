@@ -80,6 +80,15 @@ class SentryLoggerPlugin extends Phobject {
     return $array;
   }
 
+  public static function filter_headers($headers) {
+    // Take the CSRF header's name from `AphrontRequest`, so it can't drift.
+    $fields_re = sprintf(
+      '/^(Cookie|%s)$/i',
+      preg_quote(AphrontRequest::getCSRFHeaderName(), '/'));
+
+    return self::filter_values($headers, $fields_re);
+  }
+
   public static function handleError($event, $value, $metadata) {
     // PHP deprecation warnings are only logged, and would flood Sentry.
     if ($event === PhutilErrorHandler::DEPRECATED) {
@@ -135,9 +144,7 @@ class SentryLoggerPlugin extends Phobject {
 
       // Sanitize header data
       if (isset($request['headers'])) {
-        $request['headers'] = self::filter_values(
-          $request['headers'],
-          '/^(Cookie|X-Phabricator-Csfr)$/i');
+        $request['headers'] = self::filter_headers($request['headers']);
       }
 
       $event->setRequest($request);

@@ -64,4 +64,21 @@ final class SentryLoggerPluginTestCase extends PhabricatorTestCase {
       pht('`filter_values()` should mask matching keys at any depth.'));
   }
 
+  public function testFilterHeadersMasksCSRFHeaderAndCookie() {
+    // Sentry sends each header as a list of values.
+    $this->assertEqual(
+      array(
+        'X-Phabricator-Csrf' => '********',
+        'cookie' => '********',
+        'Accept' => array('*/*'),
+      ),
+      SentryLoggerPlugin::filter_headers(
+        array(
+          'X-Phabricator-Csrf' => array('secret'),
+          'cookie' => array('phsid=secret'),
+          'Accept' => array('*/*'),
+        )),
+      pht('`filter_headers()` should mask the CSRF header and cookies.'));
+  }
+
 }
