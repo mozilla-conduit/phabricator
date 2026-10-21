@@ -25,8 +25,9 @@ final class DarkConsoleController extends PhabricatorController {
       return $response;
     }
 
+    // This should be '0' when closed and '1' when opened
     $visible = $request->getStr('visible');
-    if (strlen($visible)) {
+    if (phutil_nonempty_string($visible)) {
       $this->writeDarkConsoleSetting(
         PhabricatorDarkConsoleVisibleSetting::SETTINGKEY,
         (int)$visible);
@@ -34,7 +35,7 @@ final class DarkConsoleController extends PhabricatorController {
     }
 
     $tab = $request->getStr('tab');
-    if (strlen($tab)) {
+    if (phutil_nonempty_string($tab)) {
       $this->writeDarkConsoleSetting(
         PhabricatorDarkConsoleTabSetting::SETTINGKEY,
         $tab);

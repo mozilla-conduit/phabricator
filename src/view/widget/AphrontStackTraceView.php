@@ -27,13 +27,15 @@ final class AphrontStackTraceView extends AphrontView {
     foreach ($trace as $part) {
       $lib = null;
       $file = idx($part, 'file');
-      $relative = $file;
-      foreach ($libraries as $library) {
-        $root = phutil_get_library_root($library);
-        if (Filesystem::isDescendant($file, $root)) {
-          $lib = $library;
-          $relative = Filesystem::readablePath($file, $root);
-          break;
+      if ($file !== null && $file !== '') {
+        $relative = $file;
+        foreach ($libraries as $library) {
+          $root = phutil_get_library_root($library);
+          if (Filesystem::isDescendant($file, $root)) {
+            $lib = $library;
+            $relative = Filesystem::readablePath($file, $root);
+            break;
+          }
         }
       }
 
@@ -46,7 +48,7 @@ final class AphrontStackTraceView extends AphrontView {
       }
 
       if ($file) {
-        if (isset($callsigns[$lib])) {
+        if ($lib && isset($callsigns[$lib])) {
           $attrs = array('title' => $file);
           if (empty($attrs['href'])) {
             $attrs['href'] = sprintf($path, $callsigns[$lib]).

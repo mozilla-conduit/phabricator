@@ -683,8 +683,8 @@ final class AphrontApplicationConfiguration
         break;
       }
 
-      $hash = spl_object_hash($response);
-      if (isset($seen[$hash])) {
+      $id = spl_object_id($response);
+      if (isset($seen[$id])) {
         throw new Exception(
           pht(
             'Failure while producing response for object of class "%s": '.
@@ -694,7 +694,7 @@ final class AphrontApplicationConfiguration
             get_class($response)));
       }
 
-      $seen[$hash] = true;
+      $seen[$id] = true;
 
       $new_response = $response->produceAphrontResponse();
       $this->validateProducerResponse($response, $new_response);
@@ -800,8 +800,8 @@ final class AphrontApplicationConfiguration
     $raw_input = PhabricatorStartup::getRawInput();
     $parser = new PhutilQueryStringParser();
 
-    if (strlen($raw_input)) {
-      $content_type = idx($_SERVER, 'CONTENT_TYPE');
+    if (phutil_nonempty_string($raw_input)) {
+      $content_type = idx($_SERVER, 'CONTENT_TYPE', '');
       $is_multipart = preg_match('@^multipart/form-data@i', $content_type);
       if ($is_multipart) {
         $multipart_parser = id(new AphrontMultipartParser())

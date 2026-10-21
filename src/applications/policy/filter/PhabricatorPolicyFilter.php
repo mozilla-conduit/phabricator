@@ -399,7 +399,7 @@ final class PhabricatorPolicyFilter extends Phobject {
           $object = $ref_objects[$object_phid];
         }
 
-        $phid = $object->getPHID();
+        $phid = $object->getPHID() ?? '';
 
         $key_map[$phid][] = $extended_key;
         $objects_in[$phid] = $object;
@@ -754,7 +754,7 @@ final class PhabricatorPolicyFilter extends Phobject {
 
   private function loadCustomPolicies(array $map) {
     $viewer = $this->viewer;
-    $viewer_phid = $viewer->getPHID();
+    $viewer_phid = $viewer->getPHID() ?? 'ANONYMOUS';
 
     $custom_policies = id(new PhabricatorPolicyQuery())
       ->setViewer($viewer)
@@ -803,7 +803,7 @@ final class PhabricatorPolicyFilter extends Phobject {
       $this->customPolicies[$viewer_phid] = array();
     }
 
-    $this->customPolicies[$viewer->getPHID()] += $custom_policies;
+    $this->customPolicies[$viewer_phid] += $custom_policies;
   }
 
   private function checkObjectPolicy(
@@ -829,7 +829,7 @@ final class PhabricatorPolicyFilter extends Phobject {
     PhabricatorPolicyInterface $object) {
 
     $viewer = $this->viewer;
-    $viewer_phid = $viewer->getPHID();
+    $viewer_phid = $viewer->getPHID() ?? 'ANONYMOUS';
 
     $policy = idx($this->customPolicies[$viewer_phid], $policy_phid);
     if (!$policy) {

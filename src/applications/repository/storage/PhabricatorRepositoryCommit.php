@@ -169,7 +169,7 @@ final class PhabricatorRepositoryCommit
   }
 
   public function attachCommitData(
-    PhabricatorRepositoryCommitData $data = null) {
+    ?PhabricatorRepositoryCommitData $data = null) {
     $this->commitData = $data;
     return $this;
   }
@@ -198,8 +198,8 @@ final class PhabricatorRepositoryCommit
   }
 
   public function attachIdentities(
-    PhabricatorRepositoryIdentity $author = null,
-    PhabricatorRepositoryIdentity $committer = null) {
+    ?PhabricatorRepositoryIdentity $author = null,
+    ?PhabricatorRepositoryIdentity $committer = null) {
 
     $this->authorIdentity = $author;
     $this->committerIdentity = $committer;
@@ -478,7 +478,7 @@ final class PhabricatorRepositoryCommit
     }
 
     $author = $this->getRawAuthorStringForDisplay();
-    if (strlen($author)) {
+    if (phutil_nonempty_string($author)) {
       return DiffusionView::renderName($author);
     }
 
@@ -493,7 +493,7 @@ final class PhabricatorRepositoryCommit
     }
 
     $committer = $this->getRawCommitterStringForDisplay();
-    if (strlen($committer)) {
+    if (phutil_nonempty_string($committer)) {
       return DiffusionView::renderName($committer);
     }
 

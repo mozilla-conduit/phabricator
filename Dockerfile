@@ -1,8 +1,4 @@
-# Provides Alpine 3.21's package signing keys, so the repository used below can
-# be verified normally rather than with `--allow-untrusted`.
-FROM alpine:3.21 AS apk-keys
-
-FROM php:7.4.19-fpm-alpine AS base
+FROM php:8.4.26-fpm-alpine3.23 AS base
 
 LABEL maintainer="dkl@mozilla.com"
 
@@ -20,24 +16,6 @@ ENV TMPDIR=/tmp
 
 USER root
 
-# Alpine 3.13 ships git 2.30, but the merge-conflict engine
-# (RevisionMergeConflictEngine) wants `git merge-tree --write-tree --merge-base`
-# (git >= 2.40), which is also the only path that follows renames. Take git from
-# Alpine 3.21, verified with 3.21's signing keys rather than `--allow-untrusted`.
-#
-# This has to run before the runtime dependencies below: once `g++` and friends
-# are installed, apk's solver can no longer satisfy 3.21's git and silently
-# leaves 2.30 in place.
-#
-# Later layers pull musl back to 3.13's 1.2.2, and that is fine -- git 2.47 uses
-# no symbol newer than that. It is a property of this git version rather than a
-# guarantee, so the final stage asserts the version actually present.
-COPY --from=apk-keys /etc/apk/keys/ /etc/apk/keys/
-RUN apk add --no-cache --upgrade \
-        --repository=https://dl-cdn.alpinelinux.org/alpine/v3.21/main \
-        musl \
-        git
-
 # Runtime dependencies
 RUN apk --no-cache --update add \
     composer \
@@ -51,17 +29,16 @@ RUN apk --no-cache --update add \
     make \
     mariadb-client \
     ncurses \
-    oniguruma-dev \
     patch \
     procps \
     py3-pip \
     py3-pygments \
     python3-dev
 
-# Build PHP extensions
+# Build PHP extensions. `zip` comes with PHP's source, so only APCu needs PECL,
+# and pecl.php.net sometimes answers with an HTTP 500, so retry it.
 RUN apk --no-cache add --virtual build-dependencies \
         $PHPIZE_DEPS \
-        curl-dev \
         freetype-dev \
         libjpeg-turbo-dev \
         libpng-dev \
@@ -71,16 +48,15 @@ RUN apk --no-cache add --virtual build-dependencies \
         --with-freetype \
         --with-jpeg \
     && docker-php-ext-install -j "$(nproc)" \
-        curl \
         gd \
-        iconv \
-        mbstring \
         mysqli \
         pcntl \
-    && pecl install apcu-5.1.17 \
+        zip \
+    && for try in 1 2 3; do \
+        pecl install apcu-5.1.27 && break; \
+        [ "$try" -lt 3 ] && sleep 10 || exit 1; \
+    done \
     && docker-php-ext-enable apcu \
-    && pecl install zip-1.15.5 \
-    && docker-php-ext-enable zip \
     && apk del build-dependencies
 
 RUN wget -O /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.1/dumb-init_1.2.1_amd64 \
@@ -124,7 +100,9 @@ RUN git clone https://github.com/mozilla-conduit/arcanist -b stable arcanist \
 # Install Python dependencies
 COPY --chown=app requirements.txt ./
 USER root
-RUN pip install --require-hashes -r requirements.txt
+# Alpine's Python is marked as externally managed, so pip refuses to install
+# into it without `--break-system-packages`. Nothing else in the image uses pip.
+RUN pip install --break-system-packages --require-hashes -r requirements.txt
 
 # Use ft as an alias of fetch.
 RUN git config --system --add "alias.ft" "fetch"
@@ -191,20 +169,20 @@ RUN /app/assert-git.sh
 FROM base AS development
 
 USER root
-RUN apk add --no-cache $PHPIZE_DEPS \
-    && pecl install xdebug-3.1.1 \
+# pecl.php.net sometimes answers with an HTTP 500, so retry.
+RUN apk add --no-cache $PHPIZE_DEPS linux-headers \
+    && for try in 1 2 3; do \
+        pecl install xdebug-3.4.5 && break; \
+        [ "$try" -lt 3 ] && sleep 10 || exit 1; \
+    done \
     && docker-php-ext-enable xdebug
 
 RUN { \
         echo '[xdebug]'; \
-        echo 'zend_extension=xdebug'; \
         echo 'xdebug.mode=debug'; \
         echo 'xdebug.start_with_request=yes'; \
-        echo 'xdebug.remote_handler=dbgp'; \
         echo 'xdebug.client_host=172.17.0.1'; \
-        echo 'xdebug.remote_connect_back=true'; \
         echo 'xdebug.log="/tmp/xdebug.log"'; \
-        echo 'xdebug.remote_host=172.17.0.1'; \
         echo ''; \
     } | tee /usr/local/etc/php/conf.d/xdebug.ini
 

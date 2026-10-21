@@ -67,7 +67,7 @@ abstract class PhabricatorOAuth1AuthProvider
     }
 
     $denied = $request->getStr('denied');
-    if (strlen($denied)) {
+    if ($denied) {
       // Twitter indicates that the user cancelled the login attempt by
       // returning "denied" as a parameter.
       throw new PhutilAuthUserAbortedException();
@@ -160,7 +160,7 @@ abstract class PhabricatorOAuth1AuthProvider
 
     switch ($key) {
       case self::PROPERTY_CONSUMER_KEY:
-        if (strlen($old)) {
+        if (phutil_nonempty_string($old)) {
           return pht(
             '%s updated the OAuth consumer key for this provider from '.
             '"%s" to "%s".',
@@ -175,7 +175,7 @@ abstract class PhabricatorOAuth1AuthProvider
             $new);
         }
       case self::PROPERTY_CONSUMER_SECRET:
-        if (strlen($old)) {
+        if (phutil_nonempty_string($old)) {
           return pht(
             '%s updated the OAuth consumer secret for this provider.',
             $xaction->renderHandleLink($author_phid));

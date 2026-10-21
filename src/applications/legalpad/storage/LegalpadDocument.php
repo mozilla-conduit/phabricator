@@ -130,7 +130,7 @@ final class LegalpadDocument extends LegalpadDAO
 
   public function attachUserSignature(
     $user_phid,
-    LegalpadDocumentSignature $signature = null) {
+    ?LegalpadDocumentSignature $signature = null) {
     $this->userSignatures[$user_phid] = $signature;
     return $this;
   }

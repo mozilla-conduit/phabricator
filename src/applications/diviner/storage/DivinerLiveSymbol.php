@@ -102,7 +102,7 @@ final class DivinerLiveSymbol extends DivinerDAO
     return $this->assertAttached($this->repository);
   }
 
-  public function attachRepository(PhabricatorRepository $repository = null) {
+  public function attachRepository(?PhabricatorRepository $repository = null) {
     $this->repository = $repository;
     return $this;
   }
@@ -111,7 +111,7 @@ final class DivinerLiveSymbol extends DivinerDAO
     return $this->assertAttached($this->atom);
   }
 
-  public function attachAtom(DivinerLiveAtom $atom = null) {
+  public function attachAtom(?DivinerLiveAtom $atom = null) {
     if ($atom === null) {
       $this->atom = null;
     } else {
@@ -172,7 +172,7 @@ final class DivinerLiveSymbol extends DivinerDAO
   public function getTitle() {
     $title = parent::getTitle();
 
-    if (!strlen($title)) {
+    if (!phutil_nonempty_string($title)) {
       $title = $this->getName();
     }
 
@@ -182,7 +182,7 @@ final class DivinerLiveSymbol extends DivinerDAO
   public function setTitle($value) {
     $this->writeField('title', $value);
 
-    if (strlen($value)) {
+    if (phutil_nonempty_string($value)) {
       $slug = DivinerAtomRef::normalizeTitleString($value);
       $hash = PhabricatorHash::digestForIndex($slug);
       $this->titleSlugHash = $hash;

@@ -77,13 +77,13 @@ final class ManiphestTaskPointsTransaction
 
     foreach ($xactions as $xaction) {
       $new = $xaction->getNewValue();
-      if (strlen($new) && !is_numeric($new)) {
+      if (phutil_nonempty_scalar($new) && !is_numeric($new)) {
         $errors[] = $this->newInvalidError(
           pht('Points value must be numeric or empty.'));
         continue;
       }
 
-      if ((double)$new < 0) {
+      if ((float)$new < 0) {
         $errors[] = $this->newInvalidError(
           pht('Points value must be nonnegative.'));
         continue;
@@ -97,12 +97,21 @@ final class ManiphestTaskPointsTransaction
     return 'fa-calculator';
   }
 
+  /**
+   * Normalize your Story Points from generic stuff to double or null.
+   * @param  mixed $value Your raw Story Points
+   * @return double|null
+   */
   private function getValueForPoints($value) {
-    if (!strlen($value)) {
+    // The Point can be various types also thanks to Conduit API
+    // like integers, floats, null, and strings of course.
+    // Everything meaningful must be printable as a string.
+    $is_empty = phutil_string_cast($value) === '';
+    if ($is_empty) {
       $value = null;
     }
     if ($value !== null) {
-      $value = (double)$value;
+      $value = (float)$value;
     }
     return $value;
   }

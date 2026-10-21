@@ -23,7 +23,8 @@ final class PhabricatorOAuthServerTokenController
 
     $client_id_parameter = $request->getStr('client_id');
     $client_id_header = idx($_SERVER, 'PHP_AUTH_USER');
-    if (strlen($client_id_parameter) && strlen($client_id_header)) {
+    if (phutil_nonempty_string($client_id_parameter) &&
+        phutil_nonempty_string($client_id_header)) {
       if ($client_id_parameter !== $client_id_header) {
         throw new Exception(
           pht(
@@ -37,7 +38,7 @@ final class PhabricatorOAuthServerTokenController
 
     $client_secret_parameter = $request->getStr('client_secret');
     $client_secret_header = idx($_SERVER, 'PHP_AUTH_PW');
-    if (strlen($client_secret_parameter)) {
+    if (phutil_nonempty_string($client_secret_parameter)) {
       // If the `client_secret` parameter is present, prefer parameters.
       $client_phid = $client_id_parameter;
       $client_secret = $client_secret_parameter;

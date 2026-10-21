@@ -11,7 +11,7 @@ final class PhabricatorStandardCustomFieldInt
     $indexes = array();
 
     $value = $this->getFieldValue();
-    if (strlen($value)) {
+    if (phutil_nonempty_scalar($value)) {
       $indexes[] = $this->newNumericIndex((int)$value);
     }
 
@@ -24,7 +24,8 @@ final class PhabricatorStandardCustomFieldInt
 
   public function getValueForStorage() {
     $value = $this->getFieldValue();
-    if (strlen($value)) {
+    $is_nonempty = phutil_string_cast($value) !== '';
+    if ($is_nonempty) {
       return $value;
     } else {
       return null;
@@ -32,7 +33,7 @@ final class PhabricatorStandardCustomFieldInt
   }
 
   public function setValueFromStorage($value) {
-    if (strlen($value)) {
+    if (phutil_nonempty_scalar($value)) {
       $value = (int)$value;
     } else {
       $value = null;
@@ -52,7 +53,7 @@ final class PhabricatorStandardCustomFieldInt
     PhabricatorCursorPagedPolicyAwareQuery $query,
     $value) {
 
-    if (strlen($value)) {
+    if (phutil_nonempty_scalar($value)) {
       $query->withApplicationSearchContainsConstraint(
         $this->newNumericIndex(null),
         $value);
@@ -83,7 +84,7 @@ final class PhabricatorStandardCustomFieldInt
 
     foreach ($xactions as $xaction) {
       $value = $xaction->getNewValue();
-      if (strlen($value)) {
+      if (phutil_nonempty_scalar($value)) {
         if (!preg_match('/^-?\d+/', $value)) {
           $errors[] = new PhabricatorApplicationTransactionValidationError(
             $type,
@@ -103,9 +104,9 @@ final class PhabricatorStandardCustomFieldInt
 
     $old = $xaction->getOldValue();
     $new = $xaction->getNewValue();
-    if (!strlen($old) && strlen($new)) {
+    if (!phutil_nonempty_scalar($old) && phutil_nonempty_scalar($new)) {
       return true;
-    } else if (strlen($old) && !strlen($new)) {
+    } else if (phutil_nonempty_scalar($old) && !phutil_nonempty_scalar($new)) {
       return true;
     } else {
       return ((int)$old !== (int)$new);

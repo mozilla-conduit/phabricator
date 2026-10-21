@@ -19,12 +19,6 @@ parameters:
 			path: src/aphront/sink/__tests__/AphrontHTTPSinkTestCase.php
 
 		-
-			message: '#^Access to an undefined property PhabricatorAuthPasswordException\:\:\$confirmError\.$#'
-			identifier: property.notFound
-			count: 2
-			path: src/applications/auth/password/PhabricatorAuthPasswordException.php
-
-		-
 			message: '#^Call to an undefined method PhabricatorOAuthAuthProvider\:\:configureAdapter\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -287,12 +281,6 @@ parameters:
 			identifier: function.notFound
 			count: 1
 			path: src/infrastructure/env/PhabricatorConfigFileSource.php
-
-		-
-			message: '#^Array has 2 duplicate keys with value '''' \('''', \\null\)\.$#'
-			identifier: array.duplicateKey
-			count: 1
-			path: src/infrastructure/env/__tests__/PhabricatorEnvTestCase.php
 
 		-
 			message: '#^Access to constant TYPE_NUMERIC on an unknown class PHPExcel_Cell_DataType\.$#'

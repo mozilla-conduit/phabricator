@@ -119,7 +119,9 @@ final class PhabricatorFileSearchEngine
   protected function getRequiredHandlePHIDsForResultList(
     array $files,
     PhabricatorSavedQuery $query) {
-    return mpull($files, 'getAuthorPHID');
+
+    // Remove non-manually created files which do not have an author
+    return mpull(mfilter($files, 'getAuthorPHID'), 'getAuthorPHID');
   }
 
   protected function renderResultList(
@@ -164,7 +166,7 @@ final class PhabricatorFileSearchEngine
         ->setHeader($name)
         ->setHref($file_uri)
         ->addAttribute($uploaded)
-        ->addIcon('none', phutil_format_bytes($file->getByteSize()));
+        ->addIcon('none', phutil_format_bytes((int)$file->getByteSize()));
 
       $ttl = $file->getTTL();
       if ($ttl !== null) {

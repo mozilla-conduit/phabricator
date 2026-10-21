@@ -115,7 +115,7 @@ final class PhabricatorApplicationSearchController
     if ($this->queryKey == 'advanced') {
       $run_query = false;
       $query_key = $request->getStr('query');
-    } else if (!strlen($this->queryKey)) {
+    } else if (!phutil_nonempty_string($this->queryKey)) {
       $found_query_data = false;
 
       if ($request->isHTTPGet() || $request->isQuicksand()) {
@@ -148,21 +148,22 @@ final class PhabricatorApplicationSearchController
         $query_key = $engine->getDefaultQueryKey();
       }
     }
+    if (phutil_nonempty_string($query_key)) {
+      if ($engine->isBuiltinQuery($query_key)) {
+        $saved_query = $engine->buildSavedQueryFromBuiltin($query_key);
+        $named_query = idx($engine->loadEnabledNamedQueries(), $query_key);
+      } else {
+        $saved_query = id(new PhabricatorSavedQueryQuery())
+          ->setViewer($user)
+          ->withQueryKeys(array($query_key))
+          ->executeOne();
 
-    if ($engine->isBuiltinQuery($query_key)) {
-      $saved_query = $engine->buildSavedQueryFromBuiltin($query_key);
-      $named_query = idx($engine->loadEnabledNamedQueries(), $query_key);
-    } else if ($query_key) {
-      $saved_query = id(new PhabricatorSavedQueryQuery())
-        ->setViewer($user)
-        ->withQueryKeys(array($query_key))
-        ->executeOne();
+        if (!$saved_query) {
+          return new Aphront404Response();
+        }
 
-      if (!$saved_query) {
-        return new Aphront404Response();
+        $named_query = idx($engine->loadEnabledNamedQueries(), $query_key);
       }
-
-      $named_query = idx($engine->loadEnabledNamedQueries(), $query_key);
     } else {
       $saved_query = $engine->buildSavedQueryFromRequest($request);
 
@@ -775,7 +776,7 @@ final class PhabricatorApplicationSearchController
     $force_nux) {
 
     // Don't render NUX if the user has clicked away from the default page.
-    if (strlen($this->getQueryKey())) {
+    if (phutil_nonempty_string($this->getQueryKey())) {
       return null;
     }
 
