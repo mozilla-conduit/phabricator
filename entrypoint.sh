@@ -10,7 +10,7 @@
 
 set -ex
 
-# Our base Docker image (php:7.3.11-fpm-alpine) uses SIGQUIT as the stop signal, which sh will ignore (see 12.1.1.2 in
+# Our base Docker image (php:*-fpm-alpine) uses SIGQUIT as the stop signal, which sh will ignore (see 12.1.1.2 in
 # this article: https://linux.die.net/Bash-Beginners-Guide/sect_12_01.html).
 # > In the absence of any traps, an interactive Bash shell ignores SIGTERM and SIGQUIT.
 # This is handled in two ways:
@@ -89,7 +89,7 @@ start() {
         # the host is always octet 1 on the current virtual network
         # E.g.: if this container is running on 172.27.0.16, the host is 172.27.0.1
         host_address=$(hostname -i | awk '{split($1,a,".");print a[1] "." a[2] "." a[3] ".1"}')
-        export XDEBUG_CONFIG="remote_host=$host_address remote_enable=1"
+        export XDEBUG_CONFIG="client_host=$host_address"
         export PHP_IDE_CONFIG="serverName=phabricator.test"
         ./bin/phd start && exec /usr/local/sbin/php-fpm -F
         ;;
