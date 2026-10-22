@@ -57,8 +57,10 @@ final class DifferentialInlineCommentEditType
         pht('Inline comment "suggestionText" must be a string.'));
     }
 
-    // An empty suggestion is valid (it deletes the commented lines), but the
-    // comment must say something.
+    // An empty suggestion is valid (it deletes the commented lines), but it
+    // still needs "content": Phabricator treats an inline with no text and an
+    // empty suggestion as empty, and drops it. This can be allowed once
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=2085149 is fixed.
     if (!strlen($content) && !strlen((string)$suggestion_text)) {
       throw new Exception(
         pht(

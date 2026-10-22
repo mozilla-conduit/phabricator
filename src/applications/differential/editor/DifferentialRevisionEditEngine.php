@@ -344,6 +344,11 @@ Every comment needs at least one of these keys, with a nonempty value:
     trailing newline is added if it is missing. An empty string suggests
     deleting the lines.
 
+Since an empty `suggestionText` is not a nonempty value, a suggestion to delete
+lines must also have `content`. An inline comment with no text and an empty
+suggestion is currently dropped, see
+[[ https://bugzilla.mozilla.org/show_bug.cgi?id=2085149 | Bug 2085149 ]].
+
 **New comment.** Say where the comment goes with these keys:
 
   - `path` (string, required): Path of the changed file.
