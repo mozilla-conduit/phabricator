@@ -18,6 +18,9 @@ final class ReviewHelperDraftHold extends Phobject {
 
   const PROPERTY_HOLD = 'reviewhelper.draft-hold';
 
+  // Set on "Request Review" transactions that end a hold, with the reason.
+  const METADATA_PUBLISH_REASON = 'reviewhelper.hold.release';
+
   // Waiting for Review Helper to post its review.
   const STATUS_REVIEWING = 'reviewing';
   // Review Helper posted findings, and the author has not responded yet.
@@ -154,6 +157,128 @@ final class ReviewHelperDraftHold extends Phobject {
         'reason' => $reason,
         'releasedAt' => PhabricatorTime::getNow(),
       ));
+  }
+
+/* -(  Publishing Early  )--------------------------------------------------- */
+
+  /**
+   * The "Request Review" action's label while the revision is held, or `null`
+   * to keep the usual label.
+   */
+  public static function getPublishActionLabel(
+    DifferentialRevision $revision,
+    bool $is_author): ?string {
+
+    if (!self::isHeld($revision)) {
+      return null;
+    }
+
+    if ($is_author) {
+      return pht('Publish Without AI Review');
+    }
+
+    return pht('Begin Review Without AI Review');
+  }
+
+  /**
+   * The "Request Review" action's description while the revision is held, or
+   * `null` to keep the usual description.
+   */
+  public static function getPublishActionDescription(
+    DifferentialRevision $revision): ?string {
+
+    if (self::isWaitingForReview($revision)) {
+      return pht(
+        'Review Helper has not finished reviewing this revision. Reviewers '.
+        'will be notified now, without waiting for its findings.');
+    }
+
+    if (self::hasFindings($revision)) {
+      return pht(
+        'Review Helper found issues that have not been addressed in a new '.
+        'diff. Reviewers will be notified now, and can see the findings.');
+    }
+
+    return null;
+  }
+
+  /**
+   * Notes on any "Request Review" in an edit why it ends the hold, before the
+   * edit is applied and the revision stops being held. The reason is shown in
+   * the timeline and recorded by `recordEarlyPublishes`.
+   */
+  public static function annotateEarlyPublishes(
+    DifferentialRevision $revision,
+    array $xactions): void {
+
+    $reason = self::getEarlyPublishReason($revision, $xactions);
+    if ($reason === null) {
+      return;
+    }
+
+    $request_type =
+      DifferentialRevisionRequestReviewTransaction::TRANSACTIONTYPE;
+    foreach ($xactions as $xaction) {
+      if ($xaction->getTransactionType() === $request_type) {
+        $xaction->setMetadataValue(self::METADATA_PUBLISH_REASON, $reason);
+      }
+    }
+  }
+
+  /**
+   * Records in the hold state that an annotated "Request Review" published the
+   * revision. The editor calls this once every transaction's internal effects
+   * have been applied, before the revision is saved.
+   */
+  public static function recordEarlyPublishes(
+    DifferentialRevision $revision,
+    array $xactions): void {
+
+    if (!$revision->getShouldBroadcast()) {
+      return;
+    }
+
+    foreach ($xactions as $xaction) {
+      $reason = $xaction->getMetadataValue(self::METADATA_PUBLISH_REASON);
+      if ($reason !== null) {
+        self::releaseHold($revision, $reason);
+        return;
+      }
+    }
+  }
+
+  private static function getEarlyPublishReason(
+    DifferentialRevision $revision,
+    array $xactions): ?string {
+
+    $types = mpull($xactions, 'getTransactionType');
+    $requests_review = in_array(
+      DifferentialRevisionRequestReviewTransaction::TRANSACTIONTYPE,
+      $types,
+      true);
+    if (!$requests_review) {
+      return null;
+    }
+
+    if (self::isWaitingForReview($revision)) {
+      return ReviewHelperReleaseHoldTransaction::REASON_SKIPPED_REVIEW;
+    }
+
+    if (!self::hasFindings($revision)) {
+      return null;
+    }
+
+    // `moz-phab` requests review whenever it updates a draft, so an update
+    // after the findings is the author responding, not skipping them.
+    $updates_diff = in_array(
+      DifferentialRevisionUpdateTransaction::TRANSACTIONTYPE,
+      $types,
+      true);
+    if ($updates_diff) {
+      return ReviewHelperReleaseHoldTransaction::REASON_AUTHOR_UPDATED;
+    }
+
+    return ReviewHelperReleaseHoldTransaction::REASON_SKIPPED_FINDINGS;
   }
 
 /* -(  Responding to Edits  )------------------------------------------------ */
