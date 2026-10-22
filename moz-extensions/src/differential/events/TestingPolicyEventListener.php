@@ -11,6 +11,7 @@
 final class TestingPolicyEventListener extends PhabricatorEventListener {
 
   const TAG_PREFIX = 'testing-';
+  const POLICY_PROJECT_SLUG = 'testing-policy';
   const POLICY_URI =
     'https://firefox-source-docs.mozilla.org/testing/testing-policy/';
 
@@ -45,6 +46,10 @@ final class TestingPolicyEventListener extends PhabricatorEventListener {
       return;
     }
 
+    if (!$this->repositoryHasTestingPolicy($object)) {
+      return;
+    }
+
     $testing_projects = id(new PhabricatorProjectQuery())
       ->setViewer($user)
       ->withNamePrefixes(array(self::TAG_PREFIX))
@@ -72,6 +77,32 @@ final class TestingPolicyEventListener extends PhabricatorEventListener {
         'policyURI' => self::POLICY_URI,
       ),
       'moz-extensions');
+  }
+
+  private function repositoryHasTestingPolicy(DifferentialRevision $revision) {
+    $repository_phid = $revision->getRepositoryPHID();
+    if (!$repository_phid) {
+      return false;
+    }
+
+    $repository = id(new PhabricatorRepositoryQuery())
+      ->setViewer(PhabricatorUser::getOmnipotentUser())
+      ->needProjectPHIDs(true)
+      ->withPHIDs(array($repository_phid))
+      ->executeOne();
+    if (!$repository) {
+      return false;
+    }
+
+    $policy_project = id(new PhabricatorProjectQuery())
+      ->setViewer(PhabricatorUser::getOmnipotentUser())
+      ->withSlugs(array(self::POLICY_PROJECT_SLUG))
+      ->executeOne();
+
+    return $policy_project && in_array(
+      $policy_project->getPHID(),
+      $repository->getProjectPHIDs(),
+      true);
   }
 
 }
