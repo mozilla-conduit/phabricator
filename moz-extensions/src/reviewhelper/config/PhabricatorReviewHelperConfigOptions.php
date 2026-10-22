@@ -66,6 +66,30 @@ extends PhabricatorApplicationConfigOptions {
       )
         ->setDescription(pht('Username of the bot account that posts AI review comments. ' .
           'Feedback buttons will appear on inline comments from this user.')),
+      $this->newOption(
+        'reviewhelper.draft-hold.enabled',
+        'bool',
+        false
+      )
+        ->setDescription(pht('Hold new revisions in draft while ' .
+          'Review Helper reviews them. Held revisions are published once ' .
+          'the author responds, Review Helper finds nothing, or the review ' .
+          'times out. When disabled, new revisions are published ' .
+          'immediately.')),
+      $this->newOption(
+        'reviewhelper.draft-hold.repository-phids',
+        'custom:PhabricatorRepositoryListConfigType',
+        array()
+      )
+        ->setDescription(pht('Repositories where new revisions are held in ' .
+          'draft for AI review. If empty, no revisions are held.')),
+      $this->newOption(
+        'reviewhelper.draft-hold.timeout',
+        'int',
+        1200
+      )
+        ->setDescription(pht('Seconds to wait for Review Helper to finish ' .
+          'reviewing a held revision before publishing it anyway.')),
     );
   }
 
