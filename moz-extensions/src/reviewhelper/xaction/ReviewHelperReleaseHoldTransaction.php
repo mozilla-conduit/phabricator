@@ -20,6 +20,10 @@ final class ReviewHelperReleaseHoldTransaction
   const REASON_ALREADY_REVIEWED = 'already-reviewed';
   const REASON_SERVICE_ERROR = 'service-error';
   const REASON_TIMEOUT = 'timeout';
+  // Someone used "Request Review" before the hold was released. These are
+  // recorded on the "Request Review" transaction rather than on this one.
+  const REASON_SKIPPED_REVIEW = 'skipped-review';
+  const REASON_SKIPPED_FINDINGS = 'skipped-findings';
 
   const METADATA_ERROR = 'reviewhelper.error';
 
@@ -82,37 +86,62 @@ final class ReviewHelperReleaseHoldTransaction
   }
 
   public function getTitle() {
-    switch ($this->getNewValue()) {
+    return self::renderTitle(
+      $this->getNewValue(),
+      $this->renderAuthor(),
+      $this->getMetadataValue(self::METADATA_ERROR));
+  }
+
+  /**
+   * Renders the timeline story for a hold released for `$reason`. Shared with
+   * "Request Review", which records the reason when it ends a hold early.
+   */
+  public static function renderTitle(
+    ?string $reason,
+    $author,
+    ?string $error = null) {
+
+    switch ($reason) {
       case self::REASON_NO_FINDINGS:
         return pht(
           '%s published this revision for review because Review Helper '.
           'found no issues.',
-          $this->renderAuthor());
+          $author);
       case self::REASON_AUTHOR_UPDATED:
         return pht(
           '%s published this revision for review by updating it after '.
           'Review Helper\'s review.',
-          $this->renderAuthor());
+          $author);
       case self::REASON_ALREADY_REVIEWED:
         return pht(
           '%s published this revision for review because Review Helper had '.
           'already reviewed it.',
-          $this->renderAuthor());
+          $author);
       case self::REASON_SERVICE_ERROR:
         return pht(
           '%s published this revision for review because Review Helper could '.
           'not review it: %s',
-          $this->renderAuthor(),
-          $this->getMetadataValue(self::METADATA_ERROR));
+          $author,
+          $error);
       case self::REASON_TIMEOUT:
         return pht(
           '%s published this revision for review because Review Helper did '.
           'not finish reviewing it in time.',
-          $this->renderAuthor());
+          $author);
+      case self::REASON_SKIPPED_REVIEW:
+        return pht(
+          '%s published this revision for review before Review Helper '.
+          'finished reviewing it.',
+          $author);
+      case self::REASON_SKIPPED_FINDINGS:
+        return pht(
+          '%s published this revision for review without updating it after '.
+          'Review Helper\'s review.',
+          $author);
       default:
         return pht(
           '%s published this revision for review.',
-          $this->renderAuthor());
+          $author);
     }
   }
 

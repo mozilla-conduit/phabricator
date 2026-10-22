@@ -10,9 +10,21 @@ final class DifferentialRevisionRequestReviewTransaction
   const SOURCE_AUTHOR = 'author';
   const SOURCE_VIEWER = 'viewer';
 
+  /**
+   * @phutil-external-symbol class ReviewHelperDraftHold
+   */
   protected function getRevisionActionLabel(
     DifferentialRevision $revision,
     PhabricatorUser $viewer) {
+
+    // Make it clear that publishing a revision held for AI review skips the
+    // rest of the review.
+    $hold_label = ReviewHelperDraftHold::getPublishActionLabel(
+      $revision,
+      $this->isViewerRevisionAuthor($revision, $viewer));
+    if ($hold_label !== null) {
+      return $hold_label;
+    }
 
     // See PHI1810. Allow non-authors to "Request Review" on draft revisions
     // to promote them out of the draft state. This smoothes over the workflow
@@ -28,9 +40,18 @@ final class DifferentialRevisionRequestReviewTransaction
     return pht('Request Review');
   }
 
+  /**
+   * @phutil-external-symbol class ReviewHelperDraftHold
+   */
   protected function getRevisionActionDescription(
     DifferentialRevision $revision,
     PhabricatorUser $viewer) {
+    $hold_description = ReviewHelperDraftHold::getPublishActionDescription(
+      $revision);
+    if ($hold_description !== null) {
+      return $hold_description;
+    }
+
     if ($revision->isDraft()) {
       if (!$this->isViewerRevisionAuthor($revision, $viewer)) {
         return pht(
@@ -60,9 +81,20 @@ final class DifferentialRevisionRequestReviewTransaction
     return $map;
   }
 
+  /**
+   * @phutil-external-symbol class ReviewHelperDraftHold
+   */
   protected function getRevisionActionSubmitButtonText(
     DifferentialRevision $revision,
     PhabricatorUser $viewer) {
+
+    // Match the label when publishing skips the rest of the AI review.
+    $hold_label = ReviewHelperDraftHold::getPublishActionLabel(
+      $revision,
+      $this->isViewerRevisionAuthor($revision, $viewer));
+    if ($hold_label !== null) {
+      return $hold_label;
+    }
 
     // See PHI975. When the action stack will promote the revision out of
     // draft, change the button text from "Submit Quietly".
@@ -138,7 +170,21 @@ final class DifferentialRevisionRequestReviewTransaction
     $this->getActorSourceType($object, $viewer);
   }
 
+  /**
+   * @phutil-external-symbol class ReviewHelperDraftHold
+   * @phutil-external-symbol class ReviewHelperReleaseHoldTransaction
+   */
   public function getTitle() {
+    // Say when this published a revision held for AI review before the hold
+    // was released.
+    $hold_reason = $this->getMetadataValue(
+      ReviewHelperDraftHold::METADATA_PUBLISH_REASON);
+    if ($hold_reason !== null) {
+      return ReviewHelperReleaseHoldTransaction::renderTitle(
+        $hold_reason,
+        $this->renderAuthor());
+    }
+
     $source = $this->getDraftPromotionSource();
 
     switch ($source) {
