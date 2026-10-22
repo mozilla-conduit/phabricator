@@ -66,6 +66,14 @@ final class DifferentialInlineCommentEditType
           '"suggestionText".'));
     }
 
+    // The suggestion replaces whole lines, and is rendered with the lines
+    // after it appended directly, so it must end with a newline. The web UI
+    // starts from the original lines, which already end with one.
+    if (strlen((string)$suggestion_text) &&
+        !preg_match('/\n\z/', $suggestion_text)) {
+      $suggestion_text .= "\n";
+    }
+
     $reply_to = null;
     $reply_phid = idx($value, 'replyToCommentPHID');
     if ($reply_phid !== null) {

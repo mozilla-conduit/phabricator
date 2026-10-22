@@ -340,8 +340,9 @@ revision.
 Every comment needs at least one of these keys, with a nonempty value:
 
   - `content` (string): Text of the comment.
-  - `suggestionText` (string): Replacement text for the commented lines. An
-    empty string suggests deleting them, but then `content` is required.
+  - `suggestionText` (string): Replacement text for the commented lines. A
+    trailing newline is added if it is missing. An empty string suggests
+    deleting the lines.
 
 **New comment.** Say where the comment goes with these keys:
 

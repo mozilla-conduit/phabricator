@@ -47,7 +47,8 @@ final class DifferentialRevisionEditInlineTestCase extends PhabricatorTestCase {
     $this->assertEqual(null, $fields['replyToCommentPHID']);
     $this->assertEqual(false, $fields['isDone']);
     $this->assertEqual(true, $fields['hasSuggestion']);
-    $this->assertEqual("banana\ncherry", $fields['suggestionText']);
+    // A missing trailing newline is added.
+    $this->assertEqual("banana\ncherry\n", $fields['suggestionText']);
 
     // A reply goes on the same lines as its parent. The author's own inlines
     // start out as "Done".
@@ -96,6 +97,40 @@ final class DifferentialRevisionEditInlineTestCase extends PhabricatorTestCase {
     $this->assertEqual(1, $fields['line']);
     $this->assertEqual(1, $fields['length']);
     $this->assertEqual(false, $fields['isNewFile']);
+  }
+
+  public function testSuggestionTextEndsWithNewline() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $cases = array(
+      'missing newline' => array('banana', "banana\n"),
+      'has newline' => array("banana\n", "banana\n"),
+      'several lines' => array("banana\ncherry", "banana\ncherry\n"),
+      // An empty suggestion deletes the lines, so it stays empty.
+      'deletion' => array('', ''),
+    );
+
+    foreach ($cases as $label => $case) {
+      list($suggestion_text, $expect) = $case;
+
+      $this->editRevision($reviewer, $revision, array(
+        array(
+          'type' => 'inline',
+          'value' => array(
+            'path' => 'fruit',
+            'line' => 2,
+            'content' => $label,
+            'suggestionText' => $suggestion_text,
+          ),
+        ),
+      ));
+
+      $fields = head($this->loadInlines($author, $revision))['fields'];
+      $this->assertEqual(true, $fields['hasSuggestion'], $label);
+      $this->assertEqual($expect, $fields['suggestionText'], $label);
+    }
   }
 
   public function testRejectInvalidInlineComments() {
