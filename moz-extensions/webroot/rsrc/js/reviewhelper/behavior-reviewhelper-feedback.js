@@ -125,6 +125,51 @@ JX.behavior("reviewhelper-feedback", function (config) {
 
     // Insert after the content div
     contentDiv.parentNode.insertBefore(feedbackFooter, contentDiv.nextSibling);
+
+    addSeverityBadge(commentNode, contentDiv);
+  }
+
+  // Move the severity label rendered from Review Helper's frontmatter into a
+  // badge in the comment header. This only runs for the bot's comments, so a
+  // user who types the same frontmatter does not get a badge.
+  function addSeverityBadge(commentNode, contentDiv) {
+    var label = contentDiv.querySelector('.reviewhelper-severity-label');
+    if (!label) {
+      return;
+    }
+
+    var headLeft = commentNode.querySelector('.inline-head-left');
+    if (!headLeft) {
+      return;
+    }
+
+    // The `ReviewHelperFrontmatter` dictionary rendered by
+    // `ReviewHelperFrontmatterRemarkupRule`.
+    var frontmatter;
+    try {
+      frontmatter = JSON.parse(
+        label.getAttribute('data-reviewhelper-frontmatter'));
+    } catch (error) {
+      return;
+    }
+    if (!frontmatter || !frontmatter.severity) {
+      return;
+    }
+
+    var badge = JX.$N(
+      'span',
+      {
+        className:
+          'reviewhelper-severity-badge reviewhelper-severity-' +
+          frontmatter.severity,
+        title: frontmatter.confidence ?
+          'Confidence: ' + frontmatter.confidence :
+          ''
+      },
+      label.textContent);
+
+    headLeft.appendChild(badge);
+    JX.DOM.remove(label);
   }
 
   function processExistingComments() {
