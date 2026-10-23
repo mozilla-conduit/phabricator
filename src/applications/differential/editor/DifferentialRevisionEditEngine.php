@@ -358,7 +358,8 @@ suggestion is currently dropped, see
   - `isNewFile` (bool, optional): `true` to comment on the new version of the
     file, `false` for the old version. Defaults to `true`.
   - `diff` (int or phid, optional): ID or PHID of the diff to comment on.
-    Defaults to the active diff.
+    Defaults to the diff that is active before the edit. In an edit which also
+    has an `update` transaction, this is the previous diff, not the new one.
 
 ```lang=json
 {

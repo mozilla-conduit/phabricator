@@ -227,6 +227,49 @@ final class DifferentialRevisionEditInlineTestCase extends PhabricatorTestCase {
     $this->assertEqual(array(), $this->loadInlines($author, $revision));
   }
 
+  public function testInlineWithUpdateGoesOnPreviousDiff() {
+    $author = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+    $old_diff = $revision->loadActiveDiff();
+
+    $new_diff = $this->newDiff($author, <<<EODIFF
+diff --git a/fruit b/fruit
+new file mode 100644
+index 0000000..2b36a4f
+--- /dev/null
++++ b/fruit
+@@ -0,0 +1,3 @@
++apple
++banana
++cherry
+EODIFF
+      );
+
+    // Without a "diff", the inline goes on the diff that was active before
+    // the edit, even if the same edit updates the diff.
+    $this->editRevision($author, $revision, array(
+      array(
+        'type' => 'update',
+        'value' => $new_diff->getPHID(),
+      ),
+      array(
+        'type' => 'inline',
+        'value' => array(
+          'path' => 'fruit',
+          'line' => 2,
+          'content' => 'Is this spelled right?',
+        ),
+      ),
+    ));
+
+    $this->assertEqual(
+      (int)$new_diff->getID(),
+      (int)$revision->loadActiveDiff()->getID());
+
+    $fields = head($this->loadInlines($author, $revision))['fields'];
+    $this->assertEqual((int)$old_diff->getID(), $fields['diff']['id']);
+  }
+
   public function testRejectReplyLocation() {
     $author = $this->generateNewTestUser();
     $reviewer = $this->generateNewTestUser();
