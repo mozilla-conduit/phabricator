@@ -84,8 +84,8 @@ final class DifferentialRevisionEditInlineTestCase extends PhabricatorTestCase {
         'type' => 'inline',
         'value' => array(
           'diff' => (string)$diff->getID(),
-          'path' => 'fruit',
-          'line' => '1',
+          'path' => 'basket',
+          'line' => '2',
           'isNewFile' => 'false',
           'content' => 'Old side.',
         ),
@@ -94,7 +94,8 @@ final class DifferentialRevisionEditInlineTestCase extends PhabricatorTestCase {
 
     $inlines = $this->loadInlines($author, $revision);
     $fields = head($inlines)['fields'];
-    $this->assertEqual(1, $fields['line']);
+    $this->assertEqual('basket', $fields['path']);
+    $this->assertEqual(2, $fields['line']);
     $this->assertEqual(1, $fields['length']);
     $this->assertEqual(false, $fields['isNewFile']);
   }
@@ -290,16 +291,18 @@ index 0000000..1c0f49d
 +apple
 +banan
 +cherry
+diff --git a/basket b/basket
+index 1111111..2222222 100644
+--- a/basket
++++ b/basket
+@@ -1,3 +1,3 @@
+ apple
+-pear
++plum
+ fig
 EODIFF;
 
-    $parser = new ArcanistDiffParser();
-    $changes = $parser->parseDiff($raw_diff);
-
-    $diff = DifferentialDiff::newFromRawChanges($author, $changes)
-      ->setLintStatus(DifferentialLintStatus::LINT_AUTO_SKIP)
-      ->setUnitStatus(DifferentialUnitStatus::UNIT_AUTO_SKIP)
-      ->attachRevision(null)
-      ->save();
+    $diff = $this->newDiff($author, $raw_diff);
 
     $result = id(new ConduitCall(
       'differential.revision.edit',
@@ -326,6 +329,17 @@ EODIFF;
       ->setViewer($author)
       ->withPHIDs(array($result['object']['phid']))
       ->executeOne();
+  }
+
+  private function newDiff(PhabricatorUser $author, $raw_diff) {
+    $parser = new ArcanistDiffParser();
+    $changes = $parser->parseDiff($raw_diff);
+
+    return DifferentialDiff::newFromRawChanges($author, $changes)
+      ->setLintStatus(DifferentialLintStatus::LINT_AUTO_SKIP)
+      ->setUnitStatus(DifferentialUnitStatus::UNIT_AUTO_SKIP)
+      ->attachRevision(null)
+      ->save();
   }
 
   private function editRevision(
