@@ -166,12 +166,6 @@ final class DifferentialReviewersView extends AphrontView {
           null,
           $diff->getPHID()));
 
-      if ($reviewer->isPackage()) {
-        if (!$reviewer->getChangesets()) {
-          $item->setNote(pht('(Owns No Changed Paths)'));
-        }
-      }
-
       if ($handle->hasCapabilities()) {
         if (!$handle->hasViewCapability($diff)) {
           $item

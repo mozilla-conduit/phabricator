@@ -72,7 +72,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.oauth_server' => array(
         'dead' => true,
       ),
-      'db.owners' => array(),
+      'db.owners' => array(
+        'dead' => true,
+      ),
       'db.pastebin' => array(
         'dead' => true,
       ),

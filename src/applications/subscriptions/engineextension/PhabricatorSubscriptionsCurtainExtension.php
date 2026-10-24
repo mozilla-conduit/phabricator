@@ -118,7 +118,6 @@ final class PhabricatorSubscriptionsCurtainExtension
     $type_order_map = array(
       PhabricatorPeopleUserPHIDType::TYPECONST => 0,
       PhabricatorProjectProjectPHIDType::TYPECONST => 1,
-      PhabricatorOwnersPackagePHIDType::TYPECONST => 2,
     );
     $default_type_order = count($type_order_map);
 
