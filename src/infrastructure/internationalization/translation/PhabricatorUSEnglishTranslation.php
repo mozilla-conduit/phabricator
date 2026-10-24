@@ -838,29 +838,12 @@ final class PhabricatorUSEnglishTranslation
         '%s commits',
       ),
 
-      '%s removed %s JIRA issue(s): %s.' => array(
-        array(
-          '%s removed a JIRA issue: %3$s.',
-          '%s removed JIRA issues: %3$s.',
-        ),
-      ),
-
-      '%s added %s JIRA issue(s): %s.' => array(
-        array(
-          '%s added a JIRA issue: %3$s.',
-          '%s added JIRA issues: %3$s.',
-        ),
-      ),
-
       '%s added %s required legal document(s): %s.' => array(
         array(
           '%s added a required legal document: %3$s.',
           '%s added required legal documents: %3$s.',
         ),
       ),
-
-      '%s updated JIRA issue(s): added %s %s; removed %d %s.' =>
-        '%s updated JIRA issues: added %3$s; removed %5$s.',
 
       '%s edited %s task(s), added %s: %s; removed %s: %s.' =>
         '%s edited tasks, added %4$s; removed %6$s.',

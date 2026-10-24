@@ -6,8 +6,6 @@ final class DifferentialDiff
     PhabricatorPolicyInterface,
     PhabricatorExtendedPolicyInterface,
     HarbormasterBuildableInterface,
-    HarbormasterCircleCIBuildableInterface,
-    HarbormasterBuildkiteBuildableInterface,
     PhabricatorApplicationTransactionInterface,
     PhabricatorDestructibleInterface,
     PhabricatorConduitResultInterface {
@@ -567,93 +565,6 @@ final class DifferentialDiff
   public function newBuildableEngine() {
     return new DifferentialBuildableEngine();
   }
-
-
-/* -(  HarbormasterCircleCIBuildableInterface  )----------------------------- */
-
-
-  public function getCircleCIGitHubRepositoryURI() {
-    $diff_phid = $this->getPHID();
-    $repository_phid = $this->getRepositoryPHID();
-    if (!$repository_phid) {
-      throw new Exception(
-        pht(
-          'This diff ("%s") is not associated with a repository. A diff '.
-          'must belong to a tracked repository to be built by CircleCI.',
-          $diff_phid));
-    }
-
-    $repository = id(new PhabricatorRepositoryQuery())
-      ->setViewer(PhabricatorUser::getOmnipotentUser())
-      ->withPHIDs(array($repository_phid))
-      ->executeOne();
-    if (!$repository) {
-      throw new Exception(
-        pht(
-          'This diff ("%s") is associated with a repository ("%s") which '.
-          'could not be loaded.',
-          $diff_phid,
-          $repository_phid));
-    }
-
-    $staging_uri = $repository->getStagingURI();
-    if (!$staging_uri) {
-      throw new Exception(
-        pht(
-          'This diff ("%s") is associated with a repository ("%s") that '.
-          'does not have a Staging Area configured. You must configure a '.
-          'Staging Area to use CircleCI integration.',
-          $diff_phid,
-          $repository_phid));
-    }
-
-    $path = HarbormasterCircleCIBuildStepImplementation::getGitHubPath(
-      $staging_uri);
-    if (!$path) {
-      throw new Exception(
-        pht(
-          'This diff ("%s") is associated with a repository ("%s") that '.
-          'does not have a Staging Area ("%s") that is hosted on GitHub. '.
-          'CircleCI can only build from GitHub, so the Staging Area for '.
-          'the repository must be hosted there.',
-          $diff_phid,
-          $repository_phid,
-          $staging_uri));
-    }
-
-    return $staging_uri;
-  }
-
-  public function getCircleCIBuildIdentifierType() {
-    return 'tag';
-  }
-
-  public function getCircleCIBuildIdentifier() {
-    $ref = $this->getStagingRef();
-    $ref = preg_replace('(^refs/tags/)', '', $ref);
-    return $ref;
-  }
-
-
-/* -(  HarbormasterBuildkiteBuildableInterface  )---------------------------- */
-
-  public function getBuildkiteBranch() {
-    $ref = $this->getStagingRef();
-
-    // NOTE: Circa late January 2017, Buildkite fails with the error message
-    // "Tags have been disabled for this project" if we pass the "refs/tags/"
-    // prefix via the API and the project doesn't have GitHub tag builds
-    // enabled, even if GitHub builds are disabled. The tag builds fine
-    // without this prefix.
-    $ref = preg_replace('(^refs/tags/)', '', $ref);
-
-    return $ref;
-  }
-
-  public function getBuildkiteCommit() {
-    return 'HEAD';
-  }
-
 
   public function getStagingRef() {
     // TODO: We're just hoping to get lucky. Instead, `arc` should store

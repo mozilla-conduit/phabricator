@@ -310,8 +310,7 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
       'homepage customization. See T11533 for more details.');
 
     $elastic_reason = pht(
-      'Elasticsearch is now configured with "%s".',
-      'cluster.search');
+      'Elasticsearch is no longer supported.');
 
     $mailers_reason = pht(
       'Inbound and outbound mail is now configured with "cluster.mailers".');
@@ -323,6 +322,9 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
 
     $phd_reason = pht(
       'Use "bin/phd debug ..." to get a detailed daemon execution log.');
+
+    $asana_reason = pht(
+      'The Asana integration has been removed.');
 
     $ancient_config += array(
       'phid.external-loaders' =>
@@ -550,6 +552,9 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
         'XHProf, which collected these profiles, has been removed.'),
       'phurl.short-uri' => pht(
         'Phurl, which served these short URIs, has been removed.'),
+
+      'asana.workspace-id' => $asana_reason,
+      'asana.project-ids' => $asana_reason,
     );
 
     return $ancient_config;
