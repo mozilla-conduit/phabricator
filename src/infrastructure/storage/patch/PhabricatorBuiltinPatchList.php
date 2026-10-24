@@ -69,7 +69,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.maniphest' => array(),
       'db.meta_data' => array(),
       'db.metamta' => array(),
-      'db.oauth_server' => array(),
+      'db.oauth_server' => array(
+        'dead' => true,
+      ),
       'db.owners' => array(),
       'db.pastebin' => array(
         'dead' => true,
