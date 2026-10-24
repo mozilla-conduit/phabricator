@@ -67,6 +67,7 @@ final class DifferentialCommitsSearchEngineAttachment
           'epoch' => $author_epoch,
         ),
         'message' => idx($commit, 'message'),
+        'firstPublicParent' => idx($commit, 'firstPublicParent'),
       );
     }
 
