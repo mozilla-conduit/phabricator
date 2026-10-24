@@ -291,6 +291,19 @@ final class DifferentialRevisionEditEngine
       ->setConduitTypeDescription(pht('List of revisions.'))
       ->setValue(array());
 
+    $fields[] = id(new DifferentialInlineCommentEditField())
+      ->setKey('inline')
+      ->setLabel(pht('Inline Comment'))
+      ->setIsFormField(false)
+      ->setTransactionType(DifferentialTransaction::TYPE_INLINE)
+      ->setDescription(pht('Add an inline comment to the revision.'))
+      ->setConduitDescription(pht('Publish a new inline comment.'))
+      ->setConduitTypeDescription(pht('Inline comment to publish.'))
+      ->setConduitDocumentation($this->getInlineConduitDocumentation())
+      ->setIsReorderable(false)
+      ->setIsDefaultable(false)
+      ->setIsLockable(false);
+
     $actions = DifferentialRevisionActionTransaction::loadAllActions();
     $actions = msortv($actions, 'getRevisionActionOrderVector');
 
@@ -315,6 +328,70 @@ final class DifferentialRevisionEditEngine
       ->setValue($object->getHoldAsDraft());
 
     return $fields;
+  }
+
+  private function getInlineConduitDocumentation() {
+    return pht(<<<EOREMARKUP
+Use the `inline` transaction to publish an inline comment on a file changed by
+the revision. The value is a dictionary. Inline comments are published
+immediately, as part of the same edit. They can not be added while creating a
+revision.
+
+Every comment needs at least one of these keys, with a nonempty value:
+
+  - `content` (string): Text of the comment.
+  - `suggestionText` (string): Replacement text for the commented lines. A
+    trailing newline is added if it is missing. An empty string suggests
+    deleting the lines.
+
+Since an empty `suggestionText` is not a nonempty value, a suggestion to delete
+lines must also have `content`. An inline comment with no text and an empty
+suggestion is currently dropped, see
+[[ https://bugzilla.mozilla.org/show_bug.cgi?id=2085149 | Bug 2085149 ]].
+
+**New comment.** Say where the comment goes with these keys:
+
+  - `path` (string, required): Path of the changed file.
+  - `line` (int, required): First line the comment applies to.
+  - `length` (int, optional): Number of lines the comment applies to.
+    Defaults to `1`.
+  - `isNewFile` (bool, optional): `true` to comment on the new version of the
+    file, `false` for the old version. Defaults to `true`.
+  - `diff` (int or phid, optional): ID or PHID of the diff to comment on.
+    Defaults to the diff that is active before the edit. In an edit which also
+    has an `update` transaction, this is the previous diff, not the new one.
+
+```lang=json
+{
+  "type": "inline",
+  "value": {
+    "path": "src/main.c",
+    "line": 12,
+    "length": 2,
+    "content": "This could overflow."
+  }
+}
+```
+
+**Reply.** Give the comment to reply to instead:
+
+  - `replyToCommentPHID` (phid, required): PHID of a published inline comment
+    on this revision.
+
+A reply always goes on the same lines as the comment it replies to, so it can
+not have `path`, `line`, `length`, `isNewFile` or `diff`.
+
+```lang=json
+{
+  "type": "inline",
+  "value": {
+    "replyToCommentPHID": "PHID-XCMT-abcdefghijklmnopqrst",
+    "content": "Fixed."
+  }
+}
+```
+EOREMARKUP
+      );
   }
 
   private function isCustomFieldEnabled(DifferentialRevision $revision, $key) {
