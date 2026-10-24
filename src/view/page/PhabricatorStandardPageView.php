@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This is a standard Phabricator page with menus, Javelin, DarkConsole, and
+ * This is a standard Phabricator page with menus, Javelin, and
  * basic styles.
  */
 final class PhabricatorStandardPageView extends PhabricatorBarePageView
@@ -13,7 +13,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
   private $menuContent;
   private $showChrome = true;
   private $classes = array();
-  private $disableConsole;
   private $pageObjects = array();
   private $applicationMenu;
   private $showFooter = true;
@@ -35,11 +34,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
 
   public function setApplicationName($application_name) {
     $this->applicationName = $application_name;
-    return $this;
-  }
-
-  public function setDisableConsole($disable) {
-    $this->disableConsole = $disable;
     return $this;
   }
 
@@ -223,8 +217,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
           __CLASS__));
     }
 
-    $console = $this->getConsole();
-
     require_celerity_resource('phabricator-core-css');
     require_celerity_resource('phabricator-zindex-css');
     require_celerity_resource('phui-button-css');
@@ -322,23 +314,10 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
         ));
     }
 
-    // If we aren't showing the page chrome, skip rendering DarkConsole and the
-    // main menu, since they won't be visible on the page.
+    // If we aren't showing the page chrome, skip rendering the main menu,
+    // since it won't be visible on the page.
     if (!$this->getShowChrome()) {
       return;
-    }
-
-    if ($console) {
-      require_celerity_resource('aphront-dark-console-css');
-
-      $headers = array();
-      if (DarkConsoleServicesPlugin::isQueryAnalyzerRequested()) {
-        $headers[DarkConsoleServicesPlugin::getQueryAnalyzerHeader()] = true;
-      }
-
-      Javelin::initBehavior(
-        'dark-console',
-        $this->getConsoleConfig());
     }
 
     if ($user) {
@@ -420,23 +399,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     return $this->glyph;
   }
 
-  protected function willSendResponse($response) {
-    $request = $this->getRequest();
-    $response = parent::willSendResponse($response);
-
-    $console = $request->getApplicationConfiguration()->getConsole();
-
-    if ($console) {
-      $response = PhutilSafeHTML::applyFunction(
-        'str_replace',
-        hsprintf('<darkconsole />'),
-        $console->render($request),
-        $response);
-    }
-
-    return $response;
-  }
-
   /**
    * @phutil-external-symbol class MozillaMOTD
    */
@@ -454,15 +416,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
 
     $classes = array();
     $classes[] = 'main-page-frame';
-    $developer_warning = null;
-    if (PhabricatorEnv::getEnvConfig('phabricator.developer-mode') &&
-        DarkConsoleErrorLogPluginAPI::getErrors()) {
-      $developer_warning = phutil_tag_div(
-        'aphront-developer-error-callout',
-        pht(
-          'This page raised PHP errors. Find them in DarkConsole '.
-          'or the error log.'));
-    }
 
     $motd = new MozillaMOTD();
     $motd_chrome = $motd->render();
@@ -474,7 +427,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
         'class' => 'phabricator-standard-page',
       ),
       array(
-        $developer_warning,
         $header_chrome,
         $motd_chrome,
         phutil_tag(
@@ -519,8 +471,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
   }
 
   private function renderPageBodyContent() {
-    $console = $this->getConsole();
-
     $body = parent::getBody();
 
     $nav = $this->getNavigation();
@@ -556,7 +506,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     }
 
     return array(
-      ($console ? hsprintf('<darkconsole />') : null),
       $content,
     );
   }
@@ -654,42 +603,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     return implode(' ', $classes);
   }
 
-  private function getConsole() {
-    if ($this->disableConsole) {
-      return null;
-    }
-    return $this->getRequest()->getApplicationConfiguration()->getConsole();
-  }
-
-  private function getConsoleConfig() {
-    $user = $this->getRequest()->getUser();
-
-    $headers = array();
-    if (DarkConsoleServicesPlugin::isQueryAnalyzerRequested()) {
-      $headers[DarkConsoleServicesPlugin::getQueryAnalyzerHeader()] = true;
-    }
-
-    if ($user) {
-      $setting_tab = PhabricatorDarkConsoleTabSetting::SETTINGKEY;
-      $setting_visible = PhabricatorDarkConsoleVisibleSetting::SETTINGKEY;
-      $tab = $user->getUserSetting($setting_tab);
-      $visible = $user->getUserSetting($setting_visible);
-    } else {
-      $tab = null;
-      $visible = true;
-    }
-
-    return array(
-      // NOTE: We use a generic label here to prevent input reflection
-      // and mitigate compression attacks like BREACH. See discussion in
-      // T3684.
-      'uri' => pht('Main Request'),
-      'selected' => $tab,
-      'visible'  => $visible,
-      'headers' => $headers,
-    );
-  }
-
   private function getHighSecurityWarningConfig() {
     $user = $this->getRequest()->getUser();
 
@@ -779,12 +692,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
 
     $hisec_warning_config = $this->getHighSecurityWarningConfig();
 
-    $console_config = null;
-    $console = $this->getConsole();
-    if ($console) {
-      $console_config = $this->getConsoleConfig();
-    }
-
     $upload_enabled = false;
     if ($controller) {
       $upload_enabled = $controller->isGlobalDragAndDropUploadEnabled();
@@ -823,7 +730,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       ),
       'globalDragAndDrop' => $upload_enabled,
       'hisecWarningConfig' => $hisec_warning_config,
-      'consoleConfig' => $console_config,
       'applicationClass' => $application_class,
       'applicationSearchIcon' => $application_search_icon,
       'helpItems' => $application_help,

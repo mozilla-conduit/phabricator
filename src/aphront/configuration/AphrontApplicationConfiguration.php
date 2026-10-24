@@ -11,7 +11,6 @@ final class AphrontApplicationConfiguration
   private $request;
   private $host;
   private $path;
-  private $console;
 
   public function buildRequest() {
     $parser = new PhutilQueryStringParser();
@@ -49,15 +48,6 @@ final class AphrontApplicationConfiguration
 
   public function getRequest() {
     return $this->request;
-  }
-
-  public function getConsole() {
-    return $this->console;
-  }
-
-  public function setConsole($console) {
-    $this->console = $console;
-    return $this;
   }
 
   public function setHost($host) {
@@ -153,7 +143,6 @@ final class AphrontApplicationConfiguration
 
     PhabricatorStartup::beginStartupPhase('startup.done');
 
-    DarkConsoleErrorLogPluginAPI::registerErrorHandler();
     SentryLoggerPlugin::registerErrorHandler();
 
     $response = PhabricatorSetupCheck::willProcessRequest();

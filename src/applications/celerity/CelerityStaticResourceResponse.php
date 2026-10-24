@@ -217,7 +217,6 @@ final class CelerityStaticResourceResponse extends Phobject {
       $higher_priority_names = array(
         'refresh-csrf',
         'aphront-basic-tokenizer',
-        'dark-console',
         'history-install',
       );
 
