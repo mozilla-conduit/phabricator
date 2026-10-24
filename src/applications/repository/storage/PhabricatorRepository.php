@@ -2710,22 +2710,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
       PhabricatorRepositoryURIIndex::updateRepositoryURIs($phid, array());
 
-      $books = id(new DivinerBookQuery())
-        ->setViewer($engine->getViewer())
-        ->withRepositoryPHIDs(array($phid))
-        ->execute();
-      foreach ($books as $book) {
-        $engine->destroyObject($book);
-      }
-
-      $atoms = id(new DivinerAtomQuery())
-        ->setViewer($engine->getViewer())
-        ->withRepositoryPHIDs(array($phid))
-        ->execute();
-      foreach ($atoms as $atom) {
-        $engine->destroyObject($atom);
-      }
-
       $lfs_refs = id(new PhabricatorRepositoryGitLFSRefQuery())
         ->setViewer($engine->getViewer())
         ->withRepositoryPHIDs(array($phid))

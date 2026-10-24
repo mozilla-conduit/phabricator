@@ -118,7 +118,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.phrequent' => array(
         'dead' => true,
       ),
-      'db.diviner' => array(),
+      'db.diviner' => array(
+        'dead' => true,
+      ),
       'db.auth' => array(),
       'db.doorkeeper' => array(
         'dead' => true,
