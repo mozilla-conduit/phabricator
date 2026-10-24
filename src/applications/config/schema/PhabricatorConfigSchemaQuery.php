@@ -34,6 +34,12 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       $only_living = true);
   }
 
+  private function getRetiredTableMap(PhabricatorDatabaseRef $ref) {
+    $api = $this->getAPI($ref);
+    $patches = PhabricatorSQLPatchList::buildAllPatches();
+    return $api->getRetiredTableMap($patches);
+  }
+
   private function getAPI(PhabricatorDatabaseRef $ref) {
     $key = $ref->getRefKey();
 
@@ -72,6 +78,17 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_SCHEMA IN (%Ls)',
       $databases);
+
+    // Retired tables belong to removed code but live in a database that stays,
+    // so existing installs still have them. Reporting them as surplus would make
+    // `bin/storage upgrade` fail after every such removal, and dropping them
+    // right away would make the removal impossible to revert.
+    $retired = $this->getRetiredTableMap($ref);
+    foreach ($tables as $key => $table) {
+      if (isset($retired[$table['TABLE_SCHEMA']][$table['TABLE_NAME']])) {
+        unset($tables[$key]);
+      }
+    }
 
     $database_info = queryfx_all(
       $conn,

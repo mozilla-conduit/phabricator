@@ -81,6 +81,7 @@ abstract class PhabricatorSQLPatchList extends Phobject {
           'after'   => true,
           'legacy'  => true,
           'dead'    => true,
+          'retired' => true,
           'phase' => true,
         );
 
@@ -134,6 +135,7 @@ abstract class PhabricatorSQLPatchList extends Phobject {
         $patch['key']     = $key;
         $patch['fullKey'] = $full_key;
         $patch['dead']    = (bool)idx($patch, 'dead', false);
+        $patch['retired'] = idx($patch, 'retired', array());
 
         if (isset($patch['legacy'])) {
           if ($namespace != 'phabricator') {
@@ -211,6 +213,14 @@ abstract class PhabricatorSQLPatchList extends Phobject {
                 "Patch '%s' has unknown patch type '%s'.",
                 "{$namespace}:{$key}",
                 $type));
+        }
+
+        if ($patch['retired'] && $type !== 'db') {
+          throw new Exception(
+            pht(
+              "Patch '%s' lists retired tables, but only '%s' patches may.",
+              "{$namespace}:{$key}",
+              'db'));
         }
 
         $specs[$full_key] = $patch;
