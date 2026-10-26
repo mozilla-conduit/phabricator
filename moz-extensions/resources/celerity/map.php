@@ -9,7 +9,7 @@ return array(
   'names' => array(
     'rsrc/css/differential/merge-conflict-status.css' => '8af24bdd',
     'rsrc/css/differential/testing-policy.css' => '04037685',
-    'rsrc/css/reviewhelper/reviewhelper-feedback.css' => 'b1855b16',
+    'rsrc/css/reviewhelper/reviewhelper-feedback.css' => 'ee5585f9',
     'rsrc/js/differential/behavior-testing-policy.js' => 'fa106c7d',
     'rsrc/js/reviewhelper/behavior-reviewhelper-feedback.js' => 'fd2211c3',
   ),
@@ -17,7 +17,7 @@ return array(
     'javelin-behavior-reviewhelper-feedback' => 'fd2211c3',
     'javelin-behavior-testing-policy' => 'fa106c7d',
     'merge-conflict-status-css' => '8af24bdd',
-    'reviewhelper-feedback-css' => 'b1855b16',
+    'reviewhelper-feedback-css' => 'ee5585f9',
     'testing-policy-css' => '04037685',
   ),
   'requires' => array(),

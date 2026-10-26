@@ -34,7 +34,8 @@
 }
 
 .reviewhelper-severity-major {
-  color: {$sh-orangetext};
+  /* `sh-orangetext` is only 3.84:1 on `sh-orangebackground`, below WCAG AA. */
+  color: #9a4a0a;
   background: {$sh-orangebackground};
   border-color: {$sh-orangeborder};
 }
