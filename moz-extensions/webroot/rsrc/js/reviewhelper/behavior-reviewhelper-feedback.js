@@ -138,7 +138,11 @@ JX.behavior("reviewhelper-feedback", function (config) {
   // a badge in the comment header. This only runs for comments by accounts in
   // `reviewhelper.severity-badge-usernames`, so other users don't get a badge.
   function addSeverityBadge(commentNode, contentDiv) {
-    var label = contentDiv.querySelector('.reviewhelper-severity-label');
+    // The rule only matches at the start of a comment, so the comment's own
+    // label is a direct child of its Remarkup container. Labels deeper down
+    // belong to quoted comments.
+    var label = contentDiv.querySelector(
+      ':scope > .phabricator-remarkup > .reviewhelper-severity-label');
     if (!label) {
       return;
     }
