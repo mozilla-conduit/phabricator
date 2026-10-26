@@ -19,9 +19,9 @@
  * and replaces it with a short label of the severity and category. If the
  * block can't be parsed, nothing is rendered in its place. The label carries
  * the parsed values as JSON so the `reviewhelper-feedback` behavior can turn it
- * into a badge on comments written by the bot. This rule cannot see the
- * comment author, so the label itself is not proof that Review Helper wrote
- * the comment.
+ * into a badge. This rule cannot see the comment author, so the HTML label is
+ * hidden and only the behavior shows it, for comments by accounts in
+ * `reviewhelper.severity-badge-usernames`.
  */
 final class ReviewHelperFrontmatterRemarkupRule
   extends PhabricatorRemarkupCustomBlockRule {
@@ -80,6 +80,7 @@ final class ReviewHelperFrontmatterRemarkupRule
       'p',
       array(
         'class' => 'reviewhelper-severity-label',
+        'style' => 'display: none;',
         'data-reviewhelper-frontmatter' => phutil_json_encode(
           $frontmatter->toDictionary()),
       ),

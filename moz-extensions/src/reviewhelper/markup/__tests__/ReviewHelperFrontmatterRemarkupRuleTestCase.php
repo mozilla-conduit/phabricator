@@ -44,6 +44,10 @@ final class ReviewHelperFrontmatterRemarkupRuleTestCase
     $this->assertFalse(
       strpos($html, 'reviewhelper:') !== false,
       pht('The raw YAML should not be rendered.'));
+    $this->assertTrue(
+      strpos($html, 'style="display: none;"') !== false,
+      pht('The label should be hidden until the behavior turns it into a '.
+        'badge.'));
   }
 
   public function testQuotedFrontmatterRendersLabel() {
