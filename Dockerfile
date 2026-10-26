@@ -1,5 +1,9 @@
 FROM php:8.4.27-fpm-alpine3.23 AS base
 
+# Used for some file paths in the image. MUST match the version in the Docker
+# image above.
+ENV PHPSHORT=84
+
 LABEL maintainer="dkl@mozilla.com"
 
 # From https://github.com/marco-c/risk-analysis-addon/releases
@@ -73,7 +77,16 @@ RUN { \
 RUN { \
         echo 'always_populate_raw_post_data=-1'; \
         echo 'post_max_size="32M"'; \
+        echo 'session.upload_progress.enabled = Off'; \
     } | tee /usr/local/etc/php/conf.d/phabricator.ini
+
+# Disable session upload progress for all PHPs, including the distro-shipped
+# one (despite it not being used), to counter CVE-2026-109619.
+RUN sed -i \
+  's/^;session.upload_progress.enabled.*/session.upload_progress.enabled = Off/' \
+  /etc/php${PHPSHORT}/php.ini \
+  /usr/local/etc/php/php.ini-production \
+  /usr/local/etc/php/php.ini-development
 
 # add a non-privileged user for installing and running the application
 RUN addgroup -g 10001 app \
@@ -125,11 +138,11 @@ RUN \
     echo custom/moz-extensions > /app/phabricator/conf/local/ENVIRONMENT
 COPY moz-extensions.conf.php /app/phabricator/conf/custom/
 
-COPY --chown=app assert-git.sh entrypoint.sh LICENSE update_version_json.py wait-for-mysql.php ./
+COPY --chown=app assert-git.sh assert-php.sh entrypoint.sh LICENSE update_version_json.py wait-for-mysql.php ./
 COPY --chown=app nginx/ nginx/
 
 # Update version.json
-RUN chmod +x /app/assert-git.sh /app/update_version_json.py /app/entrypoint.sh /app/wait-for-mysql.php \
+RUN chmod +x /app/assert-git.sh /app/assert-php.sh /app/update_version_json.py /app/entrypoint.sh /app/wait-for-mysql.php \
     && /app/update_version_json.py
 
 RUN { \
@@ -227,4 +240,4 @@ COPY --chown=app test-arcconfig .arcconfig
 COPY --chown=app moz-extensions moz-extensions
 RUN chmod +x /app/moz-extensions/bin/*
 
-RUN /app/assert-git.sh
+RUN /app/assert-git.sh && /app/assert-php.sh
