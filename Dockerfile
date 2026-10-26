@@ -138,11 +138,11 @@ RUN \
     echo custom/moz-extensions > /app/phabricator/conf/local/ENVIRONMENT
 COPY moz-extensions.conf.php /app/phabricator/conf/custom/
 
-COPY --chown=app assert-git.sh entrypoint.sh LICENSE update_version_json.py wait-for-mysql.php ./
+COPY --chown=app assert-git.sh assert-php.sh entrypoint.sh LICENSE update_version_json.py wait-for-mysql.php ./
 COPY --chown=app nginx/ nginx/
 
 # Update version.json
-RUN chmod +x /app/assert-git.sh /app/update_version_json.py /app/entrypoint.sh /app/wait-for-mysql.php \
+RUN chmod +x /app/assert-git.sh /app/assert-php.sh /app/update_version_json.py /app/entrypoint.sh /app/wait-for-mysql.php \
     && /app/update_version_json.py
 
 RUN { \
@@ -240,4 +240,4 @@ COPY --chown=app test-arcconfig .arcconfig
 COPY --chown=app moz-extensions moz-extensions
 RUN chmod +x /app/moz-extensions/bin/*
 
-RUN /app/assert-git.sh
+RUN /app/assert-git.sh && /app/assert-php.sh
