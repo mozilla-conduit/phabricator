@@ -25,6 +25,10 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
       return;
     }
 
+    // Severity badges don't depend on the Review Helper service, so any
+    // configured account can use them on any revision.
+    $this->initSeverityBadges();
+
     $service_url = PhabricatorEnv::getEnvConfig('reviewhelper.url');
     if (!$service_url) {
       return;
@@ -67,12 +71,9 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
 
     $event->setValue('actions', $actions);
 
-    // Initialize the feedback buttons and severity badges only if they have
-    // accounts configured.
+    // Initialize feedback feature only if bot username is configured
     $bot_username = PhabricatorEnv::getEnvConfig('reviewhelper.bot-username');
-    $severity_badge_usernames = PhabricatorEnv::getEnvConfig(
-      'reviewhelper.severity-badge-usernames');
-    if (!$bot_username && !$severity_badge_usernames) {
+    if (!$bot_username) {
       return;
     }
 
@@ -81,10 +82,27 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
       'reviewhelper-feedback',
       array(
         'botUsername' => $bot_username,
-        'severityBadgeUsernames' => array_values($severity_badge_usernames),
         'feedbackURI' => '/reviewhelper/feedback/',
       ),
       'moz-extensions'
     );
+  }
+
+  public function initSeverityBadges() {
+    $usernames = PhabricatorEnv::getEnvConfig(
+      'reviewhelper.severity-badge-usernames');
+    if (!$usernames) {
+      return;
+    }
+
+    require_celerity_resource(
+      'reviewhelper-severity-badge-css',
+      'moz-extensions');
+    Javelin::initBehavior(
+      'reviewhelper-severity-badge',
+      array(
+        'usernames' => array_values($usernames),
+      ),
+      'moz-extensions');
   }
 }

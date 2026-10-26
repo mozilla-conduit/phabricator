@@ -4,7 +4,6 @@
 
 JX.behavior("reviewhelper-feedback", function (config) {
   var botUsername = config.botUsername;
-  var severityBadgeUsernames = config.severityBadgeUsernames || [];
   var feedbackURI = config.feedbackURI;
 
   function createFeedbackButton(icon, tooltip, feedbackType, commentId) {
@@ -87,15 +86,10 @@ JX.behavior("reviewhelper-feedback", function (config) {
       return;
     }
 
-    var authorName = data.snippet ? data.snippet.split(":")[0] : null;
-
     // We only want feedback buttons on comments made by the Review Helper bot
-    if (botUsername && authorName === botUsername) {
+    var authorName = data.snippet ? data.snippet.split(":")[0] : null;
+    if (authorName === botUsername) {
       addFeedbackFooter(commentNode, commentId, contentDiv);
-    }
-
-    if (severityBadgeUsernames.indexOf(authorName) !== -1) {
-      addSeverityBadge(commentNode, contentDiv);
     }
   }
 
@@ -132,53 +126,6 @@ JX.behavior("reviewhelper-feedback", function (config) {
 
     // Insert after the content div
     contentDiv.parentNode.insertBefore(feedbackFooter, contentDiv.nextSibling);
-  }
-
-  // Move the severity label rendered from the `reviewhelper:` frontmatter into
-  // a badge in the comment header. This only runs for comments by accounts in
-  // `reviewhelper.severity-badge-usernames`, so other users don't get a badge.
-  function addSeverityBadge(commentNode, contentDiv) {
-    // The rule only matches at the start of a comment, so the comment's own
-    // label is a direct child of its Remarkup container. Labels deeper down
-    // belong to quoted comments.
-    var label = contentDiv.querySelector(
-      ':scope > .phabricator-remarkup > .reviewhelper-severity-label');
-    if (!label) {
-      return;
-    }
-
-    var headLeft = commentNode.querySelector('.inline-head-left');
-    if (!headLeft) {
-      return;
-    }
-
-    // The `ReviewHelperFrontmatter` dictionary rendered by
-    // `ReviewHelperFrontmatterRemarkupRule`.
-    var frontmatter;
-    try {
-      frontmatter = JSON.parse(
-        label.getAttribute('data-reviewhelper-frontmatter'));
-    } catch (error) {
-      return;
-    }
-    if (!frontmatter || !frontmatter.severity) {
-      return;
-    }
-
-    var badge = JX.$N(
-      'span',
-      {
-        className:
-          'reviewhelper-severity-badge reviewhelper-severity-' +
-          frontmatter.severity,
-        title: frontmatter.confidence ?
-          'Confidence: ' + frontmatter.confidence :
-          ''
-      },
-      label.textContent);
-
-    headLeft.appendChild(badge);
-    JX.DOM.remove(label);
   }
 
   function processExistingComments() {
