@@ -4,6 +4,7 @@
 
 JX.behavior("reviewhelper-feedback", function (config) {
   var botUsername = config.botUsername;
+  var severityBadgeUsernames = config.severityBadgeUsernames || [];
   var feedbackURI = config.feedbackURI;
 
   function createFeedbackButton(icon, tooltip, feedbackType, commentId) {
@@ -79,22 +80,28 @@ JX.behavior("reviewhelper-feedback", function (config) {
       return;
     }
 
-    // Avoid adding feedback UI multiple times
-    if (isEnhanced(commentNode)) {
-      return;
-    }
-
-    // We only want to enhance comments made by the Review Helper bot
-    var authorName = data.snippet ? data.snippet.split(":")[0] : null;
-    if (authorName !== botUsername) {
-      return;
-    }
-
-    // Find the content div to insert footer after it
     var contentDiv = commentNode.querySelector(
       ".differential-inline-comment-content",
     );
     if (!contentDiv) {
+      return;
+    }
+
+    var authorName = data.snippet ? data.snippet.split(":")[0] : null;
+
+    // We only want feedback buttons on comments made by the Review Helper bot
+    if (botUsername && authorName === botUsername) {
+      addFeedbackFooter(commentNode, commentId, contentDiv);
+    }
+
+    if (severityBadgeUsernames.indexOf(authorName) !== -1) {
+      addSeverityBadge(commentNode, contentDiv);
+    }
+  }
+
+  function addFeedbackFooter(commentNode, commentId, contentDiv) {
+    // Avoid adding feedback UI multiple times
+    if (isEnhanced(commentNode)) {
       return;
     }
 
@@ -125,13 +132,11 @@ JX.behavior("reviewhelper-feedback", function (config) {
 
     // Insert after the content div
     contentDiv.parentNode.insertBefore(feedbackFooter, contentDiv.nextSibling);
-
-    addSeverityBadge(commentNode, contentDiv);
   }
 
-  // Move the severity label rendered from Review Helper's frontmatter into a
-  // badge in the comment header. This only runs for the bot's comments, so a
-  // user who types the same frontmatter does not get a badge.
+  // Move the severity label rendered from the `reviewhelper:` frontmatter into
+  // a badge in the comment header. This only runs for comments by accounts in
+  // `reviewhelper.severity-badge-usernames`, so other users don't get a badge.
   function addSeverityBadge(commentNode, contentDiv) {
     var label = contentDiv.querySelector('.reviewhelper-severity-label');
     if (!label) {

@@ -67,9 +67,12 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
 
     $event->setValue('actions', $actions);
 
-    // Initialize feedback feature only if bot username is configured
+    // Initialize the feedback buttons and severity badges only if they have
+    // accounts configured.
     $bot_username = PhabricatorEnv::getEnvConfig('reviewhelper.bot-username');
-    if (!$bot_username) {
+    $severity_badge_usernames = PhabricatorEnv::getEnvConfig(
+      'reviewhelper.severity-badge-usernames');
+    if (!$bot_username && !$severity_badge_usernames) {
       return;
     }
 
@@ -78,6 +81,7 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
       'reviewhelper-feedback',
       array(
         'botUsername' => $bot_username,
+        'severityBadgeUsernames' => array_values($severity_badge_usernames),
         'feedbackURI' => '/reviewhelper/feedback/',
       ),
       'moz-extensions'

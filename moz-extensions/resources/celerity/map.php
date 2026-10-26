@@ -11,10 +11,10 @@ return array(
     'rsrc/css/differential/testing-policy.css' => '04037685',
     'rsrc/css/reviewhelper/reviewhelper-feedback.css' => 'b1855b16',
     'rsrc/js/differential/behavior-testing-policy.js' => 'fa106c7d',
-    'rsrc/js/reviewhelper/behavior-reviewhelper-feedback.js' => 'b9232364',
+    'rsrc/js/reviewhelper/behavior-reviewhelper-feedback.js' => 'fd2211c3',
   ),
   'symbols' => array(
-    'javelin-behavior-reviewhelper-feedback' => 'b9232364',
+    'javelin-behavior-reviewhelper-feedback' => 'fd2211c3',
     'javelin-behavior-testing-policy' => 'fa106c7d',
     'merge-conflict-status-css' => '8af24bdd',
     'reviewhelper-feedback-css' => 'b1855b16',
