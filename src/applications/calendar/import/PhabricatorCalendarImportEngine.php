@@ -55,7 +55,7 @@ abstract class PhabricatorCalendarImportEngine
   final protected function importEventDocument(
     PhabricatorUser $viewer,
     PhabricatorCalendarImport $import,
-    PhutilCalendarRootNode $root = null) {
+    ?PhutilCalendarRootNode $root = null) {
 
     $event_type = PhutilCalendarEventNode::NODETYPE;
 
@@ -235,14 +235,14 @@ abstract class PhabricatorCalendarImportEngine
         // We avoid disclosing email addresses to be consistent with the rest
         // of the product.
         $name = $attendee->getName();
-        if (preg_match('/@/', $name)) {
+        if (phutil_nonempty_string($name) && preg_match('/@/', $name)) {
           $name = new PhutilEmailAddress($name);
           $name = $name->getDisplayName();
         }
 
         // If we don't have a name or the name still looks like it's an
         // email address, give them a dummy placeholder name.
-        if (!strlen($name) || preg_match('/@/', $name)) {
+        if (!phutil_nonempty_string($name) || preg_match('/@/', $name)) {
           $name = pht('Private User %d', $private_index);
           $private_index++;
         }
@@ -447,7 +447,7 @@ abstract class PhabricatorCalendarImportEngine
   private function getParentNodeUID(PhutilCalendarEventNode $node) {
     $recurrence_id = $node->getRecurrenceID();
 
-    if (!strlen($recurrence_id)) {
+    if (!phutil_nonempty_string($recurrence_id)) {
       return null;
     }
 
@@ -456,7 +456,7 @@ abstract class PhabricatorCalendarImportEngine
 
   private function getNodeInstanceEpoch(PhutilCalendarEventNode $node) {
     $instance_iso = $node->getRecurrenceID();
-    if (strlen($instance_iso)) {
+    if (phutil_nonempty_string($instance_iso)) {
       $instance_datetime = PhutilCalendarAbsoluteDateTime::newFromISO8601(
         $instance_iso);
       $instance_epoch = $instance_datetime->getEpoch();

@@ -287,7 +287,7 @@ final class PhabricatorFile extends PhabricatorFileDAO
     // NOTE: Once we receive the first chunk, we'll detect its MIME type and
     // update the parent file if a MIME type hasn't been provided. This matters
     // for large media files like video.
-    $mime_type = idx($params, 'mime-type');
+    $mime_type = idx($params, 'mime-type', '');
     if (!strlen($mime_type)) {
       $file->setMimeType('application/octet-stream');
     }
@@ -856,7 +856,7 @@ final class PhabricatorFile extends PhabricatorFileDAO
     // instance identity in the path allows us to distinguish between requests
     // originating from different instances but served through the same CDN.
     $instance = PhabricatorEnv::getEnvConfig('cluster.instance');
-    if (strlen($instance)) {
+    if (phutil_nonempty_string($instance)) {
       $parts[] = '@'.$instance;
     }
 
@@ -903,7 +903,7 @@ final class PhabricatorFile extends PhabricatorFileDAO
     $parts[] = 'xform';
 
     $instance = PhabricatorEnv::getEnvConfig('cluster.instance');
-    if (strlen($instance)) {
+    if (phutil_nonempty_string($instance)) {
       $parts[] = '@'.$instance;
     }
 
@@ -971,16 +971,19 @@ final class PhabricatorFile extends PhabricatorFileDAO
     // warns you if you don't have complete support.
 
     $matches = null;
-    $ok = preg_match(
-      '@^image/(gif|png|jpe?g)@',
-      $this->getViewableMimeType(),
-      $matches);
+    $ok = false;
+    if ($this->getViewableMimeType() !== null) {
+      $ok = preg_match(
+        '@^image/(gif|png|jpe?g)@',
+        $this->getViewableMimeType(),
+        $matches);
+    }
     if (!$ok) {
       return false;
     }
 
     switch ($matches[1]) {
-      case 'jpg';
+      case 'jpg':
       case 'jpeg':
         return function_exists('imagejpeg');
         break;
@@ -1256,7 +1259,7 @@ final class PhabricatorFile extends PhabricatorFileDAO
     return $this->assertAttached($this->originalFile);
   }
 
-  public function attachOriginalFile(PhabricatorFile $file = null) {
+  public function attachOriginalFile(?PhabricatorFile $file = null) {
     $this->originalFile = $file;
     return $this;
   }
@@ -1278,7 +1281,7 @@ final class PhabricatorFile extends PhabricatorFileDAO
   public function getAltText() {
     $alt = $this->getCustomAltText();
 
-    if (strlen($alt)) {
+    if (phutil_nonempty_string($alt)) {
       return $alt;
     }
 

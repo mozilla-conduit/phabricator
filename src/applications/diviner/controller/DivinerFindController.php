@@ -32,12 +32,12 @@ final class DivinerFindController extends DivinerController {
     }
 
     $context = $request->getStr('context');
-    if (strlen($context)) {
+    if (phutil_nonempty_string($context)) {
       $query->withContexts(array($context));
     }
 
     $type = $request->getStr('type');
-    if (strlen($type)) {
+    if (phutil_nonempty_string($type)) {
       $query->withTypes(array($type));
     }
 
@@ -58,7 +58,9 @@ final class DivinerFindController extends DivinerController {
 
     if (!$atoms) {
       $title_query = clone $query;
-      $title_query->withTitles(array($query_text));
+      if (phutil_nonempty_string($query_text)) {
+        $title_query->withTitles(array($query_text));
+      }
       $atoms = $title_query->execute();
     }
 

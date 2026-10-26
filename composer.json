@@ -2,14 +2,12 @@
     "name": "mozilla/phabricator",
     "type": "project",
     "require": {
-        "sentry/sentry": "^2.3",
-        "php-http/curl-client": "^2.1",
-        "http-interop/http-factory-guzzle": "^1.0",
+        "sentry/sentry": "^4.34",
         "ext-json": "*"
     },
     "config": {
         "platform": {
-            "php": "7.4"
+            "php": "8.4"
         }
     }
 }

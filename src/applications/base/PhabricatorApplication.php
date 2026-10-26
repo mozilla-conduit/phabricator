@@ -170,8 +170,11 @@ abstract class PhabricatorApplication
     return null;
   }
 
+  /**
+   * @param string|PhutilURI $path
+   */
   final public function getApplicationURI($path = '') {
-    return $this->getBaseURI().ltrim($path, '/');
+    return $this->getBaseURI().ltrim((string)$path, '/');
   }
 
   public function getIcon() {
@@ -235,6 +238,11 @@ abstract class PhabricatorApplication
     return array();
   }
 
+  /**
+   * Get the Application Overview in raw Remarkup
+   *
+   * @return string|null
+   */
   public function getOverview() {
     return null;
   }
@@ -318,7 +326,7 @@ abstract class PhabricatorApplication
    */
   public function buildMainMenuItems(
     PhabricatorUser $user,
-    PhabricatorController $controller = null) {
+    ?PhabricatorController $controller = null) {
     return array();
   }
 

@@ -49,10 +49,13 @@ final class ConduitGetCertificateConduitAPIMethod extends ConduitAPIMethod {
       throw new ConduitException('ERR-RATE-LIMIT');
     }
 
+    $info = null;
     $token = $request->getValue('token');
-    $info = id(new PhabricatorConduitCertificateToken())->loadOneWhere(
-      'token = %s',
-      trim($token));
+    if ($token !== null) {
+      $info = id(new PhabricatorConduitCertificateToken())->loadOneWhere(
+        'token = %s',
+        trim($token));
+    }
 
     if (!$info || $info->getDateCreated() < time() - (60 * 15)) {
       $this->logFailure($request, $info);
@@ -80,7 +83,7 @@ final class ConduitGetCertificateConduitAPIMethod extends ConduitAPIMethod {
 
   private function logFailure(
     ConduitAPIRequest $request,
-    PhabricatorConduitCertificateToken $info = null) {
+    ?PhabricatorConduitCertificateToken $info = null) {
 
     $log = PhabricatorUserLog::initializeNewLog(
         $request->getUser(),

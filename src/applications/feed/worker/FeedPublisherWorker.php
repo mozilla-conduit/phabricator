@@ -17,26 +17,6 @@ final class FeedPublisherWorker extends FeedPushWorker {
           ));
       }
     }
-
-    $argv = array(
-      array(),
-    );
-
-    // Find and schedule all the enabled Doorkeeper publishers.
-    // TODO: Use PhutilClassMapQuery?
-    $doorkeeper_workers = id(new PhutilSymbolLoader())
-      ->setAncestorClass('DoorkeeperFeedWorker')
-      ->loadObjects($argv);
-    foreach ($doorkeeper_workers as $worker) {
-      if (!$worker->isEnabled()) {
-        continue;
-      }
-      $this->queueTask(
-        get_class($worker),
-        array(
-          'key' => $story->getChronologicalKey(),
-        ));
-    }
   }
 
 

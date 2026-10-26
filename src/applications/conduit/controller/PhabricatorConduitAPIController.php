@@ -286,7 +286,7 @@ final class PhabricatorConduitAPIController
       );
     }
 
-    $token_string = idx($metadata, 'token');
+    $token_string = idx($metadata, 'token', '');
     if (strlen($token_string)) {
 
       if (strlen($token_string) != 32) {
@@ -523,9 +523,9 @@ final class PhabricatorConduitAPIController
 
   private function buildHumanReadableResponse(
     $method,
-    ConduitAPIRequest $request = null,
+    ?ConduitAPIRequest $request = null,
     $result = null,
-    ConduitAPIMethod $method_implementation = null) {
+    ?ConduitAPIMethod $method_implementation = null) {
 
     $param_rows = array();
     $param_rows[] = array('Method', $this->renderAPIValue($method));
@@ -680,7 +680,7 @@ final class PhabricatorConduitAPIController
     // Otherwise, look for a single parameter called 'params' which has the
     // entire param dictionary JSON encoded.
     $params_json = $request->getStr('params');
-    if (strlen($params_json)) {
+    if (phutil_nonempty_string($params_json)) {
       $params = null;
       try {
         $params = phutil_json_decode($params_json);

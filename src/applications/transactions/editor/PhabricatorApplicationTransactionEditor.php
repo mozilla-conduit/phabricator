@@ -617,7 +617,7 @@ abstract class PhabricatorApplicationTransactionEditor
         return true;
       case PhabricatorTransactions::TYPE_SPACE:
         $space_phid = $xaction->getNewValue();
-        if (!strlen($space_phid)) {
+        if (!phutil_nonempty_string($space_phid)) {
           // If an install has no Spaces or the Spaces controls are not visible
           // to the viewer, we might end up with the empty string here instead
           // of a strict `null`, because some controller just used `getStr()`
@@ -5012,7 +5012,7 @@ abstract class PhabricatorApplicationTransactionEditor
   }
 
   final protected function newSubEditor(
-    PhabricatorApplicationTransactionEditor $template = null) {
+    ?PhabricatorApplicationTransactionEditor $template = null) {
     $editor = $this->newEditorCopy($template);
 
     $editor->parentEditor = $this;
@@ -5022,7 +5022,7 @@ abstract class PhabricatorApplicationTransactionEditor
   }
 
   private function newEditorCopy(
-    PhabricatorApplicationTransactionEditor $template = null) {
+    ?PhabricatorApplicationTransactionEditor $template = null) {
     if ($template === null) {
       $template = newv(get_class($this), array());
     }

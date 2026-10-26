@@ -100,10 +100,6 @@
       "name": "Diviner",
       "include": "(^src/applications/diviner/)"
     },
-    "doorkeeper": {
-      "name": "Doorkeeper",
-      "include": "(^src/applications/doorkeeper/)"
-    },
     "draft": {
       "name": "Draft",
       "include": "(^src/applications/draft/)"

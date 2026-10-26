@@ -7,8 +7,7 @@ Overview
 You can configure Phabricator to connect to one or more fulltext search
 services.
 
-By default, Phabricator will use MySQL for fulltext search. This is suitable
-for most installs. However, alternate engines are supported.
+Phabricator uses MySQL for fulltext search.
 
 
 Configuring Search Services
@@ -57,7 +56,6 @@ These service types are supported:
 | Service | Key | Description |
 |---|---|---|
 | MySQL | `mysql` | Default MySQL fulltext index.
-| Elasticsearch | `elasticsearch` | Use an external Elasticsearch service
 
 
 Fulltext Service Roles
@@ -97,33 +95,6 @@ A typical `mysql` service configuration looks like this:
 ```
 
 
-Service Type: Elasticsearch
-======================
-
-The `elasticsearch` service type supports these options:
-
-| Key | Description |
-|---|---|
-| `protocol` | Either `"http"` (default) or `"https"`.
-| `port` | Elasticsearch TCP port.
-| `version` | Elasticsearch version, either `2` or `5` (default).
-| `path` | Path for the index. Defaults to `/phabricator`. Advanced.
-
-A typical `elasticsearch` service configuration looks like this:
-
-```lang=json
-{
-  "type": "elasticsearch",
-  "hosts": [
-    {
-      "protocol": "http",
-      "host": "127.0.0.1",
-      "port": 9200
-    }
-  ]
-}
-```
-
 Monitoring Search Services
 ==========================
 
@@ -157,54 +128,4 @@ detailed list of indexing options available, run:
 
 ```
 phabricator/ $ ./bin/search help index
-```
-
-
-Advanced Example
-================
-
-This is a more advanced example which shows a configuration with multiple
-different services in different roles. In this example:
-
-  - Phabricator is using an Elasticsearch 2 service as its primary fulltext
-    service.
-  - An Elasticsearch 5 service is online, but only receiving writes.
-  - The MySQL service is serving as a backup if Elasticsearch fails.
-
-This particular configuration may not be very useful. It is primarily
-intended to show how to configure many different options.
-
-
-```lang=json
-[
-  {
-    "type": "elasticsearch",
-    "version": 2,
-    "hosts": [
-      {
-        "host": "elastic2.mycompany.com",
-        "port": 9200,
-        "protocol": "http"
-      }
-    ]
-  },
-  {
-    "type": "elasticsearch",
-    "version": 5,
-    "hosts": [
-      {
-        "host": "elastic5.mycompany.com",
-        "port": 9789,
-        "protocol": "https"
-        "roles": {
-          "read": false,
-          "write": true
-        }
-      }
-    ]
-  },
-  {
-    "type": "mysql"
-  }
-]
 ```

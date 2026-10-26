@@ -33,7 +33,7 @@ final class HeraldRuleController extends HeraldController {
       $content_type = $request->getStr('content_type');
       $rule->setContentType($content_type);
 
-      $rule_type = $request->getStr('rule_type');
+      $rule_type = $request->getStr('rule_type', '');
       if (!isset($rule_type_map[$rule_type])) {
         return $this->newDialog()
           ->setTitle(pht('Invalid Rule Type'))
@@ -270,7 +270,8 @@ final class HeraldRuleController extends HeraldController {
     // value so we didn't render a control, adjust the value to the first
     // valid policy value.
     $repetition_options = $this->getRepetitionOptionMap($adapter);
-    if (!isset($repetition_options[$repetition_policy])) {
+    if (!$repetition_policy ||
+        !isset($repetition_options[$repetition_policy])) {
       $repetition_policy = head_key($repetition_options);
     }
 

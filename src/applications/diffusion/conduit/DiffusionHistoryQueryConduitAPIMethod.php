@@ -24,7 +24,7 @@ final class DiffusionHistoryQueryConduitAPIMethod
       'commit' => 'required string',
       'against' => 'optional string',
       'path' => 'required string',
-      'offset' => 'required int',
+      'offset' => 'optional int',
       'limit' => 'required int',
       'needDirectChanges' => 'optional bool',
       'needChildChanges' => 'optional bool',
@@ -47,15 +47,15 @@ final class DiffusionHistoryQueryConduitAPIMethod
     $against_hash = $request->getValue('against');
 
     $path = $request->getValue('path');
-    if (!strlen($path)) {
+    if (!phutil_nonempty_string($path)) {
       $path = null;
     }
 
     $offset = $request->getValue('offset');
     $limit = $request->getValue('limit');
 
-    if (strlen($against_hash)) {
-      $commit_range = "${against_hash}..${commit_hash}";
+    if (phutil_nonempty_string($against_hash)) {
+      $commit_range = "{$against_hash}..{$commit_hash}";
     } else {
       $commit_range = $commit_hash;
     }
@@ -109,7 +109,7 @@ final class DiffusionHistoryQueryConduitAPIMethod
     $repository = $drequest->getRepository();
     $commit_hash = $request->getValue('commit');
     $path = $request->getValue('path');
-    $offset = $request->getValue('offset');
+    $offset = $request->getValue('offset', 0);
     $limit = $request->getValue('limit');
 
     $path = DiffusionPathIDQuery::normalizePath($path);

@@ -339,9 +339,14 @@ final class DifferentialRevisionViewController
         ->setErrors($revision_warnings);
     }
 
+    if ($diff_vs === null) {
+      $diff_keys = array($target->getID());
+    } else {
+      $diff_keys = array($diff_vs, $target->getID());
+    }
     $detail_diffs = array_select_keys(
       $diffs,
-      array($diff_vs, $target->getID()));
+      $diff_keys);
     $detail_diffs = mpull($detail_diffs, null, 'getPHID');
 
     $this->loadHarbormasterData($detail_diffs);
@@ -913,8 +918,8 @@ final class DifferentialRevisionViewController
 
   private function loadChangesetsAndVsMap(
     DifferentialDiff $target,
-    DifferentialDiff $diff_vs = null,
-    PhabricatorRepository $repository = null) {
+    ?DifferentialDiff $diff_vs = null,
+    ?PhabricatorRepository $repository = null) {
     $viewer = $this->getViewer();
 
     $load_diffs = array($target);
@@ -1099,7 +1104,7 @@ final class DifferentialRevisionViewController
     array $changesets,
     array $vs_changesets,
     array $vs_map,
-    PhabricatorRepository $repository = null) {
+    ?PhabricatorRepository $repository = null) {
 
     assert_instances_of($changesets,    'DifferentialChangeset');
     assert_instances_of($vs_changesets, 'DifferentialChangeset');
@@ -1459,7 +1464,7 @@ final class DifferentialRevisionViewController
       }
     }
 
-    if (isset($diffs[$old_id])) {
+    if ($old_id && isset($diffs[$old_id])) {
       return $old_id;
     }
 
@@ -1479,7 +1484,7 @@ final class DifferentialRevisionViewController
       return new Aphront404Response();
     }
 
-    if (isset($diffs[$new_id])) {
+    if ($new_id && isset($diffs[$new_id])) {
       return $new_id;
     }
 

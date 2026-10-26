@@ -311,12 +311,12 @@ final class PhabricatorFileViewController extends PhabricatorFileController {
       $file->getStorageHandle());
 
     $custom_alt = $file->getCustomAltText();
-    if (strlen($custom_alt)) {
+    if (phutil_nonempty_string($custom_alt)) {
       $finfo->addProperty(pht('Custom Alt Text'), $custom_alt);
     }
 
     $default_alt = $file->getDefaultAltText();
-    if (strlen($default_alt)) {
+    if (phutil_nonempty_string($default_alt)) {
       $finfo->addProperty(pht('Default Alt Text'), $default_alt);
     }
 

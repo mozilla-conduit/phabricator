@@ -110,7 +110,15 @@ final class PhabricatorCalendarEventQuery
     return $this;
   }
 
+  /**
+   * @param array<string|null> $phids User PHIDs
+   */
   public function needRSVPs(array $phids) {
+    foreach ($phids as $key => $phid) {
+      if ($phid === null) {
+        unset($phids[$key]);
+      }
+    }
     $this->needRSVPs = $phids;
     return $this;
   }
@@ -287,7 +295,10 @@ final class PhabricatorCalendarEventQuery
       $parent_phid = $event->getInstanceOfEventPHID();
       $sequence = $event->getSequenceIndex();
 
-      $have_pairs[$parent_phid][$sequence] = true;
+      if ($parent_phid && $sequence !== null) {
+        $have_pairs[$parent_phid][$sequence] = true;
+      }
+
     }
 
     // Now, generate a map of all <parentPHID, sequence> events we generated

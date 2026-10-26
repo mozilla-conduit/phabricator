@@ -385,7 +385,7 @@ abstract class PhabricatorApplicationTransaction
         break;
     }
 
-    if ($this->getComment()) {
+    if ($this->getComment() && $this->getComment()->getAuthorPHID()) {
       $phids[] = array($this->getComment()->getAuthorPHID());
     }
 
@@ -536,7 +536,7 @@ abstract class PhabricatorApplicationTransaction
 
   public function getColor() {
     switch ($this->getTransactionType()) {
-      case PhabricatorTransactions::TYPE_COMMENT;
+      case PhabricatorTransactions::TYPE_COMMENT:
         $comment = $this->getComment();
         if ($comment && $comment->getIsRemoved()) {
           return 'black';
@@ -550,7 +550,7 @@ abstract class PhabricatorApplicationTransaction
             return 'sky';
         }
         break;
-      case PhabricatorTransactions::TYPE_MFA;
+      case PhabricatorTransactions::TYPE_MFA:
         return 'pink';
     }
     return null;
@@ -1763,43 +1763,6 @@ abstract class PhabricatorApplicationTransaction
     }
 
     return null;
-  }
-
-  public function renderAsTextForDoorkeeper(
-    DoorkeeperFeedStoryPublisher $publisher,
-    PhabricatorFeedStory $story,
-    array $xactions) {
-
-    $text = array();
-    $body = array();
-
-    foreach ($xactions as $xaction) {
-      $xaction_body = $xaction->getBodyForMail();
-      if ($xaction_body !== null) {
-        $body[] = $xaction_body;
-      }
-
-      if ($xaction->shouldHideForMail($xactions)) {
-        continue;
-      }
-
-      $old_target = $xaction->getRenderingTarget();
-      $new_target = self::TARGET_TEXT;
-      $xaction->setRenderingTarget($new_target);
-
-      if ($publisher->getRenderWithImpliedContext()) {
-        $text[] = $xaction->getTitle();
-      } else {
-        $text[] = $xaction->getTitleForFeed();
-      }
-
-      $xaction->setRenderingTarget($old_target);
-    }
-
-    $text = implode("\n", $text);
-    $body = implode("\n\n", $body);
-
-    return rtrim($text."\n\n".$body);
   }
 
   /**
