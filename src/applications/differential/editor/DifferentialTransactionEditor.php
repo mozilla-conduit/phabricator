@@ -10,6 +10,7 @@ final class DifferentialTransactionEditor
   private $firstBroadcast = false;
   private $wasBroadcasting;
   private $isDraftDemotion;
+  private $isAIReviewFindingsNotice;
 
   private $ownersDiff;
   private $ownersChangesets;
@@ -149,7 +150,39 @@ final class DifferentialTransactionEditor
 
     $this->wasBroadcasting = $object->getShouldBroadcast();
 
+    $xactions = $this->expandAIReviewHoldTransactions($object, $xactions);
+
     return parent::expandTransactions($object, $xactions);
+  }
+
+  /**
+   * Adds the transactions that move a revision held in draft for AI review
+   * along, like publishing it once Review Helper finds nothing.
+   *
+   * @phutil-external-symbol class ReviewHelperDraftHold
+   * @phutil-external-symbol class ReviewHelperFindingsTransaction
+   */
+  private function expandAIReviewHoldTransactions(
+    DifferentialRevision $object,
+    array $xactions) {
+
+    if ($this->getIsNewObject()) {
+      return $xactions;
+    }
+
+    $hold_xactions = ReviewHelperDraftHold::newTransactionsForEdit(
+      $this->getActor(),
+      $object,
+      $xactions);
+
+    foreach ($hold_xactions as $hold_xaction) {
+      $findings_type = ReviewHelperFindingsTransaction::TRANSACTIONTYPE;
+      if ($hold_xaction->getTransactionType() === $findings_type) {
+        $this->isAIReviewFindingsNotice = true;
+      }
+    }
+
+    return array_merge($xactions, $hold_xactions);
   }
 
   protected function expandTransaction(
@@ -580,8 +613,9 @@ final class DifferentialTransactionEditor
       return $phids;
     }
 
-    // If we're demoting a draft after a build failure, just notify the author.
-    if ($this->isDraftDemotion) {
+    // If we're demoting a draft after a build failure, or Review Helper posted
+    // findings on a revision held in draft, just notify the author.
+    if ($this->isDraftDemotion || $this->isAIReviewFindingsNotice) {
       $author_phid = $object->getAuthorPHID();
       return array(
         $author_phid,
@@ -1456,6 +1490,7 @@ final class DifferentialTransactionEditor
       'changedPriorToCommitURI' => $this->changedPriorToCommitURI,
       'firstBroadcast' => $this->firstBroadcast,
       'isDraftDemotion' => $this->isDraftDemotion,
+      'isAIReviewFindingsNotice' => $this->isAIReviewFindingsNotice,
     );
   }
 
@@ -1463,6 +1498,7 @@ final class DifferentialTransactionEditor
     $this->changedPriorToCommitURI = idx($state, 'changedPriorToCommitURI');
     $this->firstBroadcast = idx($state, 'firstBroadcast');
     $this->isDraftDemotion = idx($state, 'isDraftDemotion');
+    $this->isAIReviewFindingsNotice = idx($state, 'isAIReviewFindingsNotice');
     return $this;
   }
 
