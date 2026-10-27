@@ -218,7 +218,7 @@ final class DiffusionCommitAuditorsTransaction
           default:
             $errors[] = $this->newInvalidError(
               pht(
-                'Auditor "%s" must be a user, a package, or a project.',
+                'Auditor "%s" must be a user or a project.',
                 $phid),
               $xaction);
             continue 2;
