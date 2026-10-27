@@ -384,53 +384,6 @@ final class PhabricatorConduitAPIController
         $user);
     }
 
-    $access_token = idx($metadata, 'access_token');
-    if ($access_token) {
-      $token = id(new PhabricatorOAuthServerAccessToken())
-        ->loadOneWhere('token = %s', $access_token);
-      if (!$token) {
-        return array(
-          'ERR-INVALID-AUTH',
-          pht('Access token does not exist.'),
-        );
-      }
-
-      $oauth_server = new PhabricatorOAuthServer();
-      $authorization = $oauth_server->authorizeToken($token);
-      if (!$authorization) {
-        return array(
-          'ERR-INVALID-AUTH',
-          pht('Access token is invalid or expired.'),
-        );
-      }
-
-      $user = id(new PhabricatorPeopleQuery())
-        ->setViewer(PhabricatorUser::getOmnipotentUser())
-        ->withPHIDs(array($token->getUserPHID()))
-        ->executeOne();
-      if (!$user) {
-        return array(
-          'ERR-INVALID-AUTH',
-          pht('Access token is for invalid user.'),
-        );
-      }
-
-      $ok = $this->authorizeOAuthMethodAccess($authorization, $method);
-      if (!$ok) {
-        return array(
-          'ERR-OAUTH-ACCESS',
-          pht('You do not have authorization to call this method.'),
-        );
-      }
-
-      $api_request->setOAuthToken($token);
-
-      return $this->validateAuthenticatedUser(
-        $api_request,
-        $user);
-    }
-
-
     // For intracluster requests, use a public user if no authentication
     // information is provided. We could do this safely for any request,
     // but making the API fully public means there's no way to disable badly
@@ -712,31 +665,6 @@ final class PhabricatorConduitAPIController
     }
 
     return array($metadata, $params, false);
-  }
-
-  private function authorizeOAuthMethodAccess(
-    PhabricatorOAuthClientAuthorization $authorization,
-    $method_name) {
-
-    $method = ConduitAPIMethod::getConduitMethod($method_name);
-    if (!$method) {
-      return false;
-    }
-
-    $required_scope = $method->getRequiredScope();
-    switch ($required_scope) {
-      case ConduitAPIMethod::SCOPE_ALWAYS:
-        return true;
-      case ConduitAPIMethod::SCOPE_NEVER:
-        return false;
-    }
-
-    $authorization_scope = $authorization->getScope();
-    if (!empty($authorization_scope[$required_scope])) {
-      return true;
-    }
-
-    return false;
   }
 
   private function getConduitCapabilities() {

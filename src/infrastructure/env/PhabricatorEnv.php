@@ -78,13 +78,10 @@ final class PhabricatorEnv extends Phobject {
     // and are not vulnerable to CSRF.
     AphrontWriteGuard::allowDangerousUnguardedWrites(true);
 
-    // There are several places where we log information (about errors, events,
-    // service calls, etc.) for analysis via DarkConsole or similar. These are
-    // useful for web requests, but grow unboundedly in long-running scripts and
-    // daemons. Discard data as it arrives in these cases.
+    // The service profiler logs every service call, which is useful for web
+    // requests but grows unboundedly in long-running scripts and daemons.
+    // Discard data as it arrives in these cases.
     PhutilServiceProfiler::getInstance()->enableDiscardMode();
-    DarkConsoleErrorLogPluginAPI::enableDiscardMode();
-    DarkConsoleEventPluginAPI::enableDiscardMode();
   }
 
 

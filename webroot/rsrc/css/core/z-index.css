@@ -64,19 +64,11 @@ div.phui-calendar-day-event {
   z-index: 4;
 }
 
-.dark-console {
-  z-index: 5;
-}
-
 .phui-calendar-date-number  {
   z-index: 5;
 }
 
 .phabricator-main-menu {
-  z-index: 6;
-}
-
-.aphront-developer-error-callout {
   z-index: 6;
 }
 

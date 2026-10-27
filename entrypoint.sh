@@ -124,10 +124,6 @@ case "$ARG" in
   "start")
       start
       ;;
-  "docs")
-      # Build diviner docs
-      ./bin/diviner generate
-      ;;
   "data")
       # Allows the container to be used as a data-volume only container
       /bin/true && exit

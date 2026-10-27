@@ -41,7 +41,6 @@
     "json": {
       "type": "json",
       "include": [
-        "(^src/docs/book/.*\\.book$)",
         "(^support/lint/jshintrc$)",
         "(^\\.arcconfig$)",
         "(^\\.arclint$)",

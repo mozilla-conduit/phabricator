@@ -20,7 +20,6 @@ function phabricator_read_config_file($original_config) {
       case 'development':
         return array(
           'phabricator.developer-mode'      => true,
-          'darkconsole.enabled'             => true,
         );
     }
 
