@@ -17,6 +17,7 @@ final class ReviewHelperRequestReviewHeraldAction extends HeraldAction {
 
   const DO_REQUEST = 'do.reviewhelper.request';
   const DO_INELIGIBLE = 'do.reviewhelper.ineligible';
+  const DO_HELD = 'do.reviewhelper.held';
 
   public function getHeraldActionName() {
     return pht('Request AI review');
@@ -44,6 +45,13 @@ final class ReviewHelperRequestReviewHeraldAction extends HeraldAction {
   }
 
   public function applyEffect($object, HeraldEffect $effect) {
+    // The hold requested its own review, and publishing the revision when the
+    // hold ends would otherwise trigger a second one here.
+    if (ReviewHelperDraftHold::wasEverHeld($object)) {
+      $this->logEffect(self::DO_HELD);
+      return;
+    }
+
     if (!ReviewHelperAutoRequestWorker::shouldRequestReview($object)) {
       $this->logEffect(self::DO_INELIGIBLE);
       return;
@@ -73,6 +81,11 @@ final class ReviewHelperRequestReviewHeraldAction extends HeraldAction {
         'color' => 'grey',
         'name' => pht('Not Eligible for AI Review'),
       ),
+      self::DO_HELD => array(
+        'icon' => 'fa-check',
+        'color' => 'grey',
+        'name' => pht('Already Reviewed While Held'),
+      ),
     );
   }
 
@@ -84,6 +97,10 @@ final class ReviewHelperRequestReviewHeraldAction extends HeraldAction {
         return pht(
           'Did not request an AI review, since the revision is private or '.
           'its repository is not enabled for Review Helper.');
+      case self::DO_HELD:
+        return pht(
+          'Did not request an AI review, since one was requested when the '.
+          'revision was held in draft.');
     }
   }
 
