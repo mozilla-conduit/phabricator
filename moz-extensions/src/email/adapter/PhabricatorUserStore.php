@@ -64,6 +64,10 @@ class PhabricatorUserStore {
       $users = array_values($this->queryAll($project->getMemberPHIDs()));
       $watchers = array_values($this->queryAll($project->getWatcherPHIDs()));
       return new GroupPhabricatorReviewer($project->getDisplayName(), $users, $watchers);
+    } else if (substr($PHID, 0, strlen('PHID-OPKG')) == 'PHID-OPKG') {
+      // Owners packages have been removed, so an old package reviewer has
+      // nobody left to notify.
+      return new GroupPhabricatorReviewer('', [], []);
     } else {
       // PHID type must be "PHID-USER".
       // So, this is a single user reviewer.
