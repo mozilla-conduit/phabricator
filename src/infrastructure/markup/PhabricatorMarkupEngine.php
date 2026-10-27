@@ -423,12 +423,6 @@ final class PhabricatorMarkupEngine extends Phobject {
         $engine->setConfig('preserve-linebreaks', false);
         $engine->setConfig('header.generate-toc', true);
         break;
-      case 'diviner':
-        $engine = self::newMarkupEngine(array());
-        $engine->setConfig('preserve-linebreaks', false);
-  //    $engine->setConfig('diviner.renderer', new DivinerDefaultRenderer());
-        $engine->setConfig('header.generate-toc', true);
-        break;
       case 'extract':
         // Engine used for reference/edge extraction. Turn off anything which
         // is slow and doesn't change reference extraction.

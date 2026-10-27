@@ -71,8 +71,12 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.maniphest' => array(),
       'db.meta_data' => array(),
       'db.metamta' => array(),
-      'db.oauth_server' => array(),
-      'db.owners' => array(),
+      'db.oauth_server' => array(
+        'dead' => true,
+      ),
+      'db.owners' => array(
+        'dead' => true,
+      ),
       'db.pastebin' => array(
         'dead' => true,
       ),
@@ -128,7 +132,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.phrequent' => array(
         'dead' => true,
       ),
-      'db.diviner' => array(),
+      'db.diviner' => array(
+        'dead' => true,
+      ),
       'db.auth' => array(),
       'db.doorkeeper' => array(
         'dead' => true,

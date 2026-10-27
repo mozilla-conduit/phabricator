@@ -61,12 +61,6 @@ parameters:
 			path: src/applications/diffusion/request/DiffusionRequest.php
 
 		-
-			message: '#^Call to an undefined static method DivinerDAO\:\:getTitle\(\)\.$#'
-			identifier: staticMethod.notFound
-			count: 1
-			path: src/applications/diviner/storage/DivinerLiveSymbol.php
-
-		-
 			message: '#^Call to an undefined method PhabricatorIconSet\:\:newIcons\(\)\.$#'
 			identifier: method.notFound
 			count: 1

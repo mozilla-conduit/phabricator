@@ -220,9 +220,4 @@ return array(
     'javelin-behavior-maniphest-batch-selector',
     'javelin-behavior-maniphest-list-editor',
   ),
-  'dark-console.pkg.js' => array(
-    'javelin-behavior-dark-console',
-    'phabricator-darklog',
-    'phabricator-darkmessage',
-  ),
 );

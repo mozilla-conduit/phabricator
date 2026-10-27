@@ -119,17 +119,7 @@ abstract class DifferentialRevisionReviewTransaction
     // the desired set of states.
     foreach ($revision->getReviewers() as $reviewer) {
       if (!$reviewer->hasAuthority($viewer)) {
-        $can_force = false;
-
-        if ($is_accepted) {
-          if ($revision->canReviewerForceAccept($viewer, $reviewer)) {
-            $can_force = true;
-          }
-        }
-
-        if (!$can_force) {
-          continue;
-        }
+        continue;
       }
 
       $status = $reviewer->getReviewerStatus();
@@ -179,18 +169,11 @@ abstract class DifferentialRevisionReviewTransaction
     // reviewers you have authority for. When you resign, you only affect
     // yourself.
     $with_authority = ($status != DifferentialReviewerStatus::STATUS_RESIGNED);
-    $with_force = ($status == DifferentialReviewerStatus::STATUS_ACCEPTED);
 
     if ($with_authority) {
       foreach ($revision->getReviewers() as $reviewer) {
         if (!$reviewer->hasAuthority($viewer)) {
-          if (!$with_force) {
-            continue;
-          }
-
-          if (!$revision->canReviewerForceAccept($viewer, $reviewer)) {
-            continue;
-          }
+          continue;
         }
 
         $map[$reviewer->getReviewerPHID()] = $status;

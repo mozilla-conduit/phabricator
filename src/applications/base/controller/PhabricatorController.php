@@ -104,15 +104,6 @@ abstract class PhabricatorController extends AphrontController {
     id(new PhabricatorAuthSessionEngine())
       ->willServeRequestForUser($user);
 
-    if (PhabricatorEnv::getEnvConfig('darkconsole.enabled')) {
-      $dark_console = PhabricatorDarkConsoleSetting::SETTINGKEY;
-      if ($user->getUserSetting($dark_console) ||
-         PhabricatorEnv::getEnvConfig('darkconsole.always-on')) {
-        $console = new DarkConsoleCore();
-        $request->getApplicationConfiguration()->setConsole($console);
-      }
-    }
-
     // NOTE: We want to set up the user first so we can render a real page
     // here, but fire this before any real logic.
     $restricted = array(
