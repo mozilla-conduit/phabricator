@@ -121,6 +121,27 @@ final class ReviewHelperHoldWorkerTestCase
         'published.'));
   }
 
+  public function testFailedRequestPublishesRevision() {
+    $env = $this->configureHold();
+    $revision = $this->holdRevision(
+      $this->newDraftRevision($this->generateNewTestUser()));
+
+    id(new ReviewHelperHoldRequestWorker(
+      array('revisionPHID' => $revision->getPHID())))
+      ->executeTask();
+    $revision = $this->reloadRevision($revision);
+
+    $this->assertPublished(
+      $revision,
+      pht(
+        'A revision should publish right away when Review Helper cannot be '.
+        'reached, rather than waiting for the timeout.'));
+    $this->assertEqual(
+      ReviewHelperReleaseHoldTransaction::REASON_SERVICE_ERROR,
+      $this->loadReleaseReason($revision),
+      pht('The hold should record that Review Helper failed.'));
+  }
+
   private function runSweep(): void {
     id(new ReviewHelperHoldSweepWorker(array()))->executeTask();
   }

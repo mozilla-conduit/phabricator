@@ -1567,6 +1567,18 @@ final class DifferentialTransactionEditor
   }
 
 
+  /**
+   * @phutil-external-symbol class DifferentialSubmitDraftTransaction
+   */
+  protected function didApplyInternalEffects(
+    PhabricatorLiskDAO $object,
+    array $xactions) {
+
+    DifferentialSubmitDraftTransaction::resolveSubmissions($object, $xactions);
+
+    return parent::didApplyInternalEffects($object, $xactions);
+  }
+
   protected function didApplyTransactions($object, array $xactions) {
     // If we haven't sent any email about it yet, mark this email as the first
     // email so the mail gets enriched with "SUMMARY" and "TEST PLAN".
