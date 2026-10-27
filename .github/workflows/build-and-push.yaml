@@ -30,7 +30,8 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      # Same tags and version.json as the GAR image built by deploy-actions.
+      # Full-SHA tags match the old CircleCI pushes; version.json matches the
+      # GAR image built by deploy-actions.
       - name: Generate tags and version.json
         id: meta
         env:
@@ -42,7 +43,7 @@ jobs:
           if [[ "$REF_TYPE" == "tag" ]]; then
             tags="$IMAGE:$REF_NAME"
           else
-            tags="$IMAGE:$(git rev-parse --short=10 HEAD),$IMAGE:latest"
+            tags="$IMAGE:$GITHUB_SHA,$IMAGE:latest"
           fi
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           printf '{"commit":"%s","version":"%s","source":"%s","build":"%s"}\n' \
@@ -60,5 +61,7 @@ jobs:
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
+          target: production
+          pull: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
