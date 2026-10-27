@@ -34,6 +34,12 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       $only_living = true);
   }
 
+  private function getRetiredTableMap(PhabricatorDatabaseRef $ref) {
+    $api = $this->getAPI($ref);
+    $patches = PhabricatorSQLPatchList::buildAllPatches();
+    return $api->getRetiredTableMap($patches);
+  }
+
   private function getAPI(PhabricatorDatabaseRef $ref) {
     $key = $ref->getRefKey();
 
@@ -270,6 +276,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
     PhabricatorConfigServerSchema $actual) {
 
     $comp_server = $actual->newEmptyClone();
+    $retired = $this->getRetiredTableMap($actual->getRef());
 
     $all_databases = $actual->getDatabases() + $expect->getDatabases();
     foreach ($all_databases as $database_name => $database_template) {
@@ -295,6 +302,13 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       foreach ($all_tables as $table_name => $table_template) {
         $actual_table = $actual_database->getTable($table_name);
         $expect_table = $expect_database->getTable($table_name);
+
+        // Retired tables belong to removed code but live in a database that
+        // stays, so existing installs still have them. They are left out of
+        // the comparison rather than the actual schema, so dumps keep them.
+        if (!$expect_table && isset($retired[$database_name][$table_name])) {
+          continue;
+        }
 
         $issues = $this->compareSchemata($expect_table, $actual_table);
 
