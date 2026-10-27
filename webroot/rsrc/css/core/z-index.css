@@ -52,18 +52,6 @@ div.phui-calendar-day-event {
   z-index: 4;
 }
 
-.conpherence-layout .conpherence-no-threads {
-  z-index: 4;
-}
-
-.conpherence-menu-pane {
-  z-index: 4;
-}
-
-.conpherence-message-pane .conpherence-search-main {
-  z-index: 4;
-}
-
 .phui-calendar-date-number  {
   z-index: 5;
 }
@@ -79,10 +67,6 @@ div.phui-calendar-day-event {
 
 .diff-banner {
   z-index: 6;
-}
-
-.conpherence-durable-column {
-  z-index: 7;
 }
 
 .jx-scrollbar-bar {
@@ -148,14 +132,6 @@ div.jx-typeahead-results {
 
 .phuix-autocomplete {
   z-index: 21;
-}
-
-.conpherence-participant-pane {
-  z-index: 25;
-}
-
-.conpherence-layout .conpherence-loading-mask {
-  z-index: 30;
 }
 
 .phuix-dropdown-menu {

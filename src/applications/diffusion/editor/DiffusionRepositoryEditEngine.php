@@ -216,13 +216,6 @@ final class DiffusionRepositoryEditEngine
     $track_value = $object->getTrackOnlyRules();
     $permanent_value = $object->getPermanentRefRules();
 
-    $automation_instructions = pht(
-      "Configure **Repository Automation** to allow this server to ".
-      "write to this repository.".
-      "\n\n".
-      "IMPORTANT: This feature is new, experimental, and not supported. ".
-      "Use it at your own risk.");
-
     $staging_instructions = pht(
       "To make it easier to run integration tests and builds on code ".
       "under review, you can configure a **Staging Area**. When `arc` ".
@@ -426,18 +419,6 @@ final class DiffusionRepositoryEditEngine
         ->setConduitTypeDescription(pht('New staging area URI.'))
         ->setValue($object->getStagingURI())
         ->setControlInstructions($staging_instructions),
-      id(new PhabricatorDatasourceEditField())
-        ->setKey('automationBlueprintPHIDs')
-        ->setLabel(pht('Use Blueprints'))
-        ->setTransactionType(
-          PhabricatorRepositoryBlueprintsTransaction::TRANSACTIONTYPE)
-        ->setIsCopyable(true)
-        ->setDatasource(new DrydockBlueprintDatasource())
-        ->setDescription(pht('Automation blueprints.'))
-        ->setConduitDescription(pht('Change automation blueprints.'))
-        ->setConduitTypeDescription(pht('New blueprint PHIDs.'))
-        ->setValue($object->getAutomationBlueprintPHIDs())
-        ->setControlInstructions($automation_instructions),
       id(new PhabricatorStringListEditField())
         ->setKey('symbolLanguages')
         ->setLabel(pht('Languages'))

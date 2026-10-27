@@ -268,8 +268,6 @@ final class PhabricatorApplicationTransactionCommentView
       ),
       '');
 
-    $badge_view = $this->renderBadgeView();
-
     $anchor = id(new PhabricatorAnchorView())
       ->setAnchorName('reply');
 
@@ -286,7 +284,6 @@ final class PhabricatorApplicationTransactionCommentView
           ),
           pht('Add Comment')))
       ->appendChild($image)
-      ->appendChild($badge_view)
       ->appendChild($wedge)
       ->appendChild($comment);
 
@@ -596,44 +593,6 @@ final class PhabricatorApplicationTransactionCommentView
     }
 
     return $options;
-  }
-
-  private function renderBadgeView() {
-    $user = $this->getUser();
-    $can_use_badges = PhabricatorApplication::isClassInstalledForViewer(
-      'PhabricatorBadgesApplication',
-      $user);
-    if (!$can_use_badges) {
-      return null;
-    }
-
-    // Pull Badges from UserCache
-    $badges = $user->getRecentBadgeAwards();
-    $badge_view = null;
-    if ($badges) {
-      $badge_list = array();
-      foreach ($badges as $badge) {
-        $badge_view = id(new PHUIBadgeMiniView())
-          ->setIcon($badge['icon'])
-          ->setQuality($badge['quality'])
-          ->setHeader($badge['name'])
-          ->setTipDirection('E')
-          ->setHref('/badges/view/'.$badge['id'].'/');
-
-        $badge_list[] = $badge_view;
-      }
-      $flex = new PHUIBadgeBoxView();
-      $flex->addItems($badge_list);
-      $flex->setCollapsed(true);
-      $badge_view = phutil_tag(
-        'div',
-        array(
-          'class' => 'phui-timeline-badges',
-        ),
-        $flex);
-    }
-
-    return $badge_view;
   }
 
 }
