@@ -5,7 +5,6 @@ final class ConduitAPIRequest extends Phobject {
   protected $params;
   private $user;
   private $isClusterRequest = false;
-  private $oauthToken;
   private $isStrictlyTyped = true;
 
   public function __construct(array $params, $strictly_typed) {
@@ -53,16 +52,6 @@ final class ConduitAPIRequest extends Phobject {
 
   public function getViewer() {
     return $this->getUser();
-  }
-
-  public function setOAuthToken(
-    PhabricatorOAuthServerAccessToken $oauth_token) {
-    $this->oauthToken = $oauth_token;
-    return $this;
-  }
-
-  public function getOAuthToken() {
-    return $this->oauthToken;
   }
 
   public function setIsClusterRequest($is_cluster_request) {

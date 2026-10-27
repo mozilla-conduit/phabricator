@@ -30,12 +30,6 @@ final class PhabricatorManiphestApplication extends PhabricatorApplication {
     return 0.110;
   }
 
-  public function getFactObjectsForAnalysis() {
-    return array(
-      new ManiphestTask(),
-    );
-  }
-
   public function getRemarkupRules() {
     return array(
       new ManiphestRemarkupRule(),

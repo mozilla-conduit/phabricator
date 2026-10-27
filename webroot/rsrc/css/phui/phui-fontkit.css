@@ -2,10 +2,6 @@
  * @provides phui-fontkit-css
  */
 
-.diviner-document-section .phui-header-header {
-  color: {$blacktext};
-}
-
 .phui-document-view .phabricator-remarkup .remarkup-header strong {
   color: #586BE9;
 }

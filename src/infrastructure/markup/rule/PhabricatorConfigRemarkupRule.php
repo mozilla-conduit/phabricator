@@ -11,9 +11,9 @@ final class PhabricatorConfigRemarkupRule
   }
 
   public function getPriority() {
-    // We're reusing the Diviner atom syntax, so make sure we evaluate before
-    // the Diviner rule evaluates.
-    return id(new DivinerSymbolRemarkupRule())->getPriority() - 1;
+    // This reuses the `@{...}` syntax of the removed Diviner symbol rule, and
+    // keeps the priority it had relative to that rule.
+    return 199.0;
   }
 
   public function markupConfig(array $matches) {

@@ -879,52 +879,6 @@ final class PhabricatorAuthSessionEngine extends Phobject {
   }
 
 
-/* -(  Legalpad Documents )-------------------------------------------------- */
-
-
-  /**
-   * Upgrade a session to have all legalpad documents signed.
-   *
-   * @param PhabricatorUser User whose session should upgrade.
-   * @param array LegalpadDocument objects
-   * @return void
-   * @task partial
-   */
-  public function signLegalpadDocuments(PhabricatorUser $viewer, array $docs) {
-
-    if (!$viewer->hasSession()) {
-      throw new Exception(
-        pht('Signing session legalpad documents of user with no session!'));
-    }
-
-    $session = $viewer->getSession();
-
-    if ($session->getSignedLegalpadDocuments()) {
-      throw new Exception(pht(
-        'Session has already signed required legalpad documents!'));
-    }
-
-    $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
-      $session->setSignedLegalpadDocuments(1);
-
-      queryfx(
-        $session->establishConnection('w'),
-        'UPDATE %T SET signedLegalpadDocuments = %d WHERE id = %d',
-        $session->getTableName(),
-        1,
-        $session->getID());
-
-      if (!empty($docs)) {
-        $log = PhabricatorUserLog::initializeNewLog(
-          $viewer,
-          $viewer->getPHID(),
-          PhabricatorSignDocumentsUserLogType::LOGTYPE);
-        $log->save();
-      }
-    unset($unguarded);
-  }
-
-
 /* -(  One Time Login URIs  )------------------------------------------------ */
 
 

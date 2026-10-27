@@ -72,11 +72,6 @@
   display: block;
 }
 
-.diff-tree-path-owned {
-  border-left-color: {$orange};
-  box-shadow: inset 2px 0 {$lightorange};
-}
-
 .diff-tree-path-inlines {
   display: none;
   position: absolute;

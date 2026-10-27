@@ -360,16 +360,6 @@ final class PhabricatorMarkupEngine extends Phobject {
   /**
    * @task engine
    */
-  public static function newPhrictionMarkupEngine() {
-    return self::newMarkupEngine(array(
-      'header.generate-toc' => true,
-    ));
-  }
-
-
-  /**
-   * @task engine
-   */
   public static function newFeedMarkupEngine() {
     return self::newMarkupEngine(
       array(
@@ -431,12 +421,6 @@ final class PhabricatorMarkupEngine extends Phobject {
       case 'diffusion-readme':
         $engine = self::newMarkupEngine(array());
         $engine->setConfig('preserve-linebreaks', false);
-        $engine->setConfig('header.generate-toc', true);
-        break;
-      case 'diviner':
-        $engine = self::newMarkupEngine(array());
-        $engine->setConfig('preserve-linebreaks', false);
-  //    $engine->setConfig('diviner.renderer', new DivinerDefaultRenderer());
         $engine->setConfig('header.generate-toc', true);
         break;
       case 'extract':

@@ -552,6 +552,10 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
         'XHProf, which collected these profiles, has been removed.'),
       'phurl.short-uri' => pht(
         'Phurl, which served these short URIs, has been removed.'),
+      'darkconsole.enabled' => pht('DarkConsole has been removed.'),
+      'darkconsole.always-on' => pht('DarkConsole has been removed.'),
+      'owners.fields' => pht('Owners has been removed.'),
+      'owners.custom-field-definitions' => pht('Owners has been removed.'),
 
       'asana.workspace-id' => $asana_reason,
       'asana.project-ids' => $asana_reason,

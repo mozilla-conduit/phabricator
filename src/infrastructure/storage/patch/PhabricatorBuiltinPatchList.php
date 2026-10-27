@@ -60,7 +60,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.daemon' => array(),
       'db.differential' => array(),
       'db.draft' => array(),
-      'db.drydock' => array(),
+      'db.drydock' => array(
+        'dead' => true,
+      ),
       'db.feed' => array(),
       'db.file' => array(),
       'db.flag' => array(),
@@ -69,15 +71,21 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.maniphest' => array(),
       'db.meta_data' => array(),
       'db.metamta' => array(),
-      'db.oauth_server' => array(),
-      'db.owners' => array(),
+      'db.oauth_server' => array(
+        'dead' => true,
+      ),
+      'db.owners' => array(
+        'dead' => true,
+      ),
       'db.pastebin' => array(
         'dead' => true,
       ),
       'db.phame' => array(
         'dead' => true,
       ),
-      'db.phriction' => array(),
+      'db.phriction' => array(
+        'dead' => true,
+      ),
       'db.project' => array(),
       'db.repository' => array(),
       'db.search' => array(),
@@ -96,7 +104,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
         'dead' => true,
       ),
       'db.cache' => array(),
-      'db.fact' => array(),
+      'db.fact' => array(
+        'dead' => true,
+      ),
       'db.ponder' => array(
         'dead' => true,
       ),
@@ -106,9 +116,13 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.pholio' => array(
         'dead' => true,
       ),
-      'db.conpherence' => array(),
+      'db.conpherence' => array(
+        'dead' => true,
+      ),
       'db.config' => array(),
-      'db.token' => array(),
+      'db.token' => array(
+        'dead' => true,
+      ),
       'db.phlux' => array(
         'dead' => true,
       ),
@@ -118,12 +132,16 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.phrequent' => array(
         'dead' => true,
       ),
-      'db.diviner' => array(),
+      'db.diviner' => array(
+        'dead' => true,
+      ),
       'db.auth' => array(),
       'db.doorkeeper' => array(
         'dead' => true,
       ),
-      'db.legalpad' => array(),
+      'db.legalpad' => array(
+        'dead' => true,
+      ),
       'db.policy' => array(),
       'db.nuance' => array(
         'dead' => true,
@@ -142,12 +160,16 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.phurl' => array(
         'dead' => true,
       ),
-      'db.badges' => array(),
+      'db.badges' => array(
+        'dead' => true,
+      ),
       'db.packages' => array(
         'dead' => true,
       ),
       'db.application' => array(),
-      'db.paste' => array(),
+      'db.paste' => array(
+        'dead' => true,
+      ),
       '0000.legacy.sql' => array(
         'legacy' => 0,
       ),
