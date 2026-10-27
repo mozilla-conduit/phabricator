@@ -154,31 +154,6 @@ RUN { \
 RUN curl -fsSL https://raw.githubusercontent.com/marco-c/risk-analysis-addon/${RISK_ANALYSIS_VERSION}/risk_analysis.js \
     >> /app/phabricator/webroot/rsrc/js/MozillaRiskAnalysis.js
 
-FROM base AS production
-
-USER root
-RUN docker-php-ext-install -j "$(nproc)" opcache
-
-# Install opcache recommended settings from
-# https://secure.php.net/manual/en/opcache.installation.php
-RUN { \
-        echo 'opcache.memory_consumption=128'; \
-        echo 'opcache.interned_strings_buffer=8'; \
-        echo 'opcache.max_accelerated_files=4000'; \
-        echo 'opcache.fast_shutdown=1'; \
-        echo 'opcache.enable_cli=1'; \
-        echo 'opcache.validate_timestamps=0'; \
-    } | tee /usr/local/etc/php/conf.d/opcache.ini
-
-USER app
-
-# Using a wildcard so that the COPY still succeeds, even if version.json doesn't exist.
-COPY --chown=app version.json* ./
-COPY --chown=app moz-extensions moz-extensions
-RUN chmod +x /app/moz-extensions/bin/*
-
-RUN /app/assert-git.sh
-
 FROM base AS development
 
 USER root
@@ -241,3 +216,31 @@ COPY --chown=app moz-extensions moz-extensions
 RUN chmod +x /app/moz-extensions/bin/*
 
 RUN /app/assert-git.sh && /app/assert-php.sh
+
+# Keep this stage last: builds without a `--target`, such as the
+# mozilla/deploy-actions build that pushes to GAR, use the final stage.
+# The Compose services pin `target: test` so they don't depend on this order.
+FROM base AS production
+
+USER root
+RUN docker-php-ext-install -j "$(nproc)" opcache
+
+# Install opcache recommended settings from
+# https://secure.php.net/manual/en/opcache.installation.php
+RUN { \
+        echo 'opcache.memory_consumption=128'; \
+        echo 'opcache.interned_strings_buffer=8'; \
+        echo 'opcache.max_accelerated_files=4000'; \
+        echo 'opcache.fast_shutdown=1'; \
+        echo 'opcache.enable_cli=1'; \
+        echo 'opcache.validate_timestamps=0'; \
+    } | tee /usr/local/etc/php/conf.d/opcache.ini
+
+USER app
+
+# Using a wildcard so that the COPY still succeeds, even if version.json doesn't exist.
+COPY --chown=app version.json* ./
+COPY --chown=app moz-extensions moz-extensions
+RUN chmod +x /app/moz-extensions/bin/*
+
+RUN /app/assert-git.sh
