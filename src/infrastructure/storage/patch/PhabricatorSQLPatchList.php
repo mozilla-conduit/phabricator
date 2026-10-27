@@ -137,6 +137,17 @@ abstract class PhabricatorSQLPatchList extends Phobject {
         $patch['dead']    = (bool)idx($patch, 'dead', false);
         $patch['retired'] = idx($patch, 'retired', array());
 
+        $retired = $patch['retired'];
+        $is_valid = is_array($retired) &&
+          (array_filter($retired, 'is_string') === $retired);
+        if (!$is_valid) {
+          throw new Exception(
+            pht(
+              "Patch '%s' has a '%s' value which is not a list of table names.",
+              $full_key,
+              'retired'));
+        }
+
         if (isset($patch['legacy'])) {
           if ($namespace != 'phabricator') {
             throw new Exception(
