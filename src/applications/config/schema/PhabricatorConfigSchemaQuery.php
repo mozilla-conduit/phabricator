@@ -79,17 +79,6 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
         WHERE TABLE_SCHEMA IN (%Ls)',
       $databases);
 
-    // Retired tables belong to removed code but live in a database that stays,
-    // so existing installs still have them. Reporting them as surplus would make
-    // `bin/storage upgrade` fail after every such removal, and dropping them
-    // right away would make the removal impossible to revert.
-    $retired = $this->getRetiredTableMap($ref);
-    foreach ($tables as $key => $table) {
-      if (isset($retired[$table['TABLE_SCHEMA']][$table['TABLE_NAME']])) {
-        unset($tables[$key]);
-      }
-    }
-
     $database_info = queryfx_all(
       $conn,
       'SELECT SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME
@@ -287,6 +276,7 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
     PhabricatorConfigServerSchema $actual) {
 
     $comp_server = $actual->newEmptyClone();
+    $retired = $this->getRetiredTableMap($actual->getRef());
 
     $all_databases = $actual->getDatabases() + $expect->getDatabases();
     foreach ($all_databases as $database_name => $database_template) {
@@ -312,6 +302,13 @@ final class PhabricatorConfigSchemaQuery extends Phobject {
       foreach ($all_tables as $table_name => $table_template) {
         $actual_table = $actual_database->getTable($table_name);
         $expect_table = $expect_database->getTable($table_name);
+
+        // Retired tables belong to removed code but live in a database that
+        // stays, so existing installs still have them. They are left out of
+        // the comparison rather than the actual schema, so dumps keep them.
+        if (!$expect_table && isset($retired[$database_name][$table_name])) {
+          continue;
+        }
 
         $issues = $this->compareSchemata($expect_table, $actual_table);
 
