@@ -19,6 +19,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+      target: test
     entrypoint: /app/entrypoint.sh
     command: dev_start
     environment: &phab_env
