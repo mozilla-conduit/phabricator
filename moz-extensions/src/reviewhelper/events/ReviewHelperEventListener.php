@@ -89,11 +89,18 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
   }
 
   public function initSeverityBadges() {
-    $usernames = PhabricatorEnv::getEnvConfig(
-      'reviewhelper.severity-badge-usernames');
-    if (!$usernames) {
+    $user_phids = PhabricatorEnv::getEnvConfig(
+      'reviewhelper.severity-badge-user-phids');
+    if (!$user_phids) {
       return;
     }
+
+    // The behavior matches comments by the author name in their metadata.
+    $users = id(new PhabricatorPeopleQuery())
+      ->setViewer(PhabricatorUser::getOmnipotentUser())
+      ->withPHIDs($user_phids)
+      ->execute();
+    $usernames = array_values(mpull($users, 'getUsername'));
 
     require_celerity_resource(
       'reviewhelper-severity-badge-css',
@@ -101,7 +108,7 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
     Javelin::initBehavior(
       'reviewhelper-severity-badge',
       array(
-        'usernames' => array_values($usernames),
+        'usernames' => $usernames,
       ),
       'moz-extensions');
   }

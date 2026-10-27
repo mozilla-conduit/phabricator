@@ -13,11 +13,11 @@ return array(
     'rsrc/css/reviewhelper/reviewhelper-severity-badge.css' => '4539abb6',
     'rsrc/js/differential/behavior-testing-policy.js' => 'fa106c7d',
     'rsrc/js/reviewhelper/behavior-reviewhelper-feedback.js' => '834dc29d',
-    'rsrc/js/reviewhelper/behavior-reviewhelper-severity-badge.js' => '0934ac61',
+    'rsrc/js/reviewhelper/behavior-reviewhelper-severity-badge.js' => '66cb9767',
   ),
   'symbols' => array(
     'javelin-behavior-reviewhelper-feedback' => '834dc29d',
-    'javelin-behavior-reviewhelper-severity-badge' => '0934ac61',
+    'javelin-behavior-reviewhelper-severity-badge' => '66cb9767',
     'javelin-behavior-testing-policy' => 'fa106c7d',
     'merge-conflict-status-css' => '8af24bdd',
     'reviewhelper-feedback-css' => '0f9cbe2d',

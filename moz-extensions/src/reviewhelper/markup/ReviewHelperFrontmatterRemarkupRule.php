@@ -21,7 +21,7 @@
  * the parsed values as JSON so the `reviewhelper-feedback` behavior can turn it
  * into a badge. This rule cannot see the comment author, so the HTML label is
  * hidden and only the behavior shows it, for comments by accounts in
- * `reviewhelper.severity-badge-usernames`.
+ * `reviewhelper.severity-badge-user-phids`.
  */
 final class ReviewHelperFrontmatterRemarkupRule
   extends PhabricatorRemarkupCustomBlockRule {

@@ -4,7 +4,7 @@
 
 // Show the severity frontmatter of inline comments as a badge in the comment
 // header. This only runs for comments by accounts in
-// `reviewhelper.severity-badge-usernames`, so other users don't get a badge.
+// `reviewhelper.severity-badge-user-phids`, so other users don't get a badge.
 JX.behavior("reviewhelper-severity-badge", function (config) {
   var usernames = config.usernames;
 
