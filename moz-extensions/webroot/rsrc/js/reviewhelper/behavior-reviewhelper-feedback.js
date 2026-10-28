@@ -79,22 +79,23 @@ JX.behavior("reviewhelper-feedback", function (config) {
       return;
     }
 
-    // Avoid adding feedback UI multiple times
-    if (isEnhanced(commentNode)) {
-      return;
-    }
-
-    // We only want to enhance comments made by the Review Helper bot
-    var authorName = data.snippet ? data.snippet.split(":")[0] : null;
-    if (authorName !== botUsername) {
-      return;
-    }
-
-    // Find the content div to insert footer after it
     var contentDiv = commentNode.querySelector(
       ".differential-inline-comment-content",
     );
     if (!contentDiv) {
+      return;
+    }
+
+    // We only want feedback buttons on comments made by the Review Helper bot
+    var authorName = data.snippet ? data.snippet.split(":")[0] : null;
+    if (authorName === botUsername) {
+      addFeedbackFooter(commentNode, commentId, contentDiv);
+    }
+  }
+
+  function addFeedbackFooter(commentNode, commentId, contentDiv) {
+    // Avoid adding feedback UI multiple times
+    if (isEnhanced(commentNode)) {
       return;
     }
 
