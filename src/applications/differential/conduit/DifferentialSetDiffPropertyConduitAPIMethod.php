@@ -75,6 +75,44 @@ final class DifferentialSetDiffPropertyConduitAPIMethod
     }
 
     self::updateDiffProperty($diff_id, $name, $data);
+
+    if ($revision_id && $name === 'local:commits') {
+      self::queueMergeConflictChecks($revision, $diff, $data);
+    }
+  }
+
+  /**
+   * moz-phab records `local:commits` after creating the revision, so the merge
+   * check queued by that edit may already have run without the stack's first
+   * public ancestor. Check again now that it's here.
+   *
+   * @phutil-external-symbol class RevisionMergeConflictEngine
+   * @phutil-external-symbol class RevisionMergeConflictWorker
+   */
+  private static function queueMergeConflictChecks(
+    DifferentialRevision $revision,
+    DifferentialDiff $diff,
+    $local_commits) {
+
+    // Without a first public ancestor, the check has nothing new to use.
+    if (RevisionMergeConflictEngine::getFirstPublicParent($local_commits) ===
+        null) {
+      return;
+    }
+
+    $repository = $revision->getRepository();
+    if (!$repository ||
+        !RevisionMergeConflictWorker::isEnabledForRepository($repository)) {
+      return;
+    }
+
+    RevisionMergeConflictWorker::queueCheck(
+      $revision->getPHID(),
+      $diff->getPHID());
+
+    RevisionMergeConflictWorker::queueDescendantChecks(
+      PhabricatorUser::getOmnipotentUser(),
+      array($revision->getPHID()));
   }
 
   private static function updateDiffProperty($diff_id, $name, $data) {
