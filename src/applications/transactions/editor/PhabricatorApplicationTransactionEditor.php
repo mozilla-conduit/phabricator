@@ -346,10 +346,6 @@ abstract class PhabricatorApplicationTransactionEditor
       $types[] = PhabricatorTransactions::TYPE_CUSTOMFIELD;
     }
 
-    if ($this->object instanceof PhabricatorTokenReceiverInterface) {
-      $types[] = PhabricatorTransactions::TYPE_TOKEN;
-    }
-
     if ($this->object instanceof PhabricatorProjectInterface ||
         $this->object instanceof PhabricatorMentionableInterface) {
       $types[] = PhabricatorTransactions::TYPE_EDGE;

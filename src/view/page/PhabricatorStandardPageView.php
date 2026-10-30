@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This is a standard Phabricator page with menus, Javelin, DarkConsole, and
+ * This is a standard Phabricator page with menus, Javelin, and
  * basic styles.
  */
 final class PhabricatorStandardPageView extends PhabricatorBarePageView
@@ -13,11 +13,9 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
   private $menuContent;
   private $showChrome = true;
   private $classes = array();
-  private $disableConsole;
   private $pageObjects = array();
   private $applicationMenu;
   private $showFooter = true;
-  private $showDurableColumn = true;
   private $quicksandConfig = array();
   private $tabs;
   private $crumbs;
@@ -35,11 +33,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
 
   public function setApplicationName($application_name) {
     $this->applicationName = $application_name;
-    return $this;
-  }
-
-  public function setDisableConsole($disable) {
-    $this->disableConsole = $disable;
     return $this;
   }
 
@@ -73,62 +66,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
   public function setPageObjectPHIDs(array $phids) {
     $this->pageObjects = $phids;
     return $this;
-  }
-
-  public function setShowDurableColumn($show) {
-    $this->showDurableColumn = $show;
-    return $this;
-  }
-
-  public function getShowDurableColumn() {
-    $request = $this->getRequest();
-    if (!$request) {
-      return false;
-    }
-
-    $viewer = $request->getUser();
-    if (!$viewer->isLoggedIn()) {
-      return false;
-    }
-
-    $conpherence_installed = PhabricatorApplication::isClassInstalledForViewer(
-      'PhabricatorConpherenceApplication',
-      $viewer);
-    if (!$conpherence_installed) {
-      return false;
-    }
-
-    if ($this->isQuicksandBlacklistURI()) {
-      return false;
-    }
-
-    return true;
-  }
-
-  private function isQuicksandBlacklistURI() {
-    $request = $this->getRequest();
-    if (!$request) {
-      return false;
-    }
-
-    $patterns = $this->getQuicksandURIPatternBlacklist();
-    $path = $request->getRequestURI()->getPath();
-    foreach ($patterns as $pattern) {
-      if (preg_match('(^'.$pattern.'$)', $path)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  public function getDurableColumnVisible() {
-    $column_key = PhabricatorConpherenceColumnVisibleSetting::SETTINGKEY;
-    return (bool)$this->getUserPreference($column_key, false);
-  }
-
-  public function getDurableColumnMinimize() {
-    $column_key = PhabricatorConpherenceColumnMinimizeSetting::SETTINGKEY;
-    return (bool)$this->getUserPreference($column_key, false);
   }
 
   public function addQuicksandConfig(array $config) {
@@ -223,15 +160,12 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
           __CLASS__));
     }
 
-    $console = $this->getConsole();
-
     require_celerity_resource('phabricator-core-css');
     require_celerity_resource('phabricator-zindex-css');
     require_celerity_resource('phui-button-css');
     require_celerity_resource('phui-spacing-css');
     require_celerity_resource('phui-form-css');
     require_celerity_resource('phabricator-standard-page-view');
-    require_celerity_resource('conpherence-durable-column-view');
     require_celerity_resource('font-lato');
     require_celerity_resource('mozilla-motd-css');
 
@@ -322,23 +256,10 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
         ));
     }
 
-    // If we aren't showing the page chrome, skip rendering DarkConsole and the
-    // main menu, since they won't be visible on the page.
+    // If we aren't showing the page chrome, skip rendering the main menu,
+    // since it won't be visible on the page.
     if (!$this->getShowChrome()) {
       return;
-    }
-
-    if ($console) {
-      require_celerity_resource('aphront-dark-console-css');
-
-      $headers = array();
-      if (DarkConsoleServicesPlugin::isQueryAnalyzerRequested()) {
-        $headers[DarkConsoleServicesPlugin::getQueryAnalyzerHeader()] = true;
-      }
-
-      Javelin::initBehavior(
-        'dark-console',
-        $this->getConsoleConfig());
     }
 
     if ($user) {
@@ -420,33 +341,10 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     return $this->glyph;
   }
 
-  protected function willSendResponse($response) {
-    $request = $this->getRequest();
-    $response = parent::willSendResponse($response);
-
-    $console = $request->getApplicationConfiguration()->getConsole();
-
-    if ($console) {
-      $response = PhutilSafeHTML::applyFunction(
-        'str_replace',
-        hsprintf('<darkconsole />'),
-        $console->render($request),
-        $response);
-    }
-
-    return $response;
-  }
-
   /**
    * @phutil-external-symbol class MozillaMOTD
    */
   protected function getBody() {
-    $user = null;
-    $request = $this->getRequest();
-    if ($request) {
-      $user = $request->getUser();
-    }
-
     $header_chrome = null;
     if ($this->getShowChrome()) {
       $header_chrome = $this->menuContent;
@@ -454,15 +352,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
 
     $classes = array();
     $classes[] = 'main-page-frame';
-    $developer_warning = null;
-    if (PhabricatorEnv::getEnvConfig('phabricator.developer-mode') &&
-        DarkConsoleErrorLogPluginAPI::getErrors()) {
-      $developer_warning = phutil_tag_div(
-        'aphront-developer-error-callout',
-        pht(
-          'This page raised PHP errors. Find them in DarkConsole '.
-          'or the error log.'));
-    }
 
     $motd = new MozillaMOTD();
     $motd_chrome = $motd->render();
@@ -474,7 +363,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
         'class' => 'phabricator-standard-page',
       ),
       array(
-        $developer_warning,
         $header_chrome,
         $motd_chrome,
         phutil_tag(
@@ -485,22 +373,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
           ),
           $this->renderPageBodyContent()),
       ));
-
-    $durable_column = null;
-    if ($this->getShowDurableColumn()) {
-      $is_visible = $this->getDurableColumnVisible();
-      $is_minimize = $this->getDurableColumnMinimize();
-      $durable_column = id(new ConpherenceDurableColumnView())
-        ->setSelectedConpherence(null)
-        ->setUser($user)
-        ->setQuicksandConfig($this->buildQuicksandConfig())
-        ->setVisible($is_visible)
-        ->setMinimize($is_minimize)
-        ->setInitialLoad(true);
-      if ($is_minimize) {
-        $this->classes[] = 'minimize-column';
-      }
-    }
 
     Javelin::initBehavior('quicksand-blacklist', array(
       'patterns' => $this->getQuicksandURIPatternBlacklist(),
@@ -514,13 +386,10 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       ),
       array(
         $main_page,
-        $durable_column,
       ));
   }
 
   private function renderPageBodyContent() {
-    $console = $this->getConsole();
-
     $body = parent::getBody();
 
     $nav = $this->getNavigation();
@@ -556,7 +425,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     }
 
     return array(
-      ($console ? hsprintf('<darkconsole />') : null),
       $content,
     );
   }
@@ -654,42 +522,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     return implode(' ', $classes);
   }
 
-  private function getConsole() {
-    if ($this->disableConsole) {
-      return null;
-    }
-    return $this->getRequest()->getApplicationConfiguration()->getConsole();
-  }
-
-  private function getConsoleConfig() {
-    $user = $this->getRequest()->getUser();
-
-    $headers = array();
-    if (DarkConsoleServicesPlugin::isQueryAnalyzerRequested()) {
-      $headers[DarkConsoleServicesPlugin::getQueryAnalyzerHeader()] = true;
-    }
-
-    if ($user) {
-      $setting_tab = PhabricatorDarkConsoleTabSetting::SETTINGKEY;
-      $setting_visible = PhabricatorDarkConsoleVisibleSetting::SETTINGKEY;
-      $tab = $user->getUserSetting($setting_tab);
-      $visible = $user->getUserSetting($setting_visible);
-    } else {
-      $tab = null;
-      $visible = true;
-    }
-
-    return array(
-      // NOTE: We use a generic label here to prevent input reflection
-      // and mitigate compression attacks like BREACH. See discussion in
-      // T3684.
-      'uri' => pht('Main Request'),
-      'selected' => $tab,
-      'visible'  => $visible,
-      'headers' => $headers,
-    );
-  }
-
   private function getHighSecurityWarningConfig() {
     $user = $this->getRequest()->getUser();
 
@@ -779,12 +611,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
 
     $hisec_warning_config = $this->getHighSecurityWarningConfig();
 
-    $console_config = null;
-    $console = $this->getConsole();
-    if ($console) {
-      $console_config = $this->getConsoleConfig();
-    }
-
     $upload_enabled = false;
     if ($controller) {
       $upload_enabled = $controller->isGlobalDragAndDropUploadEnabled();
@@ -819,11 +645,9 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       'bodyClasses' => $this->getBodyClasses(),
       'aphlictDropdownData' => array(
         $dropdown_query->getNotificationData(),
-        $dropdown_query->getConpherenceData(),
       ),
       'globalDragAndDrop' => $upload_enabled,
       'hisecWarningConfig' => $hisec_warning_config,
-      'consoleConfig' => $console_config,
       'applicationClass' => $application_class,
       'applicationSearchIcon' => $application_search_icon,
       'helpItems' => $application_help,

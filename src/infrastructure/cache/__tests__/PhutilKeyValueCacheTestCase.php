@@ -54,37 +54,6 @@ final class PhutilKeyValueCacheTestCase extends PhutilTestCase {
     $this->doCacheTest($cache);
   }
 
-  public function testDirectoryCache() {
-    $cache = new PhutilDirectoryKeyValueCache();
-
-    $dir = Filesystem::createTemporaryDirectory();
-    $cache->setCacheDirectory($dir);
-    $this->doCacheTest($cache);
-    $cache->destroyCache();
-  }
-
-  public function testDirectoryCacheSpecialDirectoryRules() {
-    $cache = new PhutilDirectoryKeyValueCache();
-
-    $dir = Filesystem::createTemporaryDirectory();
-    $dir = $dir.'/dircache/';
-    $cache->setCacheDirectory($dir);
-
-    $cache->setKey('a', 1);
-    $this->assertEqual(true, Filesystem::pathExists($dir.'/a.cache'));
-
-    $cache->setKey('a/b', 1);
-    $this->assertEqual(true, Filesystem::pathExists($dir.'/a/'));
-    $this->assertEqual(true, Filesystem::pathExists($dir.'/a/b.cache'));
-
-    $cache->deleteKey('a/b');
-    $this->assertEqual(false, Filesystem::pathExists($dir.'/a/'));
-    $this->assertEqual(false, Filesystem::pathExists($dir.'/a/b.cache'));
-
-    $cache->destroyCache();
-    $this->assertEqual(false, Filesystem::pathExists($dir));
-  }
-
   public function testNamespaceCache() {
     $namespace = 'namespace'.mt_rand();
     $in_request_cache = new PhutilInRequestKeyValueCache();

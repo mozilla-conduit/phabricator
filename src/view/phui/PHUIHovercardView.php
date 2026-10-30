@@ -17,7 +17,6 @@ final class PHUIHovercardView extends AphrontTagView {
   private $tags = array();
   private $fields = array();
   private $actions = array();
-  private $badges = array();
   private $isExiled;
 
   public function setObjectHandle(PhabricatorObjectHandle $handle) {
@@ -72,11 +71,6 @@ final class PHUIHovercardView extends AphrontTagView {
 
   public function addTag(PHUITagView $tag) {
     $this->tags[] = $tag;
-    return $this;
-  }
-
-  public function addBadge(PHUIBadgeMiniView $badge) {
-    $this->badges[] = $badge;
     return $this;
   }
 
@@ -141,18 +135,6 @@ final class PHUIHovercardView extends AphrontTagView {
         phutil_tag('span', array(), $field['value']),
       );
       $body[] = phutil_tag_div('phui-hovercard-body-item', $item);
-    }
-
-    if ($this->badges) {
-      $badges = id(new PHUIBadgeBoxView())
-        ->addItems($this->badges)
-        ->setCollapsed(true);
-      $body[] = phutil_tag(
-        'div',
-        array(
-          'class' => 'phui-hovercard-body-item hovercard-badges',
-        ),
-        $badges);
     }
 
     if ($handle->getImageURI()) {

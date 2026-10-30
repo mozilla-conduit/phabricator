@@ -375,87 +375,6 @@ final class PhabricatorMainMenuView extends AphrontView {
       ->setViewer($viewer);
     $dropdown_data = $dropdown_query->execute();
 
-    $message_tag = '';
-    $message_notification_dropdown = '';
-    $conpherence_app = 'PhabricatorConpherenceApplication';
-    $conpherence_data = $dropdown_data[$conpherence_app];
-    if ($conpherence_data['isInstalled']) {
-      $message_id = celerity_generate_unique_node_id();
-      $message_count_id = celerity_generate_unique_node_id();
-      $message_dropdown_id = celerity_generate_unique_node_id();
-
-      $message_count_number = $conpherence_data['rawCount'];
-
-      if ($message_count_number) {
-        $aural[] = phutil_tag(
-          'a',
-          array(
-            'href' => '/conpherence/',
-          ),
-          pht(
-            '%s unread messages.',
-            new PhutilNumber($message_count_number)));
-      } else {
-        $aural[] = pht('No messages.');
-      }
-
-      $message_count_tag = phutil_tag(
-        'span',
-        array(
-          'id'    => $message_count_id,
-          'class' => 'phabricator-main-menu-message-count',
-        ),
-        $conpherence_data['count']);
-
-      $message_icon_tag = javelin_tag(
-        'span',
-        array(
-          'class' => 'phabricator-main-menu-message-icon phui-icon-view '.
-                     'phui-font-fa fa-comments',
-          'sigil' => 'menu-icon',
-        ),
-        '');
-
-      if ($message_count_number) {
-        $container_classes[] = 'message-unread';
-      }
-
-      $message_tag = phutil_tag(
-        'a',
-        array(
-          'href'  => '/conpherence/',
-          'class' => implode(' ', $container_classes),
-          'id'    => $message_id,
-        ),
-        array(
-          $message_icon_tag,
-          $message_count_tag,
-        ));
-
-      Javelin::initBehavior(
-        'aphlict-dropdown',
-        array(
-          'bubbleID'    => $message_id,
-          'countID'     => $message_count_id,
-          'dropdownID'  => $message_dropdown_id,
-          'loadingText' => pht('Loading...'),
-          'uri'         => '/conpherence/panel/',
-          'countType'   => $conpherence_data['countType'],
-          'countNumber' => $message_count_number,
-          'unreadClass' => 'message-unread',
-        ) + self::getFavicons());
-
-      $message_notification_dropdown = javelin_tag(
-        'div',
-        array(
-          'id'    => $message_dropdown_id,
-          'class' => 'phabricator-notification-menu',
-          'sigil' => 'phabricator-notification-menu',
-          'style' => 'display: none;',
-        ),
-        '');
-    }
-
     $bubble_tag = '';
     $notification_dropdown = '';
     $notification_app = 'PhabricatorNotificationsApplication';
@@ -682,7 +601,6 @@ final class PhabricatorMainMenuView extends AphrontView {
 
     $dropdowns = array(
       $notification_dropdown,
-      $message_notification_dropdown,
       $setup_notification_dropdown,
       $user_dropdown,
     );
@@ -690,7 +608,6 @@ final class PhabricatorMainMenuView extends AphrontView {
     return array(
       array(
         $bubble_tag,
-        $message_tag,
         $setup_tag,
         $user_tag,
       ),
@@ -714,10 +631,6 @@ final class PhabricatorMainMenuView extends AphrontView {
 
     $session = $viewer->getSession();
     if ($session->getIsPartial()) {
-      return false;
-    }
-
-    if (!$session->getSignedLegalpadDocuments()) {
       return false;
     }
 

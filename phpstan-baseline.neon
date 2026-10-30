@@ -61,24 +61,6 @@ parameters:
 			path: src/applications/diffusion/request/DiffusionRequest.php
 
 		-
-			message: '#^Call to an undefined static method DivinerDAO\:\:getTitle\(\)\.$#'
-			identifier: staticMethod.notFound
-			count: 1
-			path: src/applications/diviner/storage/DivinerLiveSymbol.php
-
-		-
-			message: '#^Method DrydockBlueprintCoreCustomField\:\:readValueFromObject\(\) should return this but return statement is missing\.$#'
-			identifier: return.missing
-			count: 1
-			path: src/applications/drydock/customfield/DrydockBlueprintCoreCustomField.php
-
-		-
-			message: '#^Call to an undefined static method DrydockDAO\:\:setStatus\(\)\.$#'
-			identifier: staticMethod.notFound
-			count: 1
-			path: src/applications/drydock/storage/DrydockLease.php
-
-		-
 			message: '#^Call to an undefined method PhabricatorIconSet\:\:newIcons\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -155,12 +137,6 @@ parameters:
 			identifier: return.missing
 			count: 1
 			path: src/applications/people/storage/PhabricatorUserEmail.php
-
-		-
-			message: '#^Call to an undefined method PhrictionDocumentTitleTransaction\:\:renderHandleLink\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: src/applications/phriction/xaction/PhrictionDocumentTitleTransaction.php
 
 		-
 			message: '#^Cannot unset offset wild on array\<mixed\>\.$#'

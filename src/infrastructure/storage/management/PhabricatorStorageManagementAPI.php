@@ -121,6 +121,24 @@ final class PhabricatorStorageManagementAPI extends Phobject {
     return $list;
   }
 
+  public function getRetiredTableMap(array $patches) {
+    assert_instances_of($patches, 'PhabricatorStoragePatch');
+
+    $map = array();
+    foreach ($patches as $patch) {
+      if ($patch->getType() != 'db') {
+        continue;
+      }
+
+      $tables = $patch->getRetiredTables();
+      if ($tables) {
+        $map[$this->getDatabaseName($patch->getName())] = array_fuse($tables);
+      }
+    }
+
+    return $map;
+  }
+
   public function getConn($fragment) {
     $database = $this->getDatabaseName($fragment);
     $return = &$this->conns[$this->host][$this->user][$database];
