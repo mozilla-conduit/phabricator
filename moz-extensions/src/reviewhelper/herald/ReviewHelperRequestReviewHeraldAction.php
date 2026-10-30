@@ -27,7 +27,8 @@ final class ReviewHelperRequestReviewHeraldAction extends HeraldAction {
   }
 
   public function getRequiredAdapterStates() {
-    // Drafts forbid this state, which defers the rule until publication.
+    // Despite its name, this state is unrelated to mail. Drafts forbid it,
+    // which defers the rule until publication.
     return array(
       HeraldMailableState::STATECONST,
     );
