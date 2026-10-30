@@ -127,22 +127,4 @@ final class ReviewHelperRequestReviewHeraldActionTestCase
     return $rule;
   }
 
-  /**
-   * Publishes a draft revision with "Request Review", as phab-bot does today.
-   */
-  private function publish(
-    PhabricatorUser $author,
-    DifferentialRevision $revision): void {
-
-    $this->applyRevisionTransactions(
-      $author,
-      $revision,
-      array(
-        id(new DifferentialTransaction())
-          ->setTransactionType(
-            DifferentialRevisionRequestReviewTransaction::TRANSACTIONTYPE)
-          ->setNewValue(true),
-      ));
-  }
-
 }
