@@ -158,6 +158,11 @@ abstract class PhabricatorTestCase extends PhutilTestCase {
   protected function willRunOneTest($test) {
     $config = $this->getComputedConfiguration();
 
+    // Start every test with an empty request cache, as the daemons do between
+    // tasks. Otherwise values cached by earlier tests, like the list of Spaces
+    // in a storage fixture that has since been rolled back, leak into this one.
+    PhabricatorCaches::destroyRequestCache();
+
     if ($config[self::PHABRICATOR_TESTCONFIG_BUILD_STORAGE_FIXTURES]) {
       LiskDAO::beginIsolateAllLiskEffectsToTransactions();
     }
