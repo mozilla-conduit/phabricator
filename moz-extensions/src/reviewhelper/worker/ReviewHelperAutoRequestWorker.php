@@ -53,13 +53,6 @@ final class ReviewHelperAutoRequestWorker extends PhabricatorWorker {
       return;
     }
 
-    // Check again here, since the view policy may have changed since the
-    // request was queued.
-    if (!self::shouldRequestReview($revision)) {
-      $this->logSkipped($revision, pht('The revision is not eligible.'));
-      return;
-    }
-
     $author = id(new PhabricatorPeopleQuery())
       ->setViewer($omnipotent_viewer)
       ->withPHIDs(array($revision->getAuthorPHID()))
@@ -68,6 +61,14 @@ final class ReviewHelperAutoRequestWorker extends PhabricatorWorker {
       $this->logSkipped(
         $revision,
         pht('The revision author could not be loaded.'));
+      return;
+    }
+
+    // Check again just before the request, since the view policy may have
+    // changed since the request was queued. `requestReview` lets authors
+    // through on new private revisions, so this stricter check must come first.
+    if (!self::shouldRequestReview($revision)) {
+      $this->logSkipped($revision, pht('The revision is no longer eligible.'));
       return;
     }
 
