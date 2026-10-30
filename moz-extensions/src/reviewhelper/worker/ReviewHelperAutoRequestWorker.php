@@ -40,11 +40,11 @@ final class ReviewHelperAutoRequestWorker extends PhabricatorWorker {
   }
 
   protected function doWork() {
-    $viewer = PhabricatorUser::getOmnipotentUser();
+    $omnipotent_viewer = PhabricatorUser::getOmnipotentUser();
     $revision_phid = $this->getTaskDataValue('revisionPHID');
 
     $revision = id(new DifferentialRevisionQuery())
-      ->setViewer($viewer)
+      ->setViewer($omnipotent_viewer)
       ->withPHIDs(array($revision_phid))
       ->needDiffIDs(true)
       ->needReviewers(true)
@@ -61,7 +61,7 @@ final class ReviewHelperAutoRequestWorker extends PhabricatorWorker {
     }
 
     $author = id(new PhabricatorPeopleQuery())
-      ->setViewer($viewer)
+      ->setViewer($omnipotent_viewer)
       ->withPHIDs(array($revision->getAuthorPHID()))
       ->executeOne();
     if (!$author) {
