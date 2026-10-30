@@ -6,13 +6,15 @@
 final class ReviewHelperAutoRequestWorkerTestCase
   extends ReviewHelperAutoRequestFixtureTestCase {
 
-  public function testPublicRevisionIsRequested() {
+  public function testRevisionWithPublicPolicyIsRequested() {
     $env = $this->configureReviewHelper();
     $revision = $this->newDraftRevision($this->generateNewTestUser());
 
     $this->assertTrue(
       ReviewHelperAutoRequestWorker::shouldRequestReview($revision),
-      pht('A public revision should be sent to Review Helper.'));
+      pht(
+        'A revision with a public view policy should be sent to Review '.
+        'Helper.'));
   }
 
   public function testNewPrivateRevisionIsNotRequested() {
