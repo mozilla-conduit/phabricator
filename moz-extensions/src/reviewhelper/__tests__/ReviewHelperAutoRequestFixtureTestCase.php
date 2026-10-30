@@ -137,6 +137,24 @@ EODIFF;
     return $this->reloadRevision($revision);
   }
 
+  /**
+   * Publishes a draft revision with "Request Review", as phab-bot does today.
+   */
+  protected function publish(
+    PhabricatorUser $author,
+    DifferentialRevision $revision): void {
+
+    $this->applyRevisionTransactions(
+      $author,
+      $revision,
+      array(
+        id(new DifferentialTransaction())
+          ->setTransactionType(
+            DifferentialRevisionRequestReviewTransaction::TRANSACTIONTYPE)
+          ->setNewValue(true),
+      ));
+  }
+
   protected function applyRevisionTransactions(
     PhabricatorUser $actor,
     DifferentialRevision $revision,
