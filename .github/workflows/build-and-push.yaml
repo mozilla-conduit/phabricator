@@ -4,11 +4,14 @@ on:
   push:
     branches:
       - master
+      - development
     tags:
       - release-**
 
 jobs:
   build-and-push:
+    # Only master and release tags go to the production registry.
+    if: github.ref_type == 'tag' || github.ref_name == 'master'
     secrets: inherit
     permissions:
       contents: read
@@ -22,6 +25,9 @@ jobs:
 
   push-dockerhub:
     needs: build-and-push
+    # Run when `build-and-push` is skipped for a development branch, but not
+    # when it fails.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,8 +36,8 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      # Full-SHA tags match the old CircleCI pushes; version.json matches the
-      # GAR image built by deploy-actions.
+      # Full-SHA and branch-name tags match the old CircleCI pushes; version.json
+      # matches the GAR image built by deploy-actions.
       - name: Generate tags and version.json
         id: meta
         env:
@@ -42,8 +48,10 @@ jobs:
           set -euo pipefail
           if [[ "$REF_TYPE" == "tag" ]]; then
             tags="$IMAGE:$REF_NAME"
-          else
+          elif [[ "$REF_NAME" == "master" ]]; then
             tags="$IMAGE:$GITHUB_SHA,$IMAGE:latest"
+          else
+            tags="$IMAGE:$GITHUB_SHA,$IMAGE:${REF_NAME//\//-}"
           fi
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           printf '{"commit":"%s","version":"%s","source":"%s","build":"%s"}\n' \
