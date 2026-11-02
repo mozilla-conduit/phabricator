@@ -25,6 +25,10 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
       return;
     }
 
+    // Severity badges don't depend on the Review Helper service, so any
+    // configured account can use them on any revision.
+    $this->initSeverityBadges();
+
     $service_url = PhabricatorEnv::getEnvConfig('reviewhelper.url');
     if (!$service_url) {
       return;
@@ -82,5 +86,30 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
       ),
       'moz-extensions'
     );
+  }
+
+  public function initSeverityBadges() {
+    $user_phids = PhabricatorEnv::getEnvConfig(
+      'reviewhelper.severity-badge-user-phids');
+    if (!$user_phids) {
+      return;
+    }
+
+    // The behavior matches comments by the author name in their metadata.
+    $users = id(new PhabricatorPeopleQuery())
+      ->setViewer(PhabricatorUser::getOmnipotentUser())
+      ->withPHIDs($user_phids)
+      ->execute();
+    $usernames = array_values(mpull($users, 'getUsername'));
+
+    require_celerity_resource(
+      'reviewhelper-severity-badge-css',
+      'moz-extensions');
+    Javelin::initBehavior(
+      'reviewhelper-severity-badge',
+      array(
+        'usernames' => $usernames,
+      ),
+      'moz-extensions');
   }
 }

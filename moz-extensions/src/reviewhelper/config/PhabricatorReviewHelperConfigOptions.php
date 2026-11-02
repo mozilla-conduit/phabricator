@@ -66,6 +66,14 @@ extends PhabricatorApplicationConfigOptions {
       )
         ->setDescription(pht('Username of the bot account that posts AI review comments. ' .
           'Feedback buttons will appear on inline comments from this user.')),
+      $this->newOption(
+        'reviewhelper.severity-badge-user-phids',
+        'custom:PhabricatorUserListConfigType',
+        array()
+      )
+        ->setDescription(pht('Users whose inline comments show a ' .
+          'severity badge rendered from their `reviewhelper:` frontmatter. ' .
+          'Leave empty to disable severity badges.')),
     );
   }
 
@@ -75,6 +83,8 @@ extends PhabricatorApplicationConfigOptions {
       $this->validateServiceURL($value);
     } elseif ($key === 'reviewhelper.bot-username') {
       $this->validateBotUsername($value);
+    } elseif ($key === 'reviewhelper.severity-badge-user-phids') {
+      $this->validateSeverityBadgeUserPHIDs($value);
     }
   }
 
@@ -123,6 +133,28 @@ extends PhabricatorApplicationConfigOptions {
         pht(
           'The bot username "%s" does not match any existing Phabricator user.',
           $value
+        )
+      );
+    }
+  }
+
+  private function validateSeverityBadgeUserPHIDs(array $user_phids) {
+    if (!$user_phids) {
+      return;
+    }
+
+    $users = id(new PhabricatorUser())->loadAllWhere(
+      'phid IN (%Ls)',
+      $user_phids
+    );
+    $missing = array_diff($user_phids, mpull($users, 'getPHID'));
+
+    if ($missing) {
+      throw new PhabricatorConfigValidationException(
+        pht(
+          'The severity badge user PHIDs "%s" do not match any existing ' .
+          'Phabricator users.',
+          implode('", "', $missing)
         )
       );
     }
