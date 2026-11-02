@@ -11,7 +11,6 @@ final class ReviewHelperFrontmatterRemarkupRuleTestCase
     "reviewhelper:\n".
     "  severity: critical\n".
     "  category: security\n".
-    "  confidence: high\n".
     "---\n".
     "Fix the principal.";
 
@@ -32,7 +31,6 @@ final class ReviewHelperFrontmatterRemarkupRuleTestCase
           phutil_escape_html(phutil_json_encode(array(
             'severity' => 'critical',
             'category' => 'security',
-            'confidence' => 'high',
           ))).'"') !== false,
       pht('The label should carry the parsed frontmatter as JSON.'));
     $this->assertTrue(

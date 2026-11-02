@@ -60,10 +60,7 @@ JX.behavior("reviewhelper-severity-badge", function (config) {
       {
         className:
           'reviewhelper-severity-badge reviewhelper-severity-' +
-          frontmatter.severity,
-        title: frontmatter.confidence ?
-          'Confidence: ' + frontmatter.confidence :
-          ''
+          frontmatter.severity
       },
       label.textContent);
 

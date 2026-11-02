@@ -12,7 +12,6 @@
  *   reviewhelper:
  *     severity: critical
  *     category: security
- *     confidence: high
  *   ---
  *
  * This rule extracts the block, parses it into a `ReviewHelperFrontmatter`,

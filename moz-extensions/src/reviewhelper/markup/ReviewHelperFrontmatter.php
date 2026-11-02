@@ -23,11 +23,9 @@ final class ReviewHelperFrontmatter extends Phobject {
     'style',
     'scope',
   );
-  private static $confidences = array('high', 'medium');
 
   private $severity;
   private $category;
-  private $confidence;
 
   /**
    * Parse the `key: value` lines of a `reviewhelper:` frontmatter block.
@@ -61,8 +59,6 @@ final class ReviewHelperFrontmatter extends Phobject {
       $values, 'severity', self::$severities, true);
     $frontmatter->category = self::readValue(
       $values, 'category', self::$categories, false);
-    $frontmatter->confidence = self::readValue(
-      $values, 'confidence', self::$confidences, false);
 
     return $frontmatter;
   }
@@ -73,10 +69,6 @@ final class ReviewHelperFrontmatter extends Phobject {
 
   public function getCategory() {
     return $this->category;
-  }
-
-  public function getConfidence() {
-    return $this->confidence;
   }
 
   /**
@@ -100,7 +92,6 @@ final class ReviewHelperFrontmatter extends Phobject {
     return array(
       'severity' => $this->severity,
       'category' => $this->category,
-      'confidence' => $this->confidence,
     );
   }
 

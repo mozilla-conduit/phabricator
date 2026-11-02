@@ -9,14 +9,12 @@ final class ReviewHelperFrontmatterTestCase extends PhabricatorTestCase {
     $frontmatter = ReviewHelperFrontmatter::newFromLines(array(
       "  severity: critical\n",
       "  category: security\n",
-      "  confidence: high\n",
     ));
 
     $this->assertEqual(
       array(
         'severity' => 'critical',
         'category' => 'security',
-        'confidence' => 'high',
       ),
       $frontmatter->toDictionary(),
       pht('Every known field should be parsed.'));
@@ -34,8 +32,6 @@ final class ReviewHelperFrontmatterTestCase extends PhabricatorTestCase {
 
     $this->assertEqual(null, $frontmatter->getCategory(),
       pht('The category should be optional.'));
-    $this->assertEqual(null, $frontmatter->getConfidence(),
-      pht('The confidence should be optional.'));
     $this->assertEqual('Nit', $frontmatter->getLabel(),
       pht('Without a category, the label should only show the severity.'));
   }
@@ -45,7 +41,6 @@ final class ReviewHelperFrontmatterTestCase extends PhabricatorTestCase {
       'unknown severity' => array('  severity: catastrophic'),
       'missing severity' => array('  category: security'),
       'unknown category' => array('  severity: nit', '  category: vibes'),
-      'unknown confidence' => array('  severity: nit', '  confidence: low'),
       'unindented line' => array('severity: nit'),
       'non key-value line' => array('  severity: nit', '  - item'),
     );
