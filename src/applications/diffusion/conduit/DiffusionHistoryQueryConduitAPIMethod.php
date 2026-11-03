@@ -51,7 +51,7 @@ final class DiffusionHistoryQueryConduitAPIMethod
       $path = null;
     }
 
-    $offset = $request->getValue('offset');
+    $offset = $request->getValue('offset', 0);
     $limit = $request->getValue('limit');
 
     if (phutil_nonempty_string($against_hash)) {
