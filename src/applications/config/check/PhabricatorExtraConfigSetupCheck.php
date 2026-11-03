@@ -323,6 +323,8 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
     $phd_reason = pht(
       'Use "bin/phd debug ..." to get a detailed daemon execution log.');
 
+    $maniphest_reason = pht('Maniphest has been removed.');
+
     $asana_reason = pht(
       'The Asana integration has been removed.');
 
@@ -556,6 +558,13 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
       'darkconsole.always-on' => pht('DarkConsole has been removed.'),
       'owners.fields' => pht('Owners has been removed.'),
       'owners.custom-field-definitions' => pht('Owners has been removed.'),
+      'maniphest.custom-field-definitions' => $maniphest_reason,
+      'maniphest.fields' => $maniphest_reason,
+      'maniphest.statuses' => $maniphest_reason,
+      'maniphest.default-priority' => $maniphest_reason,
+      'maniphest.points' => $maniphest_reason,
+      'maniphest.subtypes' => $maniphest_reason,
+      'maniphest.priorities' => $maniphest_reason,
 
       'asana.workspace-id' => $asana_reason,
       'asana.project-ids' => $asana_reason,

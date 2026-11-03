@@ -90,16 +90,17 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
     $file = PhabricatorFile::newFromFileData($data, $params);
     $secret1 = $file->getSecretKey();
 
-    $task = ManiphestTask::initializeNewTask($author);
+    $event = PhabricatorCalendarEvent::initializeNewCalendarEvent($author);
 
     $xactions = array();
-    $xactions[] = id(new ManiphestTransaction())
-      ->setTransactionType(ManiphestTaskTitleTransaction::TRANSACTIONTYPE)
-      ->setNewValue(pht('File Scramble Test Task'));
-
-    $xactions[] = id(new ManiphestTransaction())
+    $xactions[] = id(new PhabricatorCalendarEventTransaction())
       ->setTransactionType(
-        ManiphestTaskDescriptionTransaction::TRANSACTIONTYPE)
+        PhabricatorCalendarEventNameTransaction::TRANSACTIONTYPE)
+      ->setNewValue(pht('File Scramble Test Event'));
+
+    $xactions[] = id(new PhabricatorCalendarEventTransaction())
+      ->setTransactionType(
+        PhabricatorCalendarEventDescriptionTransaction::TRANSACTIONTYPE)
       ->setNewValue('{'.$file->getMonogram().'}')
       ->setMetadataValue(
         'remarkup.control',
@@ -109,10 +110,10 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
           ),
         ));
 
-    id(new ManiphestTransactionEditor())
+    id(new PhabricatorCalendarEventEditor())
       ->setActor($author)
       ->setContentSource($this->newContentSource())
-      ->applyTransactions($task, $xactions);
+      ->applyTransactions($event, $xactions);
 
     $file = $file->reload();
     $secret2 = $file->getSecretKey();
@@ -125,14 +126,14 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
         'newly created object.'));
 
     $xactions = array();
-    $xactions[] = id(new ManiphestTransaction())
+    $xactions[] = id(new PhabricatorCalendarEventTransaction())
       ->setTransactionType(PhabricatorTransactions::TYPE_VIEW_POLICY)
       ->setNewValue($author->getPHID());
 
-    id(new ManiphestTransactionEditor())
+    id(new PhabricatorCalendarEventEditor())
       ->setActor($author)
       ->setContentSource($this->newContentSource())
-      ->applyTransactions($task, $xactions);
+      ->applyTransactions($event, $xactions);
 
     $file = $file->reload();
     $secret3 = $file->getSecretKey();
@@ -174,8 +175,8 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
 
     // Create an object and test object policies.
 
-    $object = ManiphestTask::initializeNewTask($author)
-      ->setTitle(pht('File Visibility Test Task'))
+    $object = PhabricatorCalendarEvent::initializeNewCalendarEvent($author)
+      ->setName(pht('File Visibility Test Event'))
       ->setViewPolicy(PhabricatorPolicies::getMostOpenPolicy())
       ->save();
 
@@ -199,13 +200,13 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
     $file_ref = '{F'.$file->getID().'}';
 
     $xactions = array();
-    $xactions[] = id(new ManiphestTransaction())
+    $xactions[] = id(new PhabricatorCalendarEventTransaction())
       ->setTransactionType(PhabricatorTransactions::TYPE_COMMENT)
       ->attachComment(
-        id(new ManiphestTransactionComment())
+        id(new PhabricatorCalendarEventTransactionComment())
           ->setContent($file_ref));
 
-    id(new ManiphestTransactionEditor())
+    id(new PhabricatorCalendarEventEditor())
       ->setActor($author)
       ->setContentSource($this->newContentSource())
       ->applyTransactions($object, $xactions);
@@ -223,7 +224,7 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
     // policy exception for the non-author viewer.
 
     $xactions = array();
-    $xactions[] = id(new ManiphestTransaction())
+    $xactions[] = id(new PhabricatorCalendarEventTransaction())
       ->setTransactionType(PhabricatorTransactions::TYPE_COMMENT)
       ->setMetadataValue(
         'remarkup.control',
@@ -233,10 +234,10 @@ final class PhabricatorFileTestCase extends PhabricatorTestCase {
           ),
         ))
       ->attachComment(
-        id(new ManiphestTransactionComment())
+        id(new PhabricatorCalendarEventTransactionComment())
           ->setContent($file_ref));
 
-    id(new ManiphestTransactionEditor())
+    id(new PhabricatorCalendarEventEditor())
       ->setActor($author)
       ->setContentSource($this->newContentSource())
       ->applyTransactions($object, $xactions);

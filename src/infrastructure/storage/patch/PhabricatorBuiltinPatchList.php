@@ -68,7 +68,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.flag' => array(),
       'db.harbormaster' => array(),
       'db.herald' => array(),
-      'db.maniphest' => array(),
+      'db.maniphest' => array(
+        'dead' => true,
+      ),
       'db.meta_data' => array(),
       'db.metamta' => array(),
       'db.oauth_server' => array(
@@ -86,7 +88,16 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.phriction' => array(
         'dead' => true,
       ),
-      'db.project' => array(),
+      'db.project' => array(
+        'retired' => array(
+          'project_column',
+          'project_columnposition',
+          'project_columntransaction',
+          'project_trigger',
+          'project_triggertransaction',
+          'project_triggerusage',
+        ),
+      ),
       'db.repository' => array(),
       'db.search' => array(),
       'db.slowvote' => array(

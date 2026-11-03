@@ -145,12 +145,6 @@ parameters:
 			path: src/applications/policy/controller/PhabricatorPolicyEditController.php
 
 		-
-			message: '#^Call to an undefined static method PhabricatorProjectDAO\:\:setRuleset\(\)\.$#'
-			identifier: staticMethod.notFound
-			count: 1
-			path: src/applications/project/storage/PhabricatorProjectTrigger.php
-
-		-
 			message: '#^Call to an undefined static method PhabricatorRepositoryDAO\:\:setLocalPath\(\)\.$#'
 			identifier: staticMethod.notFound
 			count: 1
@@ -173,18 +167,6 @@ parameters:
 			identifier: method.notFound
 			count: 1
 			path: src/applications/transactions/engineextension/PhabricatorEditorExtension.php
-
-		-
-			message: '#^Undefined variable\: \$board_phid$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/applications/transactions/storage/PhabricatorApplicationTransaction.php
-
-		-
-			message: '#^Undefined variable\: \$to_column$#'
-			identifier: variable.undefined
-			count: 1
-			path: src/applications/transactions/storage/PhabricatorApplicationTransaction.php
 
 		-
 			message: '#^Call to an undefined static method PhabricatorSearchDAO\:\:setBuiltinKey\(\)\.$#'

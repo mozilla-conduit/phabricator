@@ -4,7 +4,7 @@ final class PhabricatorMacroMailReceiver extends PhabricatorObjectMailReceiver {
 
   public function isEnabled() {
     return PhabricatorApplication::isClassInstalled(
-      'PhabricatorManiphestApplication');
+      'PhabricatorMacroApplication');
   }
 
   protected function getObjectPattern() {
