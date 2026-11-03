@@ -51,7 +51,7 @@ return array(
     'phabricator-notification',
     'javelin-behavior-aphlict-listen',
     'javelin-behavior-phabricator-search-typeahead',
-    'javelin-behavior-aphlict-dropdown',
+    'javelin-behavior-notification-dropdown',
     'javelin-behavior-history-install',
     'javelin-behavior-phabricator-gesture',
     'javelin-behavior-phabricator-remarkup-assist',

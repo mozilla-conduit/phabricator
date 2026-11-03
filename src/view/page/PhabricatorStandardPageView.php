@@ -605,7 +605,7 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     $viewer = $this->getRequest()->getUser();
     $controller = $this->getController();
 
-    $dropdown_query = id(new AphlictDropdownDataQuery())
+    $dropdown_query = id(new PhabricatorNotificationDropdownDataQuery())
       ->setViewer($viewer);
     $dropdown_query->execute();
 
@@ -643,7 +643,7 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
     return array(
       'title' => $this->getTitle(),
       'bodyClasses' => $this->getBodyClasses(),
-      'aphlictDropdownData' => array(
+      'notificationDropdownData' => array(
         $dropdown_query->getNotificationData(),
       ),
       'globalDragAndDrop' => $upload_enabled,

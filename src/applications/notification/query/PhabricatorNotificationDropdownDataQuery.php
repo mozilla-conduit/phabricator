@@ -1,6 +1,6 @@
 <?php
 
-final class AphlictDropdownDataQuery extends Phobject {
+final class PhabricatorNotificationDropdownDataQuery extends Phobject {
 
   private $viewer;
   private $notificationData;

@@ -1,5 +1,5 @@
 /**
- * @provides javelin-behavior-aphlict-dropdown
+ * @provides javelin-behavior-notification-dropdown
  * @requires javelin-behavior
  *           javelin-request
  *           javelin-stratcom
@@ -11,7 +11,7 @@
  *           phabricator-favicon
  */
 
-JX.behavior('aphlict-dropdown', function(config, statics) {
+JX.behavior('notification-dropdown', function(config, statics) {
   // Track the current globally visible menu.
   statics.visible = statics.visible || null;
 
@@ -94,7 +94,7 @@ JX.behavior('aphlict-dropdown', function(config, statics) {
       if (!data.fromServer) {
         return;
       }
-      var new_data = data.newResponse.aphlictDropdownData;
+      var new_data = data.newResponse.notificationDropdownData;
       update_counts(new_data);
     });
 
