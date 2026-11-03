@@ -12,8 +12,4 @@ final class PhabricatorRepositoryPushReplyHandler
     return null;
   }
 
-  protected function receiveEmail(PhabricatorMetaMTAReceivedMail $mail) {
-    return;
-  }
-
 }

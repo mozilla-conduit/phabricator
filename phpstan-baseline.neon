@@ -103,12 +103,6 @@ parameters:
 			path: src/applications/herald/adapter/HeraldAdapter.php
 
 		-
-			message: '#^Result of method PhabricatorObjectMailReceiver\:\:loadObject\(\) \(void\) is used\.$#'
-			identifier: method.void
-			count: 2
-			path: src/applications/metamta/receiver/PhabricatorObjectMailReceiver.php
-
-		-
 			message: '#^Method PhabricatorUserBlurbField\:\:readValueFromObject\(\) should return this but return statement is missing\.$#'
 			identifier: return.missing
 			count: 1

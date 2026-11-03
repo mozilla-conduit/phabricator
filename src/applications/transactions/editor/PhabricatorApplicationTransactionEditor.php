@@ -55,7 +55,6 @@ abstract class PhabricatorApplicationTransactionEditor
   private $subscribers;
   private $unmentionablePHIDMap = array();
   private $transactionGroupID;
-  private $applicationEmail;
 
   private $isPreview;
   private $isHeraldEditor;
@@ -276,16 +275,6 @@ abstract class PhabricatorApplicationTransactionEditor
     PhabricatorLiskDAO $object,
     array $xactions) {
     return true;
-  }
-
-  public function setApplicationEmail(
-    PhabricatorMetaMTAApplicationEmail $email) {
-    $this->applicationEmail = $email;
-    return $this;
-  }
-
-  public function getApplicationEmail() {
-    return $this->applicationEmail;
   }
 
   public function setRaiseWarnings($raise_warnings) {
@@ -4265,10 +4254,6 @@ abstract class PhabricatorApplicationTransactionEditor
       ->setIsNewObject($this->getIsNewObject())
       ->setActingAsPHID($this->getActingAsPHID())
       ->setAppliedTransactions($xactions);
-
-    if ($this->getApplicationEmail()) {
-      $adapter->setApplicationEmail($this->getApplicationEmail());
-    }
 
     // If this editor is operating in silent mode, tell Herald that we aren't
     // going to send any mail. This allows it to skip "the first time this

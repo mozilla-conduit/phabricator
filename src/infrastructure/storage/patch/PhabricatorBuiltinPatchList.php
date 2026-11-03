@@ -72,7 +72,13 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
         'dead' => true,
       ),
       'db.meta_data' => array(),
-      'db.metamta' => array(),
+      'db.metamta' => array(
+        'retired' => array(
+          'metamta_applicationemail',
+          'metamta_applicationemailtransaction',
+          'metamta_receivedmail',
+        ),
+      ),
       'db.oauth_server' => array(
         'dead' => true,
       ),

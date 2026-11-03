@@ -3558,55 +3558,6 @@ USE `{$NAMESPACE}_metamta`;
 
  SET character_set_client = {$CHARSET} ;
 
-CREATE TABLE `metamta_applicationemail` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `phid` varbinary(64) NOT NULL,
-  `applicationPHID` varbinary(64) NOT NULL,
-  `address` varchar(128) CHARACTER SET {$CHARSET_SORT} COLLATE {$COLLATE_SORT} NOT NULL,
-  `configData` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  `spacePHID` varbinary(64) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_address` (`address`),
-  UNIQUE KEY `key_phid` (`phid`),
-  KEY `key_application` (`applicationPHID`),
-  KEY `key_space` (`spacePHID`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_metamta`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `metamta_applicationemailtransaction` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `phid` varbinary(64) NOT NULL,
-  `authorPHID` varbinary(64) NOT NULL,
-  `objectPHID` varbinary(64) NOT NULL,
-  `viewPolicy` varbinary(64) NOT NULL,
-  `editPolicy` varbinary(64) NOT NULL,
-  `commentPHID` varbinary(64) DEFAULT NULL,
-  `commentVersion` int(10) unsigned NOT NULL,
-  `transactionType` varchar(32) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `oldValue` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `newValue` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `contentSource` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `metadata` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_phid` (`phid`),
-  KEY `key_object` (`objectPHID`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_metamta`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
 CREATE TABLE `metamta_mail` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `phid` varbinary(64) NOT NULL,
@@ -3639,31 +3590,6 @@ CREATE TABLE `metamta_mailproperties` (
   `dateModified` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `key_object` (`objectPHID`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_metamta`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `metamta_receivedmail` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `headers` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `bodies` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `attachments` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `relatedPHID` varbinary(64) DEFAULT NULL,
-  `authorPHID` varbinary(64) DEFAULT NULL,
-  `message` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT},
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  `messageIDHash` binary(12) NOT NULL,
-  `status` varchar(32) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `relatedPHID` (`relatedPHID`),
-  KEY `authorPHID` (`authorPHID`),
-  KEY `key_messageIDHash` (`messageIDHash`),
-  KEY `key_created` (`dateCreated`)
 ) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
 
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `{$NAMESPACE}_passphrase` /*!40100 DEFAULT CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} */;

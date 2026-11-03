@@ -20,10 +20,6 @@ final class PhabricatorProjectHeraldAdapter extends HeraldAdapter {
     $this->project = $this->newObject();
   }
 
-  public function supportsApplicationEmail() {
-    return true;
-  }
-
   public function supportsRuleType($rule_type) {
     switch ($rule_type) {
       case HeraldRuleTypeConfig::RULE_TYPE_GLOBAL:
