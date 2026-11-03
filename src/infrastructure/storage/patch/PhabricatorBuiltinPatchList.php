@@ -64,7 +64,13 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
         'dead' => true,
       ),
       'db.feed' => array(),
-      'db.file' => array(),
+      'db.file' => array(
+        'retired' => array(
+          'file_imagemacro',
+          'macro_transaction',
+          'macro_transaction_comment',
+        ),
+      ),
       'db.flag' => array(),
       'db.harbormaster' => array(),
       'db.herald' => array(),

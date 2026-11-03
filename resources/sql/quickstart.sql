@@ -2541,31 +2541,6 @@ USE `{$NAMESPACE}_file`;
 
  SET character_set_client = {$CHARSET} ;
 
-CREATE TABLE `file_imagemacro` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `phid` varbinary(64) NOT NULL,
-  `authorPHID` varbinary(64) DEFAULT NULL,
-  `filePHID` varbinary(64) NOT NULL,
-  `name` varchar(128) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  `isDisabled` tinyint(1) NOT NULL,
-  `audioPHID` varbinary(64) DEFAULT NULL,
-  `audioBehavior` varchar(64) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `mailKey` binary(20) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_phid` (`phid`),
-  UNIQUE KEY `name` (`name`),
-  KEY `key_disabled` (`isDisabled`),
-  KEY `key_dateCreated` (`dateCreated`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_file`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
 CREATE TABLE `file_storageblob` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `data` longblob NOT NULL,
@@ -2641,57 +2616,6 @@ CREATE TABLE `file_transformedfile` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `originalPHID` (`originalPHID`,`transform`),
   KEY `transformedPHID` (`transformedPHID`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_file`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `macro_transaction` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `phid` varbinary(64) NOT NULL,
-  `authorPHID` varbinary(64) NOT NULL,
-  `objectPHID` varbinary(64) NOT NULL,
-  `viewPolicy` varbinary(64) NOT NULL,
-  `editPolicy` varbinary(64) NOT NULL,
-  `commentPHID` varbinary(64) DEFAULT NULL,
-  `commentVersion` int(10) unsigned NOT NULL,
-  `transactionType` varchar(32) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `oldValue` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `newValue` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `contentSource` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  `metadata` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_phid` (`phid`),
-  KEY `key_object` (`objectPHID`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_file`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `macro_transaction_comment` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `phid` varbinary(64) NOT NULL,
-  `transactionPHID` varbinary(64) DEFAULT NULL,
-  `authorPHID` varbinary(64) NOT NULL,
-  `viewPolicy` varbinary(64) NOT NULL,
-  `editPolicy` varbinary(64) NOT NULL,
-  `commentVersion` int(10) unsigned NOT NULL,
-  `content` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `contentSource` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `isDeleted` tinyint(1) NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_phid` (`phid`),
-  UNIQUE KEY `key_version` (`transactionPHID`,`commentVersion`)
 ) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
 
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `{$NAMESPACE}_flag` /*!40100 DEFAULT CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} */;
