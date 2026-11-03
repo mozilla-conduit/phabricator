@@ -128,42 +128,6 @@
   font-weight: normal;
 }
 
-.phabricator-notification-footer {
-  background: {$greybackground};
-  border-top: 1px solid {$thinblueborder};
-  border-bottom-left-radius: 3px;
-  border-bottom-right-radius: 3px;
-  padding: 8px;
-  font-size: {$smallerfontsize};
-  color: {$darkgreytext};
-}
-
-.phabricator-notification-footer a {
-  color: {$darkgreytext};
-}
-
-.phabricator-notification-footer a:hover {
-  text-decoration: underline;
-}
-
-.phabricator-notification-menu .aphlict-connection-status {
-  color: {$lightgreytext};
-}
-
-.aphlict-connection-status {
-  position: relative;
-}
-
-.aphlict-connection-status .phui-icon-view {
-  font-size: 9px;
-  position: absolute;
-  top: 4px;
-}
-
-.aphlict-connection-status .connection-status-text {
-  margin-left: 12px;
-}
-
 .phabricator-notification .phui-timeline-value {
   font-style: italic;
   color: #000;

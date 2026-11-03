@@ -558,6 +558,8 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
       'darkconsole.always-on' => pht('DarkConsole has been removed.'),
       'owners.fields' => pht('Owners has been removed.'),
       'owners.custom-field-definitions' => pht('Owners has been removed.'),
+      'notification.servers' => pht(
+        'Aphlict, the notification server, has been removed.'),
       'maniphest.custom-field-definitions' => $maniphest_reason,
       'maniphest.fields' => $maniphest_reason,
       'maniphest.statuses' => $maniphest_reason,

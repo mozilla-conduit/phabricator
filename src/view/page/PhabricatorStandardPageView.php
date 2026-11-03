@@ -430,43 +430,11 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
   }
 
   protected function getTail() {
-    $request = $this->getRequest();
-    $user = $request->getUser();
-
     $tail = array(
       parent::getTail(),
     );
 
     $response = CelerityAPI::getStaticResourceResponse();
-
-    if ($request->isHTTPS()) {
-      $with_protocol = 'https';
-    } else {
-      $with_protocol = 'http';
-    }
-
-    $servers = PhabricatorNotificationServerRef::getEnabledClientServers(
-      $with_protocol);
-
-    if ($servers) {
-      if ($user && $user->isLoggedIn()) {
-        // TODO: We could tell the browser about all the servers and let it
-        // do random reconnects to improve reliability.
-        shuffle($servers);
-        $server = head($servers);
-
-        $client_uri = $server->getWebsocketURI();
-
-        Javelin::initBehavior(
-          'aphlict-listen',
-          array(
-            'websocketURI' => (string)$client_uri,
-          ) + $this->buildAphlictListenConfigData());
-
-        CelerityAPI::getStaticResourceResponse()
-          ->addContentSecurityPolicyURI('connect-src', $client_uri);
-      }
-    }
 
     $tail[] = $response->renderHTMLFooter($this->getFrameable());
 
@@ -651,17 +619,6 @@ final class PhabricatorStandardPageView extends PhabricatorBarePageView
       'applicationClass' => $application_class,
       'applicationSearchIcon' => $application_search_icon,
       'helpItems' => $application_help,
-    ) + $this->buildAphlictListenConfigData();
-  }
-
-  private function buildAphlictListenConfigData() {
-    $user = $this->getRequest()->getUser();
-    $subscriptions = $this->pageObjects;
-    $subscriptions[] = $user->getPHID();
-
-    return array(
-      'pageObjects'   => array_fill_keys($this->pageObjects, true),
-      'subscriptions' => $subscriptions,
     );
   }
 

@@ -142,7 +142,6 @@ final class PhabricatorFeedStoryPublisher extends Phobject {
     if ($subscribed_phids) {
       $subscribed_phids = $this->filterSubscribedPHIDs($subscribed_phids);
       $this->insertNotifications($chrono_key, $subscribed_phids);
-      $this->sendNotification($chrono_key, $subscribed_phids);
     }
 
     PhabricatorWorker::scheduleTask(
@@ -199,16 +198,6 @@ final class PhabricatorFeedStoryPublisher extends Phobject {
     PhabricatorUserCache::clearCaches(
       PhabricatorUserNotificationCountCacheType::KEY_COUNT,
       $user_phids);
-  }
-
-  private function sendNotification($chrono_key, array $subscribed_phids) {
-    $data = array(
-      'key'         => (string)$chrono_key,
-      'type'        => 'notification',
-      'subscribers' => $subscribed_phids,
-    );
-
-    PhabricatorNotificationClient::tryToPostMessage($data);
   }
 
   /**

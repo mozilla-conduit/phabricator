@@ -140,38 +140,4 @@ final class PhabricatorNotificationBuilder extends Phobject {
     return $null_view;
   }
 
-  public function buildDict() {
-    $stories = $this->parseStories();
-    $dict = array();
-
-    $viewer = $this->user;
-    $key = PhabricatorNotificationsSetting::SETTINGKEY;
-    $setting = $viewer->getUserSetting($key);
-    $desktop_ready = PhabricatorNotificationsSetting::desktopReady($setting);
-    $web_ready = PhabricatorNotificationsSetting::webReady($setting);
-
-    foreach ($stories as $story) {
-      if ($story instanceof PhabricatorApplicationTransactionFeedStory) {
-        $dict[] = array(
-          'showAnyNotification' => $web_ready,
-          'showDesktopNotification' => $desktop_ready,
-          'title'        => $story->renderText(),
-          'body'         => $story->renderTextBody(),
-          'href'         => $story->getURI(),
-          'icon'         => $story->getImageURI(),
-        );
-      } else {
-        $dict[] = array(
-          'showWebNotification' => false,
-          'showDesktopNotification' => false,
-          'title'        => null,
-          'body'         => null,
-          'href'         => null,
-          'icon'         => null,
-        );
-      }
-    }
-
-    return $dict;
-  }
 }
