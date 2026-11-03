@@ -65,7 +65,7 @@ final class PhabricatorMailManagementSendTestWorkflow
             'param' => 'message-type',
             'default' => PhabricatorMailEmailMessage::MESSAGETYPE,
             'help' => pht(
-              'Send the specified type of message (email, sms, ...).'),
+              'Send the specified type of message, like "email".'),
           ),
         ));
   }

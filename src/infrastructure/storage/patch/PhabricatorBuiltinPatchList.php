@@ -152,7 +152,12 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.diviner' => array(
         'dead' => true,
       ),
-      'db.auth' => array(),
+      'db.auth' => array(
+        'retired' => array(
+          'auth_contactnumber',
+          'auth_contactnumbertransaction',
+        ),
+      ),
       'db.doorkeeper' => array(
         'dead' => true,
       ),

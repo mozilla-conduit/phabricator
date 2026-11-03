@@ -577,56 +577,6 @@ USE `{$NAMESPACE}_auth`;
 
  SET character_set_client = {$CHARSET} ;
 
-CREATE TABLE `auth_contactnumber` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `phid` varbinary(64) NOT NULL,
-  `objectPHID` varbinary(64) NOT NULL,
-  `contactNumber` varchar(255) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `status` varchar(32) CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `properties` longtext CHARACTER SET {$CHARSET} COLLATE {$COLLATE_TEXT} NOT NULL,
-  `uniqueKey` binary(12) DEFAULT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  `isPrimary` tinyint(1) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_phid` (`phid`),
-  UNIQUE KEY `key_unique` (`uniqueKey`),
-  KEY `key_object` (`objectPHID`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_auth`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
-CREATE TABLE `auth_contactnumbertransaction` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `phid` varbinary(64) NOT NULL,
-  `authorPHID` varbinary(64) NOT NULL,
-  `objectPHID` varbinary(64) NOT NULL,
-  `viewPolicy` varbinary(64) NOT NULL,
-  `editPolicy` varbinary(64) NOT NULL,
-  `commentPHID` varbinary(64) DEFAULT NULL,
-  `commentVersion` int(10) unsigned NOT NULL,
-  `transactionType` varchar(32) COLLATE {$COLLATE_TEXT} NOT NULL,
-  `oldValue` longtext COLLATE {$COLLATE_TEXT} NOT NULL,
-  `newValue` longtext COLLATE {$COLLATE_TEXT} NOT NULL,
-  `contentSource` longtext COLLATE {$COLLATE_TEXT} NOT NULL,
-  `metadata` longtext COLLATE {$COLLATE_TEXT} NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_phid` (`phid`),
-  KEY `key_object` (`objectPHID`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_auth`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
 CREATE TABLE `auth_factorconfig` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `phid` varbinary(64) NOT NULL,
