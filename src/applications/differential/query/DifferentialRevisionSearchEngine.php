@@ -141,6 +141,7 @@ final class DifferentialRevisionSearchEngine
     if ($this->requireViewer()->isLoggedIn()) {
       $names['active'] = pht('Active Revisions');
       $names['action-with-needs-changes'] = pht('Active With Needs Changes');
+      $names['action-not-accepted'] = pht('Active Not Yet Accepted');
       $names['authored'] = pht('Authored');
     }
 
@@ -151,6 +152,7 @@ final class DifferentialRevisionSearchEngine
 
   /**
    * @phutil-external-symbol class DifferentialRevisionRequiredActionWithNeedsChangesResultBucket
+   * @phutil-external-symbol class DifferentialRevisionRequiredActionNotAcceptedResultBucket
    */
   public function buildSavedQueryFromBuiltin($query_key) {
     $query = $this->newSavedQuery();
@@ -168,6 +170,13 @@ final class DifferentialRevisionSearchEngine
           ->setParameter('bucket', $bucket_key);
       case 'action-with-needs-changes':
         $bucket_key = DifferentialRevisionRequiredActionWithNeedsChangesResultBucket::BUCKETKEY;
+
+        return $query
+          ->setParameter('responsiblePHIDs', array($viewer->getPHID()))
+          ->setParameter('statuses', array('open()'))
+          ->setParameter('bucket', $bucket_key);
+      case 'action-not-accepted':
+        $bucket_key = DifferentialRevisionRequiredActionNotAcceptedResultBucket::BUCKETKEY;
 
         return $query
           ->setParameter('responsiblePHIDs', array($viewer->getPHID()))

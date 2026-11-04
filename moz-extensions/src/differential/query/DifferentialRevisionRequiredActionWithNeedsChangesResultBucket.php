@@ -1,6 +1,6 @@
 <?php
 
-final class DifferentialRevisionRequiredActionWithNeedsChangesResultBucket
+class DifferentialRevisionRequiredActionWithNeedsChangesResultBucket
   extends DifferentialRevisionRequiredActionResultBucket {
 
   const BUCKETKEY = 'action-with-needs-changes';
