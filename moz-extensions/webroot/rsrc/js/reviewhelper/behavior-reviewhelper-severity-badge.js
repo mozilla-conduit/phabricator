@@ -2,8 +2,8 @@
  * @provides javelin-behavior-reviewhelper-severity-badge
  */
 
-// Show the severity frontmatter of inline comments as a badge in the comment
-// header. This only runs for comments by accounts in
+// Show the severity and category frontmatter of inline comments as badges in
+// the comment header. This only runs for comments by accounts in
 // `reviewhelper.severity-badge-user-phids`, so other users don't get a badge.
 JX.behavior("reviewhelper-severity-badge", function (config) {
   var usernames = config.usernames;
@@ -22,12 +22,12 @@ JX.behavior("reviewhelper-severity-badge", function (config) {
       return;
     }
 
-    addSeverityBadge(commentNode, contentDiv);
+    addBadges(commentNode, contentDiv);
   }
 
-  // Move the severity label rendered from the `reviewhelper:` frontmatter into
-  // a badge in the comment header.
-  function addSeverityBadge(commentNode, contentDiv) {
+  // Move the severity and category parts of the label rendered from the
+  // `reviewhelper:` frontmatter into separate badges in the comment header.
+  function addBadges(commentNode, contentDiv) {
     // The rule only matches at the start of a comment, so the comment's own
     // label is a direct child of its Remarkup container. Labels deeper down
     // belong to quoted comments.
@@ -55,17 +55,31 @@ JX.behavior("reviewhelper-severity-badge", function (config) {
       return;
     }
 
-    var badge = JX.$N(
-      'span',
-      {
-        className:
-          'reviewhelper-severity-badge reviewhelper-severity-' +
-          frontmatter.severity
-      },
-      label.textContent);
+    var severityPart = label.querySelector('.reviewhelper-severity-part');
+    if (!severityPart) {
+      return;
+    }
 
-    headLeft.appendChild(badge);
+    headLeft.appendChild(newBadge(
+      severityPart,
+      'reviewhelper-severity-badge reviewhelper-severity-' +
+        frontmatter.severity));
+
+    var categoryPart = label.querySelector('.reviewhelper-category-part');
+    if (categoryPart) {
+      headLeft.appendChild(
+        newBadge(categoryPart, 'reviewhelper-category-badge'));
+    }
+
     JX.DOM.remove(label);
+  }
+
+  // Build a badge holding the child nodes of a label part.
+  function newBadge(part, className) {
+    return JX.$N(
+      'span',
+      {className: className},
+      JX.$A(part.childNodes));
   }
 
   function processExistingComments() {
