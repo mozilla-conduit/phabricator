@@ -176,7 +176,8 @@ final class DifferentialRevisionSearchEngine
           ->setParameter('statuses', array('open()'))
           ->setParameter('bucket', $bucket_key);
       case 'action-not-accepted':
-        $bucket_key = DifferentialRevisionRequiredActionNotAcceptedResultBucket::BUCKETKEY;
+        $bucket_key =
+          DifferentialRevisionRequiredActionNotAcceptedResultBucket::BUCKETKEY;
 
         return $query
           ->setParameter('responsiblePHIDs', array($viewer->getPHID()))
