@@ -39,6 +39,13 @@ RUN apk --no-cache --update add \
     py3-pygments \
     python3-dev
 
+# MariaDB client >= 11.4 verifies server TLS certificates by default, and the
+# self-signed certificate MySQL generates fails that check, which breaks
+# `bin/storage shell` and `bin/storage dump`. Turn off only the verification;
+# the connection still uses TLS when the server offers it (bug 2088629).
+RUN printf '[client-mariadb]\nssl-verify-server-cert=OFF\n' \
+        > /etc/my.cnf.d/phabricator-client.cnf
+
 # Build PHP extensions. `zip` comes with PHP's source, so only APCu needs PECL,
 # and pecl.php.net sometimes answers with an HTTP 500, so retry it.
 RUN apk --no-cache add --virtual build-dependencies \
