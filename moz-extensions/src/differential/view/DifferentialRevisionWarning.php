@@ -12,7 +12,52 @@ class DifferentialRevisionWarning extends Phobject {
   public function createWarnings($viewer, $revision) {
     $this->warnings[] = $this->createSecurityWarning($viewer, $revision);
     $this->warnings[] = $this->createPublicDependencyWarning($viewer, $revision);
+    $this->warnings[] = $this->createAIReviewHoldWarning($viewer, $revision);
     return $this->warnings;
+  }
+
+  /**
+   * Explain why a revision is still in draft while it is held for AI review.
+   */
+  public function createAIReviewHoldWarning($viewer, $revision) {
+    $status = ReviewHelperDraftHold::getHoldStatus($revision);
+    if ($status === null) {
+      return null;
+    }
+
+    $is_author = ($viewer->getPHID() === $revision->getAuthorPHID());
+
+    $warning = id(new PHUIInfoView())
+      ->setSeverity(PHUIInfoView::SEVERITY_NOTICE);
+
+    if ($status === ReviewHelperDraftHold::STATUS_REVIEWING) {
+      $timeout = PhabricatorEnv::getEnvConfig(
+        'reviewhelper.draft-hold.timeout');
+      $warning->setTitle(pht('Review Helper is reviewing this revision.'));
+      $warning->appendChild(pht(
+        'This revision will be sent to reviewers when Review Helper finds no '.
+        'issues, or after %s minute(s) if it has not finished.',
+        new PhutilNumber(ceil($timeout / 60))));
+    } else {
+      $warning->setTitle(pht('Review Helper found issues in this revision.'));
+      if ($is_author) {
+        $warning->appendChild(pht(
+          'Address the findings by updating the diff, or reply to them. '.
+          'This revision will be sent to reviewers when you update the diff '.
+          'or publish it.'));
+      } else {
+        $warning->appendChild(pht(
+          'This revision will be sent to reviewers once its author responds '.
+          'to the findings.'));
+      }
+    }
+
+    if ($is_author) {
+      $warning->appendChild(phutil_tag('p', array(), pht(
+        'You can send it to reviewers at any time with "Publish Revision".')));
+    }
+
+    return $warning->render();
   }
 
   public function createSecurityWarning($viewer, $revision) {
