@@ -112,7 +112,6 @@ final class PhabricatorRepositoryManagementUnpublishWorkflow
 
     $edge_types = array(
       PhabricatorObjectMentionsObjectEdgeType::EDGECONST => true,
-      DiffusionCommitHasTaskEdgeType::EDGECONST => true,
       DiffusionCommitHasRevisionEdgeType::EDGECONST => true,
       DiffusionCommitRevertsCommitEdgeType::EDGECONST => true,
     );
@@ -204,29 +203,6 @@ final class PhabricatorRepositoryManagementUnpublishWorkflow
             'Destroyed transaction "%s" on object "%s".',
             $xaction->getPHID(),
             $dst->getPHID()));
-      }
-    }
-
-    if ($type === DiffusionCommitHasTaskEdgeType::EDGECONST) {
-      $xactions = id(clone $query)
-        ->withTransactionTypes(
-          array(
-            ManiphestTaskStatusTransaction::TRANSACTIONTYPE,
-          ))
-        ->execute();
-
-      if ($xactions) {
-        foreach ($xactions as $xaction) {
-          $metadata = $xaction->getMetadata();
-          if (idx($metadata, 'commitPHID') === $src->getPHID()) {
-            echo tsprintf(
-              "%s\n",
-              pht(
-                'MANUAL Task "%s" was likely closed improperly by "%s".',
-                $dst->getMonogram(),
-                $src->getMonogram()));
-          }
-        }
       }
     }
 

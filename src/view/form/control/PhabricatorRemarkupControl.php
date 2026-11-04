@@ -203,23 +203,6 @@ final class PhabricatorRemarkupControl
       ),
     );
 
-    $can_use_macros = function_exists('imagettftext');
-
-    if ($can_use_macros) {
-      $can_use_macros = PhabricatorApplication::isClassInstalledForViewer(
-        'PhabricatorMacroApplication',
-        $viewer);
-    }
-
-    if ($can_use_macros) {
-      $actions[] = array(
-        'spacer' => true,
-        );
-      $actions['fa-meh-o'] = array(
-        'tip' => pht('Meme'),
-      );
-    }
-
     $actions['fa-eye'] = array(
       'tip' => pht('Preview'),
       'align' => 'right',

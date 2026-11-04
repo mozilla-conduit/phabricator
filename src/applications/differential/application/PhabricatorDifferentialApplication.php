@@ -96,42 +96,12 @@ final class PhabricatorDifferentialApplication
     );
   }
 
-  public function supportsEmailIntegration() {
-    return true;
-  }
-
-  public function getAppEmailBlurb() {
-    return pht(
-      'Send email to these addresses to create revisions. The body of the '.
-      'message and / or one or more attachments should be the output of a '.
-      '"diff" command. %s',
-      phutil_tag(
-        'a',
-        array(
-          'href' => $this->getInboundEmailSupportLink(),
-        ),
-        pht('Learn More')));
-  }
-
   protected function getCustomCapabilities() {
     return array(
       DifferentialDefaultViewCapability::CAPABILITY => array(
         'caption' => pht('Default view policy for newly created revisions.'),
         'template' => DifferentialRevisionPHIDType::TYPECONST,
         'capability' => PhabricatorPolicyCapability::CAN_VIEW,
-      ),
-    );
-  }
-
-  public function getMailCommandObjects() {
-    return array(
-      'revision' => array(
-        'name' => pht('Email Commands: Revisions'),
-        'header' => pht('Interacting with Differential Revisions'),
-        'object' => new DifferentialRevision(),
-        'summary' => pht(
-          'This page documents the commands you can use to interact with '.
-          'revisions in Differential.'),
       ),
     );
   }

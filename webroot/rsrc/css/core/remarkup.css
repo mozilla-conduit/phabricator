@@ -630,11 +630,7 @@ var.remarkup-assist-textarea {
   opacity: 1.0;
 }
 
-.phabricator-image-macro-hero {
-  margin: auto;
-  max-width: 95%;
-}
-
+/* Comments rendered before macros were removed may still be cached. */
 .phabricator-remarkup-macro {
   height: auto;
   max-width: 100%;

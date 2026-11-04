@@ -66,8 +66,6 @@ final class PhabricatorPeopleApplication extends PhabricatorApplication {
         'new/(?P<type>[^/]+)/' => 'PhabricatorPeopleNewController',
         'editprofile/(?P<id>[1-9]\d*)/' =>
           'PhabricatorPeopleProfileEditController',
-        'tasks/(?P<id>[1-9]\d*)/' =>
-          'PhabricatorPeopleProfileTasksController',
         'commits/(?P<id>[1-9]\d*)/' =>
           'PhabricatorPeopleProfileCommitsController',
         'revisions/(?P<id>[1-9]\d*)/' =>

@@ -24,9 +24,7 @@ final class PhabricatorNotificationsApplication extends PhabricatorApplication {
         '(?:query/(?P<queryKey>[^/]+)/)?'
           => 'PhabricatorNotificationListController',
         'panel/' => 'PhabricatorNotificationPanelController',
-        'individual/' => 'PhabricatorNotificationIndividualController',
         'clear/' => 'PhabricatorNotificationClearController',
-        'test/' => 'PhabricatorNotificationTestController',
       ),
     );
   }

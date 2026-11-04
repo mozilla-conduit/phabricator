@@ -3,7 +3,6 @@
 abstract class PhabricatorMailReplyHandler extends Phobject {
 
   private $mailReceiver;
-  private $applicationEmail;
   private $actor;
   private $excludePHIDs = array();
   private $unexpandablePHIDs = array();
@@ -16,16 +15,6 @@ abstract class PhabricatorMailReplyHandler extends Phobject {
 
   final public function getMailReceiver() {
     return $this->mailReceiver;
-  }
-
-  public function setApplicationEmail(
-    PhabricatorMetaMTAApplicationEmail $email) {
-    $this->applicationEmail = $email;
-    return $this;
-  }
-
-  public function getApplicationEmail() {
-    return $this->applicationEmail;
   }
 
   final public function setActor(PhabricatorUser $actor) {
@@ -61,13 +50,6 @@ abstract class PhabricatorMailReplyHandler extends Phobject {
 
   public function getReplyHandlerDomain() {
     return PhabricatorEnv::getEnvConfig('metamta.reply-handler-domain');
-  }
-
-  abstract protected function receiveEmail(
-    PhabricatorMetaMTAReceivedMail $mail);
-
-  public function processEmail(PhabricatorMetaMTAReceivedMail $mail) {
-    return $this->receiveEmail($mail);
   }
 
   public function supportsPrivateReplies() {
@@ -108,12 +90,19 @@ abstract class PhabricatorMailReplyHandler extends Phobject {
 
     $mail_key = PhabricatorMetaMTAMailProperties::loadMailKey($receiver);
 
-    $hash = PhabricatorObjectMailReceiver::computeMailHash(
+    $hash = self::computeMailHash(
       $mail_key,
       $receiver->getPHID());
 
     $address = "{$prefix}{$receiver_id}+public+{$hash}@{$domain}";
     return $this->getSingleReplyHandlerPrefix($address);
+  }
+
+  public static function computeMailHash($mail_key, $phid) {
+    $hash = PhabricatorHash::digestWithNamedKey(
+      $mail_key.$phid,
+      'mail.object-address-key');
+    return substr($hash, 0, 16);
   }
 
   protected function getSingleReplyHandlerPrefix($address) {
@@ -134,62 +123,13 @@ abstract class PhabricatorMailReplyHandler extends Phobject {
 
     $mail_key = PhabricatorMetaMTAMailProperties::loadMailKey($receiver);
 
-    $hash = PhabricatorObjectMailReceiver::computeMailHash(
+    $hash = self::computeMailHash(
       $mail_key,
       $user->getPHID());
     $domain = $this->getReplyHandlerDomain();
 
     $address = "{$prefix}{$receiver_id}+{$user_id}+{$hash}@{$domain}";
     return $this->getSingleReplyHandlerPrefix($address);
-  }
-
-  final protected function enhanceBodyWithAttachments(
-    $body,
-    array $attachments) {
-
-    if (!$attachments) {
-      return $body;
-    }
-
-    $files = id(new PhabricatorFileQuery())
-      ->setViewer($this->getActor())
-      ->withPHIDs($attachments)
-      ->execute();
-
-    $output = array();
-    $output[] = $body;
-
-    // We're going to put all the non-images first in a list, then embed
-    // the images.
-    $head = array();
-    $tail = array();
-    foreach ($files as $file) {
-      if ($file->isViewableImage()) {
-        $tail[] = $file;
-      } else {
-        $head[] = $file;
-      }
-    }
-
-    if ($head) {
-      $list = array();
-      foreach ($head as $file) {
-        $list[] = '  - {'.$file->getMonogram().', layout=link}';
-      }
-      $output[] = implode("\n", $list);
-    }
-
-    if ($tail) {
-      $list = array();
-      foreach ($tail as $file) {
-        $list[] = '{'.$file->getMonogram().'}';
-      }
-      $output[] = implode("\n\n", $list);
-    }
-
-    $output = implode("\n\n", $output);
-
-    return rtrim($output);
   }
 
 

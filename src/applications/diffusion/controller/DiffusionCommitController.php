@@ -536,7 +536,6 @@ final class DiffusionCommitController extends DiffusionController {
     $edge_query = id(new PhabricatorEdgeQuery())
       ->withSourcePHIDs(array($commit_phid))
       ->withEdgeTypes(array(
-        DiffusionCommitHasTaskEdgeType::EDGECONST,
         DiffusionCommitHasRevisionEdgeType::EDGECONST,
         DiffusionCommitRevertsCommitEdgeType::EDGECONST,
         DiffusionCommitRevertedByCommitEdgeType::EDGECONST,
@@ -544,8 +543,6 @@ final class DiffusionCommitController extends DiffusionController {
 
     $edges = $edge_query->execute();
 
-    $task_phids = array_keys(
-      $edges[$commit_phid][DiffusionCommitHasTaskEdgeType::EDGECONST]);
     $revision_phid = key(
       $edges[$commit_phid][DiffusionCommitHasRevisionEdgeType::EDGECONST]);
 
@@ -738,17 +735,6 @@ final class DiffusionCommitController extends DiffusionController {
       $view->addProperty(
         pht('Reverted By'),
         $viewer->renderHandleList($reverted_by_phids));
-    }
-
-    if ($task_phids) {
-      $task_list = array();
-      foreach ($task_phids as $phid) {
-        $task_list[] = $handles[$phid]->renderLink();
-      }
-      $task_list = phutil_implode_html(phutil_tag('br'), $task_list);
-      $view->addProperty(
-        pht('Tasks'),
-        $task_list);
     }
 
     return $view;
