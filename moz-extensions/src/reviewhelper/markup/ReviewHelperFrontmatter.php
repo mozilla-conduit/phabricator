@@ -13,7 +13,7 @@ final class ReviewHelperFrontmatter extends Phobject {
 
   private static $severities = array('critical', 'major', 'minor', 'nit');
   // Each category and the Font Awesome icon shown on its badge.
-  private static $categories = array(
+  private static $categoryIcons = array(
     'security' => 'fa-lock',
     'correctness' => 'fa-bug',
     'performance' => 'fa-bolt',
@@ -56,7 +56,7 @@ final class ReviewHelperFrontmatter extends Phobject {
     $frontmatter->severity = self::readValue(
       $values, 'severity', self::$severities, true);
     $frontmatter->category = self::readValue(
-      $values, 'category', array_keys(self::$categories), false);
+      $values, 'category', array_keys(self::$categoryIcons), false);
 
     return $frontmatter;
   }
@@ -93,7 +93,7 @@ final class ReviewHelperFrontmatter extends Phobject {
       return null;
     }
 
-    return self::$categories[$this->category];
+    return self::$categoryIcons[$this->category];
   }
 
   /**
