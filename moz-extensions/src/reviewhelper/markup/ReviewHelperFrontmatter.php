@@ -12,15 +12,14 @@
 final class ReviewHelperFrontmatter extends Phobject {
 
   private static $severities = array('critical', 'major', 'minor', 'nit');
-  // Each category and the emoji shown on its badge, escaped to keep this file
-  // ASCII.
+  // Each category and the Font Awesome icon shown on its badge.
   private static $categories = array(
-    'security' => "\u{1F512}",
-    'correctness' => "\u{1F41B}",
-    'performance' => "\u{26A1}",
-    'maintainability' => "\u{1F527}",
-    'style' => "\u{1F3A8}",
-    'scope' => "\u{1F3AF}",
+    'security' => 'fa-lock',
+    'correctness' => 'fa-bug',
+    'performance' => 'fa-bolt',
+    'maintainability' => 'fa-wrench',
+    'style' => 'fa-paint-brush',
+    'scope' => 'fa-bullseye',
   );
 
   private $severity;
@@ -86,9 +85,10 @@ final class ReviewHelperFrontmatter extends Phobject {
   }
 
   /**
-   * The emoji for the category, or `null` when there is no category.
+   * The Font Awesome icon for the category, or `null` when there is no
+   * category.
    */
-  public function getCategoryEmoji() {
+  public function getCategoryIcon() {
     if ($this->category === null) {
       return null;
     }

@@ -39,12 +39,12 @@ final class ReviewHelperFrontmatterRemarkupRuleTestCase
         '<span class="reviewhelper-severity-part">Critical</span>') !== false,
       pht('The severity should be rendered in its own part.'));
     $this->assertTrue(
-      strpos(
-        $html,
-        '<span class="reviewhelper-category-part">'.
-          '<span aria-hidden="true">'."\u{1F512}".'</span> Security'.
-          '</span>') !== false,
-      pht('The category should be rendered in its own part, with an emoji '.
+      (bool)preg_match(
+        '(<span class="reviewhelper-category-part">'.
+          '<span class="visual-only phui-icon-view phui-font-fa fa-lock"'.
+          '[^>]* aria-hidden="true"></span> Security</span>)',
+        $html),
+      pht('The category should be rendered in its own part, with an icon '.
         'hidden from screen readers.'));
     $this->assertFalse(
       strpos($html, 'reviewhelper:') !== false,

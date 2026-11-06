@@ -75,15 +75,14 @@ final class ReviewHelperFrontmatterRemarkupRule
     );
     if ($frontmatter->getCategoryLabel() !== null) {
       $label[] = ' ';
-      // Screen readers should read the category name, not the emoji.
-      $emoji = phutil_tag(
-        'span',
-        array('aria-hidden' => 'true'),
-        $frontmatter->getCategoryEmoji());
+      // `PHUIIconView` is hidden from screen readers, so they read the category
+      // name instead of the icon.
+      $icon = id(new PHUIIconView())
+        ->setIcon($frontmatter->getCategoryIcon());
       $label[] = phutil_tag(
         'span',
         array('class' => 'reviewhelper-category-part'),
-        array($emoji, ' ', $frontmatter->getCategoryLabel()));
+        array($icon, ' ', $frontmatter->getCategoryLabel()));
     }
 
     return phutil_tag(

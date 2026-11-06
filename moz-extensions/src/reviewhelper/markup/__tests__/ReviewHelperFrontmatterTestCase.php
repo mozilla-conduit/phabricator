@@ -22,8 +22,8 @@ final class ReviewHelperFrontmatterTestCase extends PhabricatorTestCase {
       pht('The severity label should be capitalized.'));
     $this->assertEqual('Security', $frontmatter->getCategoryLabel(),
       pht('The category label should be capitalized.'));
-    $this->assertEqual("\u{1F512}", $frontmatter->getCategoryEmoji(),
-      pht('Security should have a lock emoji.'));
+    $this->assertEqual('fa-lock', $frontmatter->getCategoryIcon(),
+      pht('Security should have a lock icon.'));
     $this->assertEqual('[Critical] [Security]', $frontmatter->getTextLabel(),
       pht('The text label should bracket the severity and category.'));
   }
@@ -38,8 +38,8 @@ final class ReviewHelperFrontmatterTestCase extends PhabricatorTestCase {
       pht('The category should be optional.'));
     $this->assertEqual(null, $frontmatter->getCategoryLabel(),
       pht('Without a category, there should be no category label.'));
-    $this->assertEqual(null, $frontmatter->getCategoryEmoji(),
-      pht('Without a category, there should be no category emoji.'));
+    $this->assertEqual(null, $frontmatter->getCategoryIcon(),
+      pht('Without a category, there should be no category icon.'));
     $this->assertEqual('[Nit]', $frontmatter->getTextLabel(),
       pht('Without a category, the text label should only show the severity.'));
   }
