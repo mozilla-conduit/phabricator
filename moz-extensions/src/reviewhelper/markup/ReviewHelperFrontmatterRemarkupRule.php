@@ -28,6 +28,14 @@ final class ReviewHelperFrontmatterRemarkupRule
   const MAX_LINES = 12;
 
   /**
+   * Part of the markup cache key, so bump this whenever the rendered HTML
+   * changes. Otherwise comments cached with the old HTML won't get badges.
+   */
+  public function getRuleVersion() {
+    return 2;
+  }
+
+  /**
    * Run before `PhutilRemarkupHorizontalRuleBlockRule` (priority 300), which
    * would otherwise claim the opening `---` line.
    */
