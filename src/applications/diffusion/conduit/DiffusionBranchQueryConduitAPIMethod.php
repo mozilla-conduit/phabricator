@@ -30,7 +30,7 @@ final class DiffusionBranchQueryConduitAPIMethod
     $repository = $drequest->getRepository();
 
     $contains = $request->getValue('contains');
-    if (strlen($contains)) {
+    if (phutil_nonempty_string($contains)) {
 
       // See PHI958 (and, earlier, PHI720). If "patterns" are provided, pass
       // them to "git branch ..." to let callers test for reachability from
@@ -56,7 +56,7 @@ final class DiffusionBranchQueryConduitAPIMethod
       $refs = array();
       foreach ($ref_map as $ref => $commit) {
         $refs[] = id(new DiffusionRepositoryRef())
-          ->setShortName($ref)
+          ->setShortName((string)$ref)
           ->setCommitIdentifier($commit);
       }
     } else {
@@ -80,7 +80,7 @@ final class DiffusionBranchQueryConduitAPIMethod
       ->setRepository($repository);
 
     $contains = $request->getValue('contains');
-    if (strlen($contains)) {
+    if (phutil_nonempty_string($contains)) {
       $query->withContainsCommit($contains);
     }
 

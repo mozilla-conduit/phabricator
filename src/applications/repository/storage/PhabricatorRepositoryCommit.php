@@ -6,12 +6,9 @@ final class PhabricatorRepositoryCommit
     PhabricatorPolicyInterface,
     PhabricatorFlaggableInterface,
     PhabricatorProjectInterface,
-    PhabricatorTokenReceiverInterface,
     PhabricatorSubscribableInterface,
     PhabricatorMentionableInterface,
     HarbormasterBuildableInterface,
-    HarbormasterCircleCIBuildableInterface,
-    HarbormasterBuildkiteBuildableInterface,
     PhabricatorCustomFieldInterface,
     PhabricatorApplicationTransactionInterface,
     PhabricatorTimelineInterface,
@@ -169,7 +166,7 @@ final class PhabricatorRepositoryCommit
   }
 
   public function attachCommitData(
-    PhabricatorRepositoryCommitData $data = null) {
+    ?PhabricatorRepositoryCommitData $data = null) {
     $this->commitData = $data;
     return $this;
   }
@@ -198,8 +195,8 @@ final class PhabricatorRepositoryCommit
   }
 
   public function attachIdentities(
-    PhabricatorRepositoryIdentity $author = null,
-    PhabricatorRepositoryIdentity $committer = null) {
+    ?PhabricatorRepositoryIdentity $author = null,
+    ?PhabricatorRepositoryIdentity $committer = null) {
 
     $this->authorIdentity = $author;
     $this->committerIdentity = $committer;
@@ -242,29 +239,6 @@ final class PhabricatorRepositoryCommit
     $map = $this->assertAttachedKey($this->auditAuthorityPHIDs, $user_phid);
 
     return isset($map[$audit->getAuditorPHID()]);
-  }
-
-  public function writeOwnersEdges(array $package_phids) {
-    $src_phid = $this->getPHID();
-    $edge_type = DiffusionCommitHasPackageEdgeType::EDGECONST;
-
-    $editor = new PhabricatorEdgeEditor();
-
-    $dst_phids = PhabricatorEdgeQuery::loadDestinationPHIDs(
-      $src_phid,
-      $edge_type);
-
-    foreach ($dst_phids as $dst_phid) {
-      $editor->removeEdge($src_phid, $edge_type, $dst_phid);
-    }
-
-    foreach ($package_phids as $package_phid) {
-      $editor->addEdge($src_phid, $edge_type, $package_phid);
-    }
-
-    $editor->save();
-
-    return $this;
   }
 
   public function getAuditorPHIDsForEdit() {
@@ -478,7 +452,7 @@ final class PhabricatorRepositoryCommit
     }
 
     $author = $this->getRawAuthorStringForDisplay();
-    if (strlen($author)) {
+    if (phutil_nonempty_string($author)) {
       return DiffusionView::renderName($author);
     }
 
@@ -493,7 +467,7 @@ final class PhabricatorRepositoryCommit
     }
 
     $committer = $this->getRawCommitterStringForDisplay();
-    if (strlen($committer)) {
+    if (phutil_nonempty_string($committer)) {
       return DiffusionView::renderName($committer);
     }
 
@@ -607,14 +581,6 @@ final class PhabricatorRepositoryCommit
   }
 
 
-/* -(  PhabricatorTokenReceiverInterface  )---------------------------------- */
-
-  public function getUsersToNotifyOfTokenGiven() {
-    return array(
-      $this->getAuthorPHID(),
-    );
-  }
-
 /* -( Stuff for serialization )---------------------------------------------- */
 
   /**
@@ -686,90 +652,6 @@ final class PhabricatorRepositoryCommit
 
   public function newBuildableEngine() {
     return new DiffusionBuildableEngine();
-  }
-
-
-/* -(  HarbormasterCircleCIBuildableInterface  )----------------------------- */
-
-
-  public function getCircleCIGitHubRepositoryURI() {
-    $repository = $this->getRepository();
-
-    $commit_phid = $this->getPHID();
-    $repository_phid = $repository->getPHID();
-
-    if ($repository->isHosted()) {
-      throw new Exception(
-        pht(
-          'This commit ("%s") is associated with a hosted repository '.
-          '("%s"). Repositories must be imported from GitHub to be built '.
-          'with CircleCI.',
-          $commit_phid,
-          $repository_phid));
-    }
-
-    $remote_uri = $repository->getRemoteURI();
-    $path = HarbormasterCircleCIBuildStepImplementation::getGitHubPath(
-      $remote_uri);
-    if (!$path) {
-      throw new Exception(
-        pht(
-          'This commit ("%s") is associated with a repository ("%s") which '.
-          'has a remote URI ("%s") that does not appear to be hosted on '.
-          'GitHub. Repositories must be hosted on GitHub to be built with '.
-          'CircleCI.',
-          $commit_phid,
-          $repository_phid,
-          $remote_uri));
-    }
-
-    return $remote_uri;
-  }
-
-  public function getCircleCIBuildIdentifierType() {
-    return 'revision';
-  }
-
-  public function getCircleCIBuildIdentifier() {
-    return $this->getCommitIdentifier();
-  }
-
-
-/* -(  HarbormasterBuildkiteBuildableInterface  )---------------------------- */
-
-
-  public function getBuildkiteBranch() {
-    $viewer = PhabricatorUser::getOmnipotentUser();
-    $repository = $this->getRepository();
-
-    $branches = DiffusionQuery::callConduitWithDiffusionRequest(
-      $viewer,
-      DiffusionRequest::newFromDictionary(
-        array(
-          'repository' => $repository,
-          'user' => $viewer,
-        )),
-      'diffusion.branchquery',
-      array(
-        'contains' => $this->getCommitIdentifier(),
-        'repository' => $repository->getPHID(),
-      ));
-
-    if (!$branches) {
-      throw new Exception(
-        pht(
-          'Commit "%s" is not an ancestor of any branch head, so it can not '.
-          'be built with Buildkite.',
-          $this->getCommitIdentifier()));
-    }
-
-    $branch = head($branches);
-
-    return 'refs/heads/'.$branch['shortName'];
-  }
-
-  public function getBuildkiteCommit() {
-    return $this->getCommitIdentifier();
   }
 
 

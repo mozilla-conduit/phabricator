@@ -39,12 +39,6 @@ final class PhabricatorAuthLogoutConduitAPIMethod
     $engine = id(new PhabricatorAuthSessionEngine());
     $engine->terminateLoginSessions($viewer);
 
-    // If we were called via OAuth, destroy the OAuth token.
-    $oauth_token = $request->getOAuthToken();
-    if ($oauth_token) {
-      $oauth_token->delete();
-    }
-
     return null;
   }
 

@@ -34,9 +34,6 @@ final class PhabricatorDifferentialConfigOptions
       new DifferentialManiphestTasksField(),
       new DifferentialCommitsField(),
 
-      new DifferentialJIRAIssuesField(),
-      new DifferentialAsanaRepresentationField(),
-
       new DifferentialChangesSinceLastUpdateField(),
       new DifferentialBranchField(),
 

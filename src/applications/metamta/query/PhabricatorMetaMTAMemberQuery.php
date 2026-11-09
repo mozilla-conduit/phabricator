@@ -33,45 +33,6 @@ final class PhabricatorMetaMTAMemberQuery extends PhabricatorQuery {
       $type_map[phid_get_type($phid)][] = $phid;
     }
 
-    // TODO: Generalize this somewhere else.
-
-
-    // If we have packages, break them down into their constituent user and
-    // project owners first. Then we'll resolve those and build the packages
-    // back up from the pieces.
-    $package_type = PhabricatorOwnersPackagePHIDType::TYPECONST;
-    $package_phids = idx($type_map, $package_type, array());
-    unset($type_map[$package_type]);
-
-    $package_map = array();
-    if ($package_phids) {
-      $packages = id(new PhabricatorOwnersPackageQuery())
-        ->setViewer($viewer)
-        ->withPHIDs($package_phids)
-        ->execute();
-
-      foreach ($packages as $package) {
-        $package_owners = array();
-        foreach ($package->getOwners() as $owner) {
-          $owner_phid = $owner->getUserPHID();
-          $owner_type = phid_get_type($owner_phid);
-          $type_map[$owner_type][] = $owner_phid;
-          $package_owners[] = $owner_phid;
-        }
-        $package_map[$package->getPHID()] = $package_owners;
-      }
-
-      // See T13648. We may have packages that no longer exist or can't be
-      // loaded (for example, because they have been destroyed). Give them
-      // empty entries in the map so we return a mapping for all input PHIDs.
-
-      foreach ($package_phids as $package_phid) {
-        if (!isset($package_map[$package_phid])) {
-          $package_map[$package_phid] = array();
-        }
-      }
-    }
-
     $results = array();
     foreach ($type_map as $type => $phids) {
       switch ($type) {
@@ -132,21 +93,6 @@ final class PhabricatorMetaMTAMemberQuery extends PhabricatorQuery {
             $results[$phid] = array($phid);
           }
           break;
-      }
-    }
-
-    // For any packages, stitch them back together from the resolved users
-    // and projects.
-    if ($package_map) {
-      foreach ($package_map as $package_phid => $owner_phids) {
-        $resolved = array();
-        foreach ($owner_phids as $owner_phid) {
-          $resolved_phids = idx($results, $owner_phid, array());
-          foreach ($resolved_phids as $resolved_phid) {
-            $resolved[] = $resolved_phid;
-          }
-        }
-        $results[$package_phid] = $resolved;
       }
     }
 

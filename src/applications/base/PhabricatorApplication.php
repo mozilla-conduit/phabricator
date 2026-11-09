@@ -5,7 +5,6 @@
  * @task  ui    UI Integration
  * @task  uri   URI Routing
  * @task  mail  Email integration
- * @task  fact  Fact Integration
  * @task  meta  Application Management
  */
 abstract class PhabricatorApplication
@@ -170,8 +169,11 @@ abstract class PhabricatorApplication
     return null;
   }
 
+  /**
+   * @param string|PhutilURI $path
+   */
   final public function getApplicationURI($path = '') {
-    return $this->getBaseURI().ltrim($path, '/');
+    return $this->getBaseURI().ltrim((string)$path, '/');
   }
 
   public function getIcon() {
@@ -235,6 +237,11 @@ abstract class PhabricatorApplication
     return array();
   }
 
+  /**
+   * Get the Application Overview in raw Remarkup
+   *
+   * @return string|null
+   */
   public function getOverview() {
     return null;
   }
@@ -283,14 +290,6 @@ abstract class PhabricatorApplication
     throw new PhutilMethodNotImplementedException();
   }
 
-/* -(  Fact Integration  )--------------------------------------------------- */
-
-
-  public function getFactObjectsForAnalysis() {
-    return array();
-  }
-
-
 /* -(  UI Integration  )----------------------------------------------------- */
 
 
@@ -318,7 +317,7 @@ abstract class PhabricatorApplication
    */
   public function buildMainMenuItems(
     PhabricatorUser $user,
-    PhabricatorController $controller = null) {
+    ?PhabricatorController $controller = null) {
     return array();
   }
 

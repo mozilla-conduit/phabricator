@@ -7,7 +7,7 @@ final class PhabricatorConfigSettingsListController
     $viewer = $request->getViewer();
 
     $filter = $request->getURIData('filter');
-    if (!strlen($filter)) {
+    if (!phutil_nonempty_string($filter)) {
       $filter = 'settings';
     }
 
@@ -75,7 +75,7 @@ final class PhabricatorConfigSettingsListController
 
   private function newConfigOptionView(
     PhabricatorConfigOption $option,
-    PhabricatorConfigEntry $stored_value = null) {
+    ?PhabricatorConfigEntry $stored_value = null) {
 
     $summary = $option->getSummary();
 

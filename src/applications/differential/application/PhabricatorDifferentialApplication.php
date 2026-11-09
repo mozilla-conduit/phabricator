@@ -70,8 +70,6 @@ final class PhabricatorDifferentialApplication
             => 'DifferentialRevisionCloseDetailsController',
           'update/(?P<revisionID>[1-9]\d*)/'
             => 'DifferentialDiffCreateController',
-          'operation/(?P<id>[1-9]\d*)/'
-            => 'DifferentialRevisionOperationController',
           'inlines/(?P<id>[1-9]\d*)/'
             => 'DifferentialRevisionInlinesController',
           'paths/(?P<id>[1-9]\d*)/'

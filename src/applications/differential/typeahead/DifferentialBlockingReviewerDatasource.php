@@ -19,7 +19,6 @@ final class DifferentialBlockingReviewerDatasource
     return array(
       new PhabricatorPeopleDatasource(),
       new PhabricatorProjectDatasource(),
-      new PhabricatorOwnersPackageDatasource(),
     );
   }
 

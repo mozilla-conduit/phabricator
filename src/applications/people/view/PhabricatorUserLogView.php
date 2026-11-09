@@ -22,7 +22,10 @@ final class PhabricatorUserLogView extends AphrontView {
 
     $phids = array();
     foreach ($logs as $log) {
-      $phids[] = $log->getActorPHID();
+      $actor_phid = $log->getActorPHID();
+      if ($actor_phid) {
+        $phids[] = $actor_phid;
+      }
       $phids[] = $log->getUserPHID();
     }
     $handles = $viewer->loadHandles($phids);
@@ -36,7 +39,7 @@ final class PhabricatorUserLogView extends AphrontView {
 
     $rows = array();
     foreach ($logs as $log) {
-      $session = substr($log->getSession(), 0, 6);
+      $session = substr(coalesce($log->getSession(), ''), 0, 6);
 
       $actor_phid = $log->getActorPHID();
       $user_phid = $log->getUserPHID();

@@ -59,7 +59,6 @@ final class PhabricatorProject extends PhabricatorProjectDAO
   const ITEM_PROFILE = 'project.profile';
   const ITEM_POINTS = 'project.points';
   const ITEM_WORKBOARD = 'project.workboard';
-  const ITEM_REPORTS = 'project.reports';
   const ITEM_MEMBERS = 'project.members';
   const ITEM_MANAGE = 'project.manage';
   const ITEM_MILESTONES = 'project.milestones';
@@ -67,7 +66,7 @@ final class PhabricatorProject extends PhabricatorProjectDAO
 
   public static function initializeNewProject(
     PhabricatorUser $actor,
-    PhabricatorProject $parent = null) {
+    ?PhabricatorProject $parent = null) {
 
     $app = id(new PhabricatorApplicationQuery())
       ->setViewer(PhabricatorUser::getOmnipotentUser())
@@ -144,7 +143,8 @@ final class PhabricatorProject extends PhabricatorProjectDAO
 
     switch ($capability) {
       case PhabricatorPolicyCapability::CAN_VIEW:
-        if ($this->isUserMember($viewer->getPHID())) {
+        $viewer_phid = $viewer->getPHID();
+        if ($viewer_phid && $this->isUserMember($viewer_phid)) {
           // Project members can always view a project.
           return true;
         }
@@ -498,7 +498,7 @@ final class PhabricatorProject extends PhabricatorProjectDAO
     return $this->assertAttached($this->parentProject);
   }
 
-  public function attachParentProject(PhabricatorProject $project = null) {
+  public function attachParentProject(?PhabricatorProject $project = null) {
     $this->parentProject = $project;
     return $this;
   }
@@ -641,26 +641,44 @@ final class PhabricatorProject extends PhabricatorProjectDAO
     return $this;
   }
 
+  /**
+   * @return string Workboard default sort, e.g. 'natural'
+   */
   public function getDefaultWorkboardSort() {
     return $this->getProperty('workboard.sort.default');
   }
 
+  /**
+   * @param string $sort Workboard default sort
+   */
   public function setDefaultWorkboardSort($sort) {
     return $this->setProperty('workboard.sort.default', $sort);
   }
 
+  /**
+   * @return string Workboard default filter, e.g. 'assigned'
+   */
   public function getDefaultWorkboardFilter() {
     return $this->getProperty('workboard.filter.default');
   }
 
+  /**
+   * @param string $filter Workboard default filter
+   */
   public function setDefaultWorkboardFilter($filter) {
     return $this->setProperty('workboard.filter.default', $filter);
   }
 
+  /**
+   * @return string Workboard background color, e.g. 'pink'
+   */
   public function getWorkboardBackgroundColor() {
     return $this->getProperty('workboard.background');
   }
 
+  /**
+   * @param string $color Workboard background color
+   */
   public function setWorkboardBackgroundColor($color) {
     return $this->setProperty('workboard.background', $color);
   }

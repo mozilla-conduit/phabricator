@@ -229,7 +229,7 @@ final class PhabricatorDatabaseRef
     $host = $this->getHost();
 
     $port = $this->getPort();
-    if (strlen($port)) {
+    if ($port) {
       return "{$host}:{$port}";
     }
 
@@ -393,7 +393,7 @@ final class PhabricatorDatabaseRef
 
         if ($is_replica) {
           $latency = idx($replica_status, 'Seconds_Behind_Master');
-          if (!strlen($latency)) {
+          if (!phutil_nonempty_string($latency)) {
             $ref->setReplicaStatus(self::REPLICATION_NOT_REPLICATING);
           } else {
             $latency = (int)$latency;

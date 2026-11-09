@@ -158,6 +158,11 @@ abstract class PhabricatorTestCase extends PhutilTestCase {
   protected function willRunOneTest($test) {
     $config = $this->getComputedConfiguration();
 
+    // Start every test with an empty request cache, as the daemons do between
+    // tasks. Otherwise values cached by earlier tests, like the list of Spaces
+    // in a storage fixture that has since been rolled back, leak into this one.
+    PhabricatorCaches::destroyRequestCache();
+
     if ($config[self::PHABRICATOR_TESTCONFIG_BUILD_STORAGE_FIXTURES]) {
       LiskDAO::beginIsolateAllLiskEffectsToTransactions();
     }
@@ -280,6 +285,30 @@ abstract class PhabricatorTestCase extends PhutilTestCase {
         'Expected a "%s" mentioning "%s".',
         $expected_exception_class,
         $expect_substring));
+  }
+
+  /**
+   * Asserts that a callable raises no deprecation warnings, and returns its
+   * result. `PhutilErrorHandler` only logs deprecations, so tests pass anyway.
+   */
+  final protected function assertNoDeprecations($callable, $message) {
+    $deprecations = array();
+    set_error_handler(
+      function ($errno, $errstr, $errfile, $errline) use (&$deprecations) {
+        $deprecations[] = pht('%s at [%s:%d]', $errstr, $errfile, $errline);
+        return true;
+      },
+      E_DEPRECATED);
+
+    try {
+      $result = $callable();
+    } finally {
+      restore_error_handler();
+    }
+
+    $this->assertEqual(array(), $deprecations, $message);
+
+    return $result;
   }
 
 }

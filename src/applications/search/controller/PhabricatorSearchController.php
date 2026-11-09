@@ -13,7 +13,7 @@ final class PhabricatorSearchController
     $viewer = $this->getViewer();
     $query = $request->getStr('query');
 
-    if ($request->getStr('jump') != 'no' && strlen($query)) {
+    if ($request->getStr('jump') != 'no' && phutil_nonempty_string($query)) {
       $jump_uri = id(new PhabricatorDatasourceEngine())
         ->setViewer($viewer)
         ->newJumpURI($query);
@@ -31,7 +31,7 @@ final class PhabricatorSearchController
     if ($request->getBool('search:primary')) {
 
       // If there's no query, just take the user to advanced search.
-      if (!strlen($query)) {
+      if (!phutil_nonempty_string($query)) {
         $advanced_uri = '/search/query/advanced/';
         return id(new AphrontRedirectResponse())->setURI($advanced_uri);
       }

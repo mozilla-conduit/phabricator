@@ -104,6 +104,10 @@ final class PhabricatorEmbedFileRemarkupRule
     }
   }
 
+  /**
+   * @param string $option_string File display options. See "Embedding Images"
+   *   in @{article:Remarkup Reference}
+   */
   private function getFileOptions($option_string) {
     $options = array(
       'size' => null,
@@ -197,7 +201,8 @@ final class PhabricatorEmbedFileRemarkupRule
       $alt = $options['alt'];
     }
 
-    if (!strlen($alt)) {
+    // PhutilSimpleOptions returns a bool if the option is set without a value
+    if (is_bool($alt) || !phutil_nonempty_string($alt)) {
       $alt = $file->getAltText();
     }
 
@@ -346,10 +351,11 @@ final class PhabricatorEmbedFileRemarkupRule
   }
 
   private function parseDimension($string) {
-    $string = trim($string);
-
-    if (preg_match('/^(?:\d*\\.)?\d+%?$/', $string)) {
-      return $string;
+    if ($string !== null) {
+      $string = trim($string);
+      if (preg_match('/^(?:\d*\\.)?\d+%?$/', $string)) {
+        return $string;
+      }
     }
 
     return null;

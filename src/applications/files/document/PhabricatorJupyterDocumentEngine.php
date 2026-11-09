@@ -36,14 +36,14 @@ final class PhabricatorJupyterDocumentEngine
   }
 
   public function canDiffDocuments(
-    PhabricatorDocumentRef $uref = null,
-    PhabricatorDocumentRef $vref = null) {
+    ?PhabricatorDocumentRef $uref = null,
+    ?PhabricatorDocumentRef $vref = null) {
     return true;
   }
 
   public function newEngineBlocks(
-    PhabricatorDocumentRef $uref = null,
-    PhabricatorDocumentRef $vref = null) {
+    ?PhabricatorDocumentRef $uref = null,
+    ?PhabricatorDocumentRef $vref = null) {
 
     $blocks = new PhabricatorDocumentEngineBlocks();
 
@@ -323,11 +323,11 @@ final class PhabricatorJupyterDocumentEngine
     }
 
     $nbformat = idx($data, 'nbformat');
-    if (!strlen($nbformat)) {
+    if (!is_int($nbformat)) {
       throw new Exception(
         pht(
-          'This document is missing an "nbformat" field. Jupyter notebooks '.
-          'must have this field.'));
+          'This document lacks a valid "nbformat" field. Jupyter notebooks '.
+          'must have this field and it must have an integer value.'));
     }
 
     if ($nbformat !== 4) {

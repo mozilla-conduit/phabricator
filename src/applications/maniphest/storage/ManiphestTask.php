@@ -5,7 +5,6 @@ final class ManiphestTask extends ManiphestDAO
     PhabricatorSubscribableInterface,
     PhabricatorMarkupInterface,
     PhabricatorPolicyInterface,
-    PhabricatorTokenReceiverInterface,
     PhabricatorFlaggableInterface,
     PhabricatorMentionableInterface,
     PhabricatorCustomFieldInterface,
@@ -16,7 +15,6 @@ final class ManiphestTask extends ManiphestDAO
     PhabricatorConduitResultInterface,
     PhabricatorFulltextInterface,
     PhabricatorFerretInterface,
-    DoorkeeperBridgedObjectInterface,
     PhabricatorEditEngineSubtypeInterface,
     PhabricatorEditEngineLockableInterface,
     PhabricatorEditEngineMFAInterface,
@@ -51,7 +49,6 @@ final class ManiphestTask extends ManiphestDAO
   private $groupByProjectPHID = self::ATTACHABLE;
   private $customFields = self::ATTACHABLE;
   private $edgeProjectPHIDs = self::ATTACHABLE;
-  private $bridgedObject = self::ATTACHABLE;
 
   public static function initializeNewTask(PhabricatorUser $actor) {
     $app = id(new PhabricatorApplicationQuery())
@@ -356,20 +353,6 @@ final class ManiphestTask extends ManiphestDAO
   }
 
 
-/* -(  PhabricatorTokenReceiverInterface  )---------------------------------- */
-
-
-  public function getUsersToNotifyOfTokenGiven() {
-    // Sort of ambiguous who this was intended for; just let them both know.
-    return array_filter(
-      array_unique(
-        array(
-          $this->getAuthorPHID(),
-          $this->getOwnerPHID(),
-        )));
-  }
-
-
 /* -(  PhabricatorCustomFieldInterface  )------------------------------------ */
 
 
@@ -527,20 +510,6 @@ final class ManiphestTask extends ManiphestDAO
 
   public function newFulltextEngine() {
     return new ManiphestTaskFulltextEngine();
-  }
-
-
-/* -(  DoorkeeperBridgedObjectInterface  )----------------------------------- */
-
-
-  public function getBridgedObject() {
-    return $this->assertAttached($this->bridgedObject);
-  }
-
-  public function attachBridgedObject(
-    DoorkeeperExternalObject $object = null) {
-    $this->bridgedObject = $object;
-    return $this;
   }
 
 

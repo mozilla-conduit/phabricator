@@ -40,7 +40,7 @@ final class PhabricatorCoreConfigOptions
     $silent_description = $this->deformat(pht(<<<EOREMARKUP
 This option allows you to stop this service from sending data to most external
 services: it will disable email, SMS, repository mirroring, remote builds,
-Doorkeeper writes, and webhooks.
+and webhooks.
 
 This option is intended to allow an instance to be exported, copied, imported,
 and run in a test environment without impacting users. For example, if you are

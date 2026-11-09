@@ -4,7 +4,6 @@ final class AphlictDropdownDataQuery extends Phobject {
 
   private $viewer;
   private $notificationData;
-  private $conpherenceData;
 
   public function setViewer(PhabricatorUser $viewer) {
     $this->viewer = $viewer;
@@ -27,41 +26,8 @@ final class AphlictDropdownDataQuery extends Phobject {
     return $this->notificationData;
   }
 
-  private function setConpherenceData(array $data) {
-    $this->conpherenceData = $data;
-    return $this;
-  }
-
-  public function getConpherenceData() {
-    if ($this->conpherenceData === null) {
-      throw new Exception(pht('You must %s first!', 'execute()'));
-    }
-    return $this->conpherenceData;
-  }
-
   public function execute() {
     $viewer = $this->getViewer();
-
-    $conpherence_app = 'PhabricatorConpherenceApplication';
-    $is_c_installed = PhabricatorApplication::isClassInstalledForViewer(
-      $conpherence_app,
-      $viewer);
-    if ($is_c_installed) {
-      $raw_message_count_number = $viewer->getUnreadMessageCount();
-      $message_count_number = $this->formatNumber($raw_message_count_number);
-    } else {
-      $raw_message_count_number = null;
-      $message_count_number = null;
-    }
-
-
-    $conpherence_data = array(
-      'isInstalled' => $is_c_installed,
-      'countType' => 'messages',
-      'count' => $message_count_number,
-      'rawCount' => $raw_message_count_number,
-    );
-    $this->setConpherenceData($conpherence_data);
 
     $notification_app = 'PhabricatorNotificationsApplication';
     $is_n_installed = PhabricatorApplication::isClassInstalledForViewer(
@@ -86,7 +52,6 @@ final class AphlictDropdownDataQuery extends Phobject {
 
     return array(
       $notification_app => $this->getNotificationData(),
-      $conpherence_app => $this->getConpherenceData(),
     );
   }
 

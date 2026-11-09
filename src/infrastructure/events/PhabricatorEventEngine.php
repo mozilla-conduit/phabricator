@@ -23,9 +23,6 @@ final class PhabricatorEventEngine extends Phobject {
       }
     }
 
-    // Add built-in listeners.
-    $listeners[] = new DarkConsoleEventPluginAPI();
-
     // Add application listeners.
     $applications = PhabricatorApplication::getAllInstalledApplications();
     foreach ($applications as $application) {

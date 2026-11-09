@@ -38,37 +38,6 @@ final class PhabricatorObjectListQueryTestCase extends PhabricatorTestCase {
       ),
       $result);
 
-    $package = PhabricatorOwnersPackage::initializeNewPackage($user)
-      ->setName(pht('Query Test Package'))
-      ->save();
-
-    $package_phid = $package->getPHID();
-    $package_mono = $package->getMonogram();
-
-    $result = $this->parseObjectList("{$package_mono} Any Ignored Text");
-    $this->assertEqual(array($package_phid), $result);
-
-    $result = $this->parseObjectList("{$package_mono} Any Text, {$name}");
-    $this->assertEqual(array($package_phid, $phid), $result);
-
-    $result = $this->parseObjectList(
-      "{$package_mono} Any Text!, {$name}",
-      array(),
-      false,
-      array('!'));
-    $this->assertEqual(
-      array(
-        array(
-          'phid' => $package_phid,
-          'suffixes' => array('!' => '!'),
-        ),
-        array(
-          'phid' => $phid,
-          'suffixes' => array(),
-        ),
-      ),
-      $result);
-
     // Expect failure when loading a user if objects must be of type "DUCK".
     $caught = null;
     try {

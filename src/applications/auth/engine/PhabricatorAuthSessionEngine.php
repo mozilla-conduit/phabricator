@@ -333,7 +333,7 @@ final class PhabricatorAuthSessionEngine extends Phobject {
    */
   public function terminateLoginSessions(
     PhabricatorUser $user,
-    PhutilOpaqueEnvelope $except_session = null) {
+    ?PhutilOpaqueEnvelope $except_session = null) {
 
     $sessions = id(new PhabricatorAuthSessionQuery())
       ->setViewer($user)
@@ -879,52 +879,6 @@ final class PhabricatorAuthSessionEngine extends Phobject {
   }
 
 
-/* -(  Legalpad Documents )-------------------------------------------------- */
-
-
-  /**
-   * Upgrade a session to have all legalpad documents signed.
-   *
-   * @param PhabricatorUser User whose session should upgrade.
-   * @param array LegalpadDocument objects
-   * @return void
-   * @task partial
-   */
-  public function signLegalpadDocuments(PhabricatorUser $viewer, array $docs) {
-
-    if (!$viewer->hasSession()) {
-      throw new Exception(
-        pht('Signing session legalpad documents of user with no session!'));
-    }
-
-    $session = $viewer->getSession();
-
-    if ($session->getSignedLegalpadDocuments()) {
-      throw new Exception(pht(
-        'Session has already signed required legalpad documents!'));
-    }
-
-    $unguarded = AphrontWriteGuard::beginScopedUnguardedWrites();
-      $session->setSignedLegalpadDocuments(1);
-
-      queryfx(
-        $session->establishConnection('w'),
-        'UPDATE %T SET signedLegalpadDocuments = %d WHERE id = %d',
-        $session->getTableName(),
-        1,
-        $session->getID());
-
-      if (!empty($docs)) {
-        $log = PhabricatorUserLog::initializeNewLog(
-          $viewer,
-          $viewer->getPHID(),
-          PhabricatorSignDocumentsUserLogType::LOGTYPE);
-        $log->save();
-      }
-    unset($unguarded);
-  }
-
-
 /* -(  One Time Login URIs  )------------------------------------------------ */
 
 
@@ -946,7 +900,7 @@ final class PhabricatorAuthSessionEngine extends Phobject {
    */
   public function getOneTimeLoginURI(
     PhabricatorUser $user,
-    PhabricatorUserEmail $email = null,
+    ?PhabricatorUserEmail $email = null,
     $type = self::ONETIME_RESET,
     $force_full_session = false) {
 
@@ -993,7 +947,7 @@ final class PhabricatorAuthSessionEngine extends Phobject {
    */
   public function loadOneTimeLoginKey(
     PhabricatorUser $user,
-    PhabricatorUserEmail $email = null,
+    ?PhabricatorUserEmail $email = null,
     $key = null) {
 
     $key_hash = $this->getOneTimeLoginKeyHash($user, $email, $key);
@@ -1021,7 +975,7 @@ final class PhabricatorAuthSessionEngine extends Phobject {
    */
   private function getOneTimeLoginKeyHash(
     PhabricatorUser $user,
-    PhabricatorUserEmail $email = null,
+    ?PhabricatorUserEmail $email = null,
     $key = null) {
 
     $parts = array(

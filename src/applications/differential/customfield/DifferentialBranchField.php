@@ -36,8 +36,8 @@ final class DifferentialBranchField
   }
 
   private function getBranchDescription(DifferentialDiff $diff) {
-    $branch = $diff->getBranch();
-    $bookmark = $diff->getBookmark();
+    $branch = coalesce($diff->getBranch(), '');
+    $bookmark = coalesce($diff->getBookmark(), '');
 
     if (strlen($branch) && strlen($bookmark)) {
       return pht('%s (bookmark) on %s (branch)', $bookmark, $branch);
@@ -45,7 +45,7 @@ final class DifferentialBranchField
       return pht('%s (bookmark)', $bookmark);
     } else if (strlen($branch)) {
       $onto = $diff->loadTargetBranch();
-      if (strlen($onto) && ($onto !== $branch)) {
+      if (phutil_nonempty_string($onto) && ($onto !== $branch)) {
         return pht(
           '%s (branched from %s)',
           $branch,

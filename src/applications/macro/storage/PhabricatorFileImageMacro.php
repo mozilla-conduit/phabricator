@@ -5,7 +5,6 @@ final class PhabricatorFileImageMacro extends PhabricatorFileDAO
     PhabricatorSubscribableInterface,
     PhabricatorApplicationTransactionInterface,
     PhabricatorFlaggableInterface,
-    PhabricatorTokenReceiverInterface,
     PhabricatorPolicyInterface {
 
   protected $authorPHID;
@@ -32,7 +31,7 @@ final class PhabricatorFileImageMacro extends PhabricatorFileDAO
     return $this->assertAttached($this->file);
   }
 
-  public function attachAudio(PhabricatorFile $audio = null) {
+  public function attachAudio(?PhabricatorFile $audio = null) {
     $this->audio = $audio;
     return $this;
   }
@@ -108,16 +107,6 @@ final class PhabricatorFileImageMacro extends PhabricatorFileDAO
 
   public function isAutomaticallySubscribed($phid) {
     return false;
-  }
-
-
-/* -(  PhabricatorTokenRecevierInterface  )---------------------------------- */
-
-
-  public function getUsersToNotifyOfTokenGiven() {
-    return array(
-      $this->getAuthorPHID(),
-    );
   }
 
 

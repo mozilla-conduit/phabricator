@@ -13,7 +13,7 @@ final class PhabricatorDashboardPanelRefList
 
     $mode_map = PhabricatorDashboardLayoutMode::getAllLayoutModes();
     $mode_key = idx($config, 'layoutMode');
-    if (!isset($mode_map[$mode_key])) {
+    if ($mode_key === null || !isset($mode_map[$mode_key])) {
       $mode_key = head_key($mode_map);
     }
     $mode = $mode_map[$mode_key];
@@ -121,7 +121,7 @@ final class PhabricatorDashboardPanelRefList
   public function movePanelRef(
     PhabricatorDashboardPanelRef $target,
     $column_key,
-    PhabricatorDashboardPanelRef $after = null) {
+    ?PhabricatorDashboardPanelRef $after = null) {
 
     $target->setColumnKey($column_key);
 

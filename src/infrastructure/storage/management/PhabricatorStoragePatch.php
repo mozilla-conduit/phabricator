@@ -9,6 +9,7 @@ final class PhabricatorStoragePatch extends Phobject {
   private $after;
   private $legacy;
   private $dead;
+  private $retired;
   private $phase;
 
   const PHASE_DEFAULT = 'default';
@@ -22,6 +23,7 @@ final class PhabricatorStoragePatch extends Phobject {
     $this->name     = $dict['name'];
     $this->after    = $dict['after'];
     $this->dead     = $dict['dead'];
+    $this->retired  = $dict['retired'];
     $this->phase = $dict['phase'];
   }
 
@@ -55,6 +57,14 @@ final class PhabricatorStoragePatch extends Phobject {
 
   public function isDead() {
     return $this->dead;
+  }
+
+  /**
+   * Tables this database still holds in existing installs, but which no code
+   * uses any more. Schema checks ignore them until a patch drops them.
+   */
+  public function getRetiredTables() {
+    return $this->retired;
   }
 
   public function getIsGlobalPatch() {

@@ -8,7 +8,6 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
   private $coverage;
   private $coverageID;
   private $context;
-  private $packages;
 
   public function setChangeset(DifferentialChangeset $changeset) {
     $this->changeset = $changeset;
@@ -42,6 +41,11 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
     return $this;
   }
 
+  /**
+   * Get the Coverage, expressed as a string, each letter with this meaning:
+   * N: Not Executable, C: Covered, U: Uncovered.
+   * @return string|null
+   */
   public function getCoverage() {
     return $this->coverage;
   }
@@ -62,16 +66,6 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
 
   public function getContext() {
     return $this->context;
-  }
-
-  public function setPackages(array $packages) {
-    assert_instances_of($packages, 'PhabricatorOwnersPackage');
-    $this->packages = mpull($packages, null, 'getPHID');
-    return $this;
-  }
-
-  public function getPackages() {
-    return $this->packages;
   }
 
   public function render() {
@@ -95,8 +89,6 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
 
     $cells[] = $this->renderCoverage();
     $cells[] = $this->renderModifiedCoverage();
-
-    $cells[] = $this->renderPackages();
 
     return $cells;
   }
@@ -139,7 +131,7 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
     $not_applicable = '-';
 
     $coverage = $this->getCoverage();
-    if (!strlen($coverage)) {
+    if (!phutil_nonempty_string($coverage)) {
       return $not_applicable;
     }
 
@@ -157,7 +149,7 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
     $not_applicable = '-';
 
     $coverage = $this->getCoverage();
-    if (!strlen($coverage)) {
+    if (!phutil_nonempty_string($coverage)) {
       return $not_applicable;
     }
 
@@ -215,20 +207,6 @@ final class PHUIDiffTableOfContentsItemView extends AphrontView {
         'class' => 'differential-toc-meta',
       ),
       $meta);
-  }
-
-  public function renderPackages() {
-    $packages = $this->getPackages();
-
-    if (!$packages) {
-      return null;
-    }
-
-    $viewer = $this->getViewer();
-    $package_phids = mpull($packages, 'getPHID');
-
-    return $viewer->renderHandleList($package_phids)
-      ->setGlyphLimit(48);
   }
 
 }

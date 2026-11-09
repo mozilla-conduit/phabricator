@@ -941,7 +941,7 @@ abstract class PhabricatorEditEngine
       }
     } else {
       $form_key = $request->getURIData('formKey');
-      if (strlen($form_key)) {
+      if (phutil_nonempty_string($form_key)) {
         $config = $this->loadEditEngineConfigurationWithIdentifier($form_key);
 
         if (!$config) {
@@ -971,14 +971,14 @@ abstract class PhabricatorEditEngine
     }
 
     $page_key = $request->getURIData('pageKey');
-    if (!strlen($page_key)) {
+    if (!phutil_nonempty_string($page_key)) {
       $pages = $this->getPages($object);
       if ($pages) {
         $page_key = head_key($pages);
       }
     }
 
-    if (strlen($page_key)) {
+    if (phutil_nonempty_string($page_key)) {
       $page = $this->selectPage($object, $page_key);
       if (!$page) {
         return new Aphront404Response();
@@ -1169,7 +1169,7 @@ abstract class PhabricatorEditEngine
       if ($this->getIsCreate()) {
         $template = $request->getStr('template');
 
-        if (strlen($template)) {
+        if (phutil_nonempty_string($template)) {
           $template_object = $this->newObjectFromIdentifier(
             $template,
             array(
@@ -1200,7 +1200,7 @@ abstract class PhabricatorEditEngine
           }
 
           $field_key = $field->getKey();
-          if (isset($copy_fields[$field_key])) {
+          if ($field_key && isset($copy_fields[$field_key])) {
             $field->readValueFromField($copy_fields[$field_key]);
           }
 
@@ -1909,7 +1909,7 @@ abstract class PhabricatorEditEngine
     $comment_text = $request->getStr('comment');
 
     $comment_metadata = $request->getStr('comment_metadata');
-    if (strlen($comment_metadata)) {
+    if (phutil_nonempty_string($comment_metadata)) {
       $comment_metadata = phutil_json_decode($comment_metadata);
     }
 
@@ -2009,7 +2009,7 @@ abstract class PhabricatorEditEngine
       $xactions[] = $xaction;
     }
 
-    if (strlen($comment_text) || !$xactions) {
+    if (phutil_nonempty_string($comment_text) || !$xactions) {
       $xactions[] = id(clone $template)
         ->setTransactionType(PhabricatorTransactions::TYPE_COMMENT)
         ->setMetadataValue('remarkup.control', $comment_metadata)
@@ -2335,6 +2335,12 @@ abstract class PhabricatorEditEngine
     return $this->getConduitEditTypesFromFields($fields);
   }
 
+  /**
+   * Get all EditEngines of all applications. (Use PhabricatorEditEngineQuery
+   * to get only EditEngines of installed applications installed.)
+   *
+   * @array<PhabricatorEditEngine>
+   */
   final public static function getAllEditEngines() {
     return id(new PhutilClassMapQuery())
       ->setAncestorClass(__CLASS__)

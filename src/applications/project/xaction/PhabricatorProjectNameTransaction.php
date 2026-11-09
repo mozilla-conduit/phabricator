@@ -71,7 +71,7 @@ final class PhabricatorProjectNameTransaction
 
     $max_length = $object->getColumnMaximumByteLength('name');
     foreach ($xactions as $xaction) {
-      $new_value = $xaction->getNewValue();
+      $new_value = $xaction->getNewValue() ?? '';
       $new_length = strlen($new_value);
       if ($new_length > $max_length) {
         $errors[] = $this->newInvalidError(

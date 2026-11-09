@@ -268,7 +268,7 @@ abstract class PhabricatorStandardCustomField
 
   public function readValueFromRequest(AphrontRequest $request) {
     $value = $request->getStr($this->getFieldKey());
-    if (!strlen($value)) {
+    if (!phutil_nonempty_string($value)) {
       $value = null;
     }
     $this->setFieldValue($value);
@@ -301,7 +301,7 @@ abstract class PhabricatorStandardCustomField
   }
 
   public function renderPropertyViewValue(array $handles) {
-    if (!strlen($this->getFieldValue())) {
+    if (!phutil_nonempty_string($this->getFieldValue())) {
       return null;
     }
     return $this->getFieldValue();
@@ -389,7 +389,7 @@ abstract class PhabricatorStandardCustomField
     if (is_array($value)) {
       return empty($value);
     }
-    return !strlen($value);
+    return $value === null || !strlen($value);
   }
 
   public function getApplicationTransactionTitle(
@@ -477,7 +477,9 @@ abstract class PhabricatorStandardCustomField
     }
 
     $field_value = $this->getFieldValue();
-    if (strlen($field_value)) {
+    if ($field_value !== null &&
+        !is_array($field_value) &&
+        strlen($field_value)) {
       $document->addField($field_key, $field_value);
     }
   }

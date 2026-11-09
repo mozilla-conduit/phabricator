@@ -37,11 +37,11 @@ final class DiffusionBrowseQueryConduitAPIMethod
     $repository = $drequest->getRepository();
 
     $path = $request->getValue('path');
-    if (!strlen($path) || $path === '/') {
+    if (!phutil_nonempty_string($path) || $path === '/') {
       $path = null;
     }
 
-    $commit = $request->getValue('commit');
+    $commit = $request->getValue('commit', '');
     $offset = (int)$request->getValue('offset');
     $limit = (int)$request->getValue('limit');
     $result = $this->getEmptyResultSet();

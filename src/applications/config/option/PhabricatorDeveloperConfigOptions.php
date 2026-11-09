@@ -21,41 +21,6 @@ final class PhabricatorDeveloperConfigOptions
 
   public function getOptions() {
     return array(
-      $this->newOption('darkconsole.enabled', 'bool', false)
-        ->setBoolOptions(
-          array(
-            pht('Enable DarkConsole'),
-            pht('Disable DarkConsole'),
-          ))
-        ->setSummary(pht('Enable the debugging console.'))
-        ->setDescription(
-          pht(
-            "DarkConsole is a development and profiling tool built into ".
-            "the web interface. You should leave it disabled unless ".
-            "you are developing or debugging %s.\n\n".
-            "Once you activate DarkConsole for the install, **you need to ".
-            "enable it for your account before it will actually appear on ".
-            "pages.** You can do this in Settings > Developer Settings.\n\n".
-            "DarkConsole exposes potentially sensitive data (like queries, ".
-            "stack traces, and configuration) so you generally should not ".
-            "turn it on in production.",
-            PlatformSymbols::getPlatformServerName())),
-      $this->newOption('darkconsole.always-on', 'bool', false)
-        ->setBoolOptions(
-          array(
-            pht('Always Activate DarkConsole'),
-            pht('Require DarkConsole Activation'),
-          ))
-        ->setSummary(pht('Activate DarkConsole on every page.'))
-        ->setDescription(
-          pht(
-            "This option allows you to enable DarkConsole on every page, ".
-            "even for logged-out users. This is only really useful if you ".
-            "need to debug something on a logged-out page. You should not ".
-            "enable this option in production.\n\n".
-            "You must enable DarkConsole by setting '%s' ".
-            "before this option will have any effect.",
-            'darkconsole.enabled')),
       $this->newOption('debug.time-limit', 'int', null)
         ->setSummary(
           pht(
@@ -65,8 +30,8 @@ final class PhabricatorDeveloperConfigOptions
             "This option can help debug pages which are taking a very ".
             "long time (more than 30 seconds) to render.\n\n".
             "If a page is slow to render (but taking less than 30 seconds), ".
-            "the best tools to use to figure out why it is slow are usually ".
-            "the DarkConsole service call profiler.\n\n".
+            "the best tool to use to figure out why it is slow is usually ".
+            "a profiler.\n\n".
             "However, if a request takes a very long time to return, some ".
             "components (like Apache, nginx, or PHP itself) may abort the ".
             "request before it finishes. This can prevent you from using ".
@@ -89,7 +54,7 @@ final class PhabricatorDeveloperConfigOptions
           ))
         ->setSummary(
           pht(
-            'Confirm before redirecting so DarkConsole can be examined.'))
+            'Confirm before redirecting, to debug POST handling.'))
         ->setDescription(
           pht(
             'Normally, this software issues HTTP redirects after a successful '.

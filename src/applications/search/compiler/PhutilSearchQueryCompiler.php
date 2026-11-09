@@ -103,7 +103,9 @@ final class PhutilSearchQueryCompiler
 
   private function tokenizeQuery($query) {
     $maximum_bytes = 1024;
-
+    if ($query === null) {
+      $query = '';
+    }
     $query_bytes = strlen($query);
     if ($query_bytes > $maximum_bytes) {
       throw new PhutilSearchQueryCompilerSyntaxException(
@@ -403,6 +405,9 @@ final class PhutilSearchQueryCompiler
       $present_tokens = array();
       $absent_tokens = array();
       foreach ($results as $result) {
+        if (!isset($result['function'])) {
+          continue;
+        }
         $function = $result['function'];
 
         if ($result['operator'] === self::OPERATOR_ABSENT) {
@@ -435,7 +440,7 @@ final class PhutilSearchQueryCompiler
 
   private function renderToken(
     PhutilSearchQueryToken $token,
-    PhutilSearchStemmer $stemmer = null) {
+    ?PhutilSearchStemmer $stemmer = null) {
     $value = $token->getValue();
 
     if ($stemmer) {

@@ -194,7 +194,6 @@ final class PHUITimelineView extends AphrontView {
     }
 
     if ($show) {
-      $this->prepareBadgeData($show);
       $events[] = phutil_implode_html($spacer, $show);
     }
 
@@ -231,66 +230,6 @@ final class PHUITimelineView extends AphrontView {
                    'the-worlds-end',
       ),
       '');
-  }
-
-  private function prepareBadgeData(array $events) {
-    assert_instances_of($events, 'PHUITimelineEventView');
-
-    $viewer = $this->getUser();
-    $can_use_badges = PhabricatorApplication::isClassInstalledForViewer(
-      'PhabricatorBadgesApplication',
-      $viewer);
-    if (!$can_use_badges) {
-      return;
-    }
-
-    $user_phid_type = PhabricatorPeopleUserPHIDType::TYPECONST;
-
-    $user_phids = array();
-    foreach ($events as $key => $event) {
-      $author_phid = $event->getAuthorPHID();
-      if (!$author_phid) {
-        unset($events[$key]);
-        continue;
-      }
-
-      if (phid_get_type($author_phid) != $user_phid_type) {
-        // This is likely an application actor, like "Herald" or "Harbormaster".
-        // They can't have badges.
-        unset($events[$key]);
-        continue;
-      }
-
-      $user_phids[$author_phid] = $author_phid;
-    }
-
-    if (!$user_phids) {
-      return;
-    }
-
-    $users = id(new PhabricatorPeopleQuery())
-      ->setViewer($viewer)
-      ->withPHIDs($user_phids)
-      ->needBadgeAwards(true)
-      ->execute();
-    $users = mpull($users, null, 'getPHID');
-
-    foreach ($events as $event) {
-      $user_phid = $event->getAuthorPHID();
-      if (!array_key_exists($user_phid, $users)) {
-        continue;
-      }
-      $badges = $users[$user_phid]->getRecentBadgeAwards();
-      foreach ($badges as $badge) {
-        $badge_view = id(new PHUIBadgeMiniView())
-          ->setIcon($badge['icon'])
-          ->setQuality($badge['quality'])
-          ->setHeader($badge['name'])
-          ->setTipDirection('E')
-          ->setHref('/badges/view/'.$badge['id'].'/');
-        $event->addBadge($badge_view);
-      }
-    }
   }
 
 }

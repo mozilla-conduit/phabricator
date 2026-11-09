@@ -18,10 +18,6 @@ abstract class CelerityResourceController extends PhabricatorController {
     return true;
   }
 
-  public function shouldAllowLegallyNonCompliantUsers() {
-    return true;
-  }
-
   abstract public function getCelerityResourceMap();
 
   protected function serveResource(array $spec) {
@@ -113,7 +109,7 @@ abstract class CelerityResourceController extends PhabricatorController {
 
     $range = AphrontRequest::getHTTPHeader('Range');
 
-    if (strlen($range)) {
+    if (phutil_nonempty_string($range)) {
       $response->setContentLength(strlen($data));
 
       list($range_begin, $range_end) = $response->parseHTTPRange($range);

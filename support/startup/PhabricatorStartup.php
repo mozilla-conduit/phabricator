@@ -387,7 +387,7 @@ final class PhabricatorStartup {
    * @task validation
    */
   private static function setupPHP() {
-    error_reporting(E_ALL | E_STRICT);
+    error_reporting(E_ALL);
     self::$oldMemoryLimit = ini_get('memory_limit');
     ini_set('memory_limit', -1);
 
@@ -461,7 +461,7 @@ final class PhabricatorStartup {
         case INPUT_COOKIE:
           $_COOKIE = array_merge($_COOKIE, $filtered);
           break;
-        case INPUT_ENV;
+        case INPUT_ENV:
           $env = array_merge($_ENV, $filtered);
           $_ENV = self::filterEnvSuperglobal($env);
           break;
@@ -534,7 +534,7 @@ final class PhabricatorStartup {
    * @task validation
    */
   private static function verifyPHP() {
-    $required_version = '5.2.3';
+    $required_version = '7.2.25';
     if (version_compare(PHP_VERSION, $required_version) < 0) {
       self::didFatal(
         "You are running PHP version '".PHP_VERSION."', which is older than ".

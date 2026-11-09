@@ -48,9 +48,9 @@ class PhabricatorUserStore {
       $project = self::fetchProject($PHID);
       return array_values($this->queryAll($project->getMemberPHIDs()));
     } else if (substr($PHID, 0, strlen('PHID-OPKG')) == 'PHID-OPKG') {
-      // This is a "code owner" subscriber
-      $package = self::fetchPackage($PHID);
-      return array_values($this->queryAll($package->getOwnerPHIDs()));
+      // Owners packages have been removed, so an old package subscriber has
+      // nobody left to notify.
+      return [];
     } else {
       // PHID type must be "PHID-USER".
       return [$this->find($PHID)];
@@ -65,10 +65,9 @@ class PhabricatorUserStore {
       $watchers = array_values($this->queryAll($project->getWatcherPHIDs()));
       return new GroupPhabricatorReviewer($project->getDisplayName(), $users, $watchers);
     } else if (substr($PHID, 0, strlen('PHID-OPKG')) == 'PHID-OPKG') {
-      // This is a "code owner" reviewer
-      $package = self::fetchPackage($PHID);
-      $users = array_values($this->queryAll($package->getOwnerPHIDs()));
-      return new GroupPhabricatorReviewer($package->getName(), $users, []);
+      // Owners packages have been removed, so an old package reviewer has
+      // nobody left to notify.
+      return new GroupPhabricatorReviewer('', [], []);
     } else {
       // PHID type must be "PHID-USER".
       // So, this is a single user reviewer.
@@ -101,13 +100,6 @@ class PhabricatorUserStore {
       ->setViewer(PhabricatorUser::getOmnipotentUser())
       ->needMembers(true)
       ->needWatchers(true)
-      ->withPHIDs([$PHID])
-      ->executeOne();
-  }
-
-  private static function fetchPackage(string $PHID): PhabricatorOwnersPackage {
-    return (new PhabricatorOwnersPackageQuery())
-      ->setViewer(PhabricatorUser::getOmnipotentUser())
       ->withPHIDs([$PHID])
       ->executeOne();
   }

@@ -5,8 +5,6 @@
  */
 final class PhabricatorTrivialTestCase extends PhabricatorTestCase {
 
-  // NOTE: Update developer/unit_tests.diviner when updating this class!
-
   private $two;
 
   protected function willRunOneTest($test_name) {

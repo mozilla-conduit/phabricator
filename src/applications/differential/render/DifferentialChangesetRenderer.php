@@ -105,7 +105,7 @@ abstract class DifferentialChangesetRenderer extends Phobject {
     return $this->depthOnlyLines;
   }
 
-  public function attachOldFile(PhabricatorFile $old = null) {
+  public function attachOldFile(?PhabricatorFile $old = null) {
     $this->oldFile = $old;
     return $this;
   }
@@ -121,7 +121,7 @@ abstract class DifferentialChangesetRenderer extends Phobject {
     return (bool)$this->oldFile;
   }
 
-  public function attachNewFile(PhabricatorFile $new = null) {
+  public function attachNewFile(?PhabricatorFile $new = null) {
     $this->newFile = $new;
     return $this;
   }
@@ -521,7 +521,7 @@ abstract class DifferentialChangesetRenderer extends Phobject {
         }
       }
 
-      if (isset($hunk_starts[$ospec['line']])) {
+      if ($ospec['line'] !== null  && isset($hunk_starts[$ospec['line']])) {
         $primitives[] = array(
           'type' => 'no-context',
         );

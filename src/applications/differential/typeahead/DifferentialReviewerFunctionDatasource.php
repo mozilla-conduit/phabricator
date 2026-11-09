@@ -18,7 +18,6 @@ final class DifferentialReviewerFunctionDatasource
   public function getComponentDatasources() {
     return array(
       new PhabricatorProjectOrUserFunctionDatasource(),
-      new PhabricatorOwnersPackageFunctionDatasource(),
       new DifferentialNoReviewersDatasource(),
     );
   }

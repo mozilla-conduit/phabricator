@@ -449,6 +449,7 @@ abstract class PhabricatorCursorPagedPolicyAwareQuery
 
   /**
    * @task clauses
+   * @return PhutilQueryString
    */
   protected function buildSelectClause(AphrontDatabaseConnection $conn) {
     $parts = $this->buildSelectClauseParts($conn);
@@ -2030,7 +2031,7 @@ abstract class PhabricatorCursorPagedPolicyAwareQuery
 
       $value = $raw_token->getValue();
 
-      $length = count(phutil_utf8v($value));
+      $length = phutil_utf8_strlen($value);
 
       if ($raw_token->getOperator() == $op_sub) {
         $is_substring = true;
@@ -2449,11 +2450,11 @@ abstract class PhabricatorCursorPagedPolicyAwareQuery
     PhabricatorSearchNgrams $index,
     $value) {
 
-    if (strlen($value)) {
+    if (phutil_nonempty_string($value)) {
       $this->ngrams[] = array(
         'index' => $index,
         'value' => $value,
-        'length' => count(phutil_utf8v($value)),
+        'length' => phutil_utf8_strlen($value),
       );
     }
 
@@ -2810,6 +2811,7 @@ abstract class PhabricatorCursorPagedPolicyAwareQuery
 
   /**
    * @task edgelogic
+   * @return array<PhutilQueryString>
    */
   public function buildEdgeLogicWhereClause(AphrontDatabaseConnection $conn) {
     $where = array();
@@ -2869,6 +2871,7 @@ abstract class PhabricatorCursorPagedPolicyAwareQuery
 
   /**
    * @task edgelogic
+   * @return array<PhutilQueryString>
    */
   public function buildEdgeLogicHavingClause(AphrontDatabaseConnection $conn) {
     $having = array();

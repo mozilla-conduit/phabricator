@@ -267,7 +267,6 @@ final class DifferentialChangesetDetailView extends AphrontView {
           'pathIconIcon' => $changeset->getPathIconIcon(),
           'pathIconColor' => $changeset->getPathIconColor(),
           'isLowImportance' => $changeset->getIsLowImportanceChangeset(),
-          'isOwned' => $changeset->getIsOwnedChangeset(),
 
           'editorURITemplate' => $this->getEditorURITemplate(),
           'editorConfigureURI' => $this->getEditorConfigureURI(),

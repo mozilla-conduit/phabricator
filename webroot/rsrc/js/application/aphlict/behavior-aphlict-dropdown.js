@@ -98,13 +98,6 @@ JX.behavior('aphlict-dropdown', function(config, statics) {
       update_counts(new_data);
     });
 
-  JX.Stratcom.listen(
-    'conpherence-redraw-aphlict',
-    null,
-    function (e) {
-      update_counts(e.getData());
-    });
-
   function update_counts(new_data) {
     var updated = false;
     for (var ii = 0; ii < new_data.length; ii++) {

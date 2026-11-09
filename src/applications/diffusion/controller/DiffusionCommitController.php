@@ -27,8 +27,9 @@ final class DiffusionCommitController extends DiffusionController {
 
     // If this page is being accessed via "/source/xyz/commit/...", redirect
     // to the canonical URI.
-    $has_callsign = strlen($request->getURIData('repositoryCallsign'));
-    $has_id = strlen($request->getURIData('repositoryID'));
+    $has_callsign =
+      phutil_nonempty_string($request->getURIData('repositoryCallsign'));
+    $has_id = phutil_nonempty_string($request->getURIData('repositoryID'));
     if (!$has_callsign && !$has_id) {
       $canonical_uri = $repository->getCommitURI($commit_identifier);
       return id(new AphrontRedirectResponse())
@@ -922,7 +923,7 @@ final class DiffusionCommitController extends DiffusionController {
 
   private function linkBugtraq($corpus) {
     $url = PhabricatorEnv::getEnvConfig('bugtraq.url');
-    if (!strlen($url)) {
+    if (!phutil_nonempty_string($url)) {
       return $corpus;
     }
 
@@ -965,34 +966,6 @@ final class DiffusionCommitController extends DiffusionController {
     $diffusion_view = id(new DiffusionEmptyResultView())
       ->setDiffusionRequest($drequest);
 
-    $have_owners = PhabricatorApplication::isClassInstalledForViewer(
-      'PhabricatorOwnersApplication',
-      $viewer);
-
-    if (!$changesets) {
-      $have_owners = false;
-    }
-
-    if ($have_owners) {
-      if ($viewer->getPHID()) {
-        $packages = id(new PhabricatorOwnersPackageQuery())
-          ->setViewer($viewer)
-          ->withStatuses(array(PhabricatorOwnersPackage::STATUS_ACTIVE))
-          ->withAuthorityPHIDs(array($viewer->getPHID()))
-          ->execute();
-        $toc_view->setAuthorityPackages($packages);
-      }
-
-      $repository = $drequest->getRepository();
-      $repository_phid = $repository->getPHID();
-
-      $control_query = id(new PhabricatorOwnersPackageQuery())
-        ->setViewer($viewer)
-        ->withStatuses(array(PhabricatorOwnersPackage::STATUS_ACTIVE))
-        ->withControl($repository_phid, mpull($changesets, 'getFilename'));
-      $control_query->execute();
-    }
-
     foreach ($changesets as $changeset_id => $changeset) {
       $path = $changeset->getFilename();
       $anchor = $changeset->getAnchorName();
@@ -1013,13 +986,6 @@ final class DiffusionCommitController extends DiffusionController {
             ' ',
             $browse_link,
           ));
-
-      if ($have_owners) {
-        $packages = $control_query->getControllingPackagesForPath(
-          $repository_phid,
-          $changeset->getFilename());
-        $item->setPackages($packages);
-      }
 
       $toc_view->addItem($item);
     }

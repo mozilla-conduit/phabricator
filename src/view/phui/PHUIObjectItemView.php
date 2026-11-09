@@ -22,7 +22,6 @@ final class PHUIObjectItemView extends AphrontTagView {
   private $imageHref;
   private $imageIcon;
   private $titleText;
-  private $badge;
   private $sideColumn;
   private $coverImage;
   private $description;
@@ -81,11 +80,29 @@ final class PHUIObjectItemView extends AphrontTagView {
     return $this->object;
   }
 
+  /**
+   * Set the href attribute
+   *
+   * @param string|PhutilURI|null $href
+   * @return self
+   */
   public function setHref($href) {
+
+    // We have not a very clear idea about what this method should receive
+    // So, let's log alien stuff for some time
+    // https://we.phorge.it/T15316
+    self::requireValidHref($href, 'href');
+
     $this->href = $href;
     return $this;
   }
 
+  /**
+   * Get the href attribute
+   *
+   * @see PHUIObjectItemView::setHref()
+   * @return string|PhutilURI|null
+   */
   public function getHref() {
     return $this->href;
   }
@@ -97,11 +114,6 @@ final class PHUIObjectItemView extends AphrontTagView {
 
   public function setSubHead($subhead) {
     $this->subhead = $subhead;
-    return $this;
-  }
-
-  public function setBadge(PHUIBadgeMiniView $badge) {
-    $this->badge = $badge;
     return $this;
   }
 
@@ -128,7 +140,19 @@ final class PHUIObjectItemView extends AphrontTagView {
     return $this;
   }
 
+  /**
+   * Set the image href attribute
+   *
+   * @param string|PhutilURI|null $image_href
+   * @return self
+   */
   public function setImageHref($image_href) {
+
+    // We have not a very clear idea about what this method should receive
+    // So, let's log alien stuff for some time
+    // https://we.phorge.it/T15316
+    self::requireValidHref($image_href, 'image_href');
+
     $this->imageHref = $image_href;
     return $this;
   }
@@ -651,7 +675,8 @@ final class PHUIObjectItemView extends AphrontTagView {
         $this->getImageIcon());
     }
 
-    if ($image && (strlen($this->href) || strlen($this->imageHref))) {
+    if ($image && (phutil_nonempty_stringlike($this->href) ||
+        phutil_nonempty_stringlike($this->imageHref))) {
       $image_href = ($this->imageHref) ? $this->imageHref : $this->href;
       $image = phutil_tag(
         'a',
@@ -670,15 +695,6 @@ final class PHUIObjectItemView extends AphrontTagView {
           'class' => 'phui-oi-col0',
         ),
         $status);
-    }
-
-    if ($this->badge) {
-      $column0 = phutil_tag(
-        'div',
-        array(
-          'class' => 'phui-oi-col0 phui-oi-badge',
-        ),
-        $this->badge);
     }
 
     if ($this->selectableName !== null) {
@@ -847,7 +863,7 @@ final class PHUIObjectItemView extends AphrontTagView {
       'class' => 'phui-oi-status-icon',
     );
 
-    if (strlen($label)) {
+    if (phutil_nonempty_string($label)) {
       $options['sigil'] = 'has-tooltip';
       $options['meta']  = array('tip' => $label, 'size' => 300);
     }
@@ -870,6 +886,32 @@ final class PHUIObjectItemView extends AphrontTagView {
     }
 
     return javelin_tag('span', $options, '');
+  }
+
+
+  /**
+   * Receive a href attribute and check if it has expected values
+   *
+   * TODO: Feel free to remove after 2023, if no more new reports arrive.
+   *
+   * https://we.phorge.it/T15316
+   *
+   * @param mixed  $href Value to be checked
+   * @param string $variable_name Human reference
+   */
+  private static function requireValidHref($href, $variable_name) {
+
+    // We have not a very clear idea about what a "href" should be
+    if (is_object($href) && !($href instanceof PhutilURI)) {
+
+      // We log stuff with a kind stack trace
+      phlog(new Exception(pht(
+        'The variable %s received an unexpected type: %s. '.
+        'Please share this stack trace as comment in Task %s',
+        $variable_name,
+        get_class($href),
+        'https://we.phorge.it/T15316')));
+    }
   }
 
 }

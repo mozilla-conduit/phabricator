@@ -199,7 +199,7 @@ final class PhabricatorMultiFactorSettingsPanel
       $cancel_uri);
 
     $selected_phid = $request->getStr('providerPHID');
-    if (empty($providers[$selected_phid])) {
+    if ($selected_phid === null || empty($providers[$selected_phid])) {
       $selected_provider = null;
     } else {
       $selected_provider = $providers[$selected_phid];
@@ -257,7 +257,7 @@ final class PhabricatorMultiFactorSettingsPanel
     // example, with SMS).
     if (!$request->isFormPost() || !$request->getBool('mfa.start')) {
       $enroll = $selected_provider->getEnrollMessage();
-      if (!strlen($enroll)) {
+      if (!phutil_nonempty_string($enroll)) {
         $enroll = $selected_provider->getEnrollDescription($viewer);
       }
 

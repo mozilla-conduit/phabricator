@@ -132,8 +132,7 @@ JX.behavior('aphlict-listen', function(config) {
   };
 
   // Don't start the client until other behaviors have had a chance to
-  // initialize. In particular, we want to capture events into the log for
-  // the DarkConsole "Realtime" panel.
+  // initialize.
   setTimeout(start_client, 0);
 
   JX.Stratcom.listen(

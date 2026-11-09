@@ -33,13 +33,13 @@ final class PhabricatorTypeaheadModularDatasourceController
       ->setAncestorClass('PhabricatorTypeaheadDatasource')
       ->execute();
 
-    if (isset($sources[$class])) {
+    if ($class && isset($sources[$class])) {
       $source = $sources[$class];
 
       $parameters = array();
 
       $raw_parameters = $request->getStr('parameters');
-      if (strlen($raw_parameters)) {
+      if (phutil_nonempty_string($raw_parameters)) {
         try {
           $parameters = phutil_json_decode($raw_parameters);
         } catch (PhutilJSONParserException $ex) {

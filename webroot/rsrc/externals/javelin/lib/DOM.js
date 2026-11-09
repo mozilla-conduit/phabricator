@@ -25,10 +25,11 @@
  *   LANG=HTML
  *   <div id="some_id">...</div>
  *
- * If the specified node does not exist, @{JX.$()} will throw an exception.
+ * If the specified node does not exist, @{function:JX.$} will throw an
+ * exception.
  *
- * For other ways to select nodes from the document, see @{JX.DOM.scry()} and
- * @{JX.DOM.find()}.
+ * For other ways to select nodes from the document, see @{method:scry} in
+ * @{class:JX.DOM} and @{method:find} in @{class:JX.DOM}.
  *
  * @param  string  "id" attribute to select from the document.
  * @return Node    Node with the specified "id" attribute.
@@ -638,11 +639,11 @@ JX.install('DOM', {
 
     /**
      * Listen for events occuring beneath a specific node in the DOM. This is
-     * similar to @{JX.Stratcom.listen()}, but allows you to specify some node
-     * which serves as a scope instead of the default scope (the whole document)
-     * which you get if you install using @{JX.Stratcom.listen()} directly. For
-     * example, to listen for clicks on nodes with the sigil 'menu-item' below
-     * the root menu node:
+     * similar to @{method:listen} in @{class:JX.Stratcom}, but allows you to
+     * specify some node which serves as a scope instead of the default scope
+     * (the whole document) which you get if you install using @{method:listen}
+     * in @{class:JX.Stratcom} directly. For example, to listen for clicks on
+     * on nodes with the sigil 'menu-item' below the root menu node:
      *
      *   var the_menu = getReferenceToTheMenuNodeSomehow();
      *   JX.DOM.listen(the_menu, 'click', 'menu-item', function(e) { ... });
@@ -672,8 +673,9 @@ JX.install('DOM', {
 
     /**
      * Invoke a custom event on a node. This method is a companion to
-     * @{method:JX.DOM.listen} and parallels @{method:JX.Stratcom.invoke} in
-     * the same way that method parallels @{method:JX.Stratcom.listen}.
+     * @{method:listen} in @{class:JX.DOM} and parallels @{method:invoke} in
+     * @{class:JX.Stratcom} in the same way that method parallels
+     * @{method:listen} in @{class:JX.Stratcom}.
      *
      * This method can not be used to invoke native events (like 'click').
      *

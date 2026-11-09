@@ -87,7 +87,6 @@ final class PhabricatorDiffusionApplication extends PhabricatorApplication {
           'delete/' => 'DiffusionRepositoryEditDeleteController',
           'update/' => 'DiffusionRepositoryEditUpdateController',
           'publish/' => 'DiffusionRepositoryEditPublishingController',
-          'testautomation/' => 'DiffusionRepositoryTestAutomationController',
         ),
         'pathtree/(?P<dblob>.*)' => 'DiffusionPathTreeController',
       ),

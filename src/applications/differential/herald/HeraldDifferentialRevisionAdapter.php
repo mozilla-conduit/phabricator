@@ -6,7 +6,6 @@ final class HeraldDifferentialRevisionAdapter
 
   protected $revision;
 
-  protected $affectedPackages;
   protected $changesets;
   private $haveHunks;
 
@@ -112,22 +111,6 @@ final class HeraldDifferentialRevisionAdapter
     }
 
     return $changesets;
-  }
-
-  public function loadAffectedPackages() {
-    if ($this->affectedPackages === null) {
-      $this->affectedPackages = array();
-
-      $repository = $this->loadRepository();
-      if ($repository) {
-        $packages = PhabricatorOwnersPackage::loadAffectedPackagesForChangesets(
-          $repository,
-          $this->getDiff(),
-          $this->loadChangesets());
-        $this->affectedPackages = $packages;
-      }
-    }
-    return $this->affectedPackages;
   }
 
   public function loadReviewers() {

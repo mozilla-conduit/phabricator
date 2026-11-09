@@ -257,7 +257,6 @@
 }
 
 .phui-timeline-title .phui-timeline-value,
-.conpherence-transaction-content .phui-timeline-value,
 .phui-feed-story-head .phui-timeline-value {
   font-style: italic;
   color: {$blacktext};
@@ -409,24 +408,6 @@ a.phui-timeline-menu .phui-icon-view {
 
 .phui-timeline-view + .phui-object-box {
   margin-top: 0;
-}
-
-.phui-timeline-badges {
-  position: absolute;
-  left: -64px;
-  top: 52px;
-  width: 54px;
-  text-align: center;
-}
-
-.phui-timeline-badges .phui-badge-mini {
-  height: 18px;
-  width: 18px;
-  line-height: 16px;
-}
-
-.phui-timeline-badges .phui-badge-mini .phui-icon-view {
-  font-size: 10px;
 }
 
 .phui-comment-preview-view {

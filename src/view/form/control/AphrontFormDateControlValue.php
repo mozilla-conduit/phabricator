@@ -63,8 +63,8 @@ final class AphrontFormDateControlValue extends Phobject {
     $value = new AphrontFormDateControlValue();
     $value->viewer = $request->getViewer();
 
-    $date = $request->getStr($key.'_d');
-    $time = $request->getStr($key.'_t');
+    $date = $request->getStr($key.'_d', '');
+    $time = $request->getStr($key.'_t', '');
 
     // If we have the individual parts, we read them preferentially. If we do
     // not, try to read the key as a raw value. This makes it so that HTTP
@@ -297,6 +297,10 @@ final class AphrontFormDateControlValue extends Phobject {
   }
 
   private function getStandardDateFormat($date) {
+    // no value entered into the field at all
+    if (!$date) {
+      return null;
+    }
     $colloquial = array(
       'newyear' => 'January 1',
       'valentine' => 'February 14',
@@ -312,7 +316,7 @@ final class AphrontFormDateControlValue extends Phobject {
     $normalized = preg_replace('/day\z/', '', $normalized);
     $normalized = preg_replace('/s\z/', '', $normalized);
 
-    if (isset($colloquial[$normalized])) {
+    if ($normalized !== null && isset($colloquial[$normalized])) {
       return $colloquial[$normalized];
     }
 

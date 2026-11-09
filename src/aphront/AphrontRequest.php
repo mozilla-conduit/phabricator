@@ -66,7 +66,7 @@ final class AphrontRequest extends Phobject {
   }
 
   public static function parseURILineRange($range, $limit) {
-    if (!strlen($range)) {
+    if (!phutil_nonempty_string($range)) {
       return null;
     }
 
@@ -211,7 +211,7 @@ final class AphrontRequest extends Phobject {
    */
   public function getStr($name, $default = null) {
     if (isset($this->requestData[$name])) {
-      $str = (string)$this->requestData[$name];
+      $str = phutil_string_cast($this->requestData[$name]);
       // Normalize newline craziness.
       $str = str_replace(
         array("\r\n", "\r"),
@@ -234,7 +234,7 @@ final class AphrontRequest extends Phobject {
 
     $raw_data = phutil_string_cast($this->requestData[$name]);
     $raw_data = trim($raw_data);
-    if (!strlen($raw_data)) {
+    if (!phutil_nonempty_string($raw_data)) {
       return $default;
     }
 
@@ -448,7 +448,7 @@ final class AphrontRequest extends Phobject {
   }
 
   private function getPrefixedCookieName($name) {
-    if (strlen($this->cookiePrefix)) {
+    if (phutil_nonempty_string($this->cookiePrefix)) {
       return $this->cookiePrefix.'_'.$name;
     } else {
       return $name;
@@ -499,7 +499,7 @@ final class AphrontRequest extends Phobject {
     // domain is. This makes setup easier, and we'll tell administrators to
     // configure a base domain during the setup process.
     $base_uri = PhabricatorEnv::getEnvConfig('phabricator.base-uri');
-    if (!strlen($base_uri)) {
+    if (!phutil_nonempty_string($base_uri)) {
       return new PhutilURI('http://'.$host.'/');
     }
 
@@ -956,7 +956,7 @@ final class AphrontRequest extends Phobject {
     $submit_cookie = PhabricatorCookies::COOKIE_SUBMIT;
 
     $submit_key = $this->getCookie($submit_cookie);
-    if (strlen($submit_key)) {
+    if (phutil_nonempty_string($submit_key)) {
       $this->clearCookie($submit_cookie);
       $this->submitKey = $submit_key;
     }

@@ -56,10 +56,6 @@ body .phui-header-shell.phui-bleed-header
   border-top-width: 0;
 }
 
-.phui-property-list-view + .diviner-document-section {
-  margin-top: -1px;
-}
-
 .phui-header-view {
   position: relative;
   font-size: {$normalfontsize};

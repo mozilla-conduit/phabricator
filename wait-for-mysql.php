@@ -8,6 +8,10 @@ $port = getenv('MYSQL_PORT');
 $user = getenv('MYSQL_USER');
 $pass = getenv('MYSQL_PASS');
 
+// PHP 8.1 made mysqli throw on connection errors, which would end the script
+// at the first refused connection instead of retrying.
+mysqli_report(MYSQLI_REPORT_OFF);
+
 $max_tries = 10;
 $tries = 0;
 

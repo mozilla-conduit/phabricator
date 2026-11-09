@@ -27,7 +27,6 @@ final class DifferentialSubscribersCommitMessageField
       array(
         PhabricatorPeopleUserPHIDType::TYPECONST,
         PhabricatorProjectProjectPHIDType::TYPECONST,
-        PhabricatorOwnersPackagePHIDType::TYPECONST,
       ));
   }
 

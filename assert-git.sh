@@ -1,13 +1,12 @@
 #!/bin/sh
 # Fail the build rather than shipping an image where the merge-conflict engine
 # (RevisionMergeConflictEngine) would silently fall back to the rename-blind
-# legacy path, or where git cannot run at all against the musl present in the
-# image.
+# legacy path: it needs `git merge-tree --write-tree --merge-base`
+# (git >= 2.40), which is also the only path that follows renames.
 #
 # Run at the end of every final stage, not just in `base`: each stage installs
-# further packages afterwards, and those come from Alpine 3.13 while git comes
-# from 3.21. A later `apk add` can pull a dependency back to 3.13 and leave git
-# broken.
+# further packages afterwards, and a change of base image or Alpine release can
+# change the git they end up with.
 set -eu
 
 git --version

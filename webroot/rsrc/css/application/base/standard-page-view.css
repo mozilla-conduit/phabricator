@@ -116,15 +116,6 @@ a.handle-status-closed:hover {
   color: {$greytext};
 }
 
-.aphront-developer-error-callout {
-  position: relative;
-  padding: 2em;
-  background: #aa0000;
-  color: white;
-  text-align: center;
-  font-size: {$smallerfontsize};
-}
-
 .phui-handle.phui-link-person {
   /* Prevent linebreaks between user availability markers and usernames. */
   white-space: nowrap;

@@ -43,6 +43,9 @@ final class PhabricatorHash extends Phobject {
    *                  the string.
    */
   public static function digestForIndex($string) {
+    if ($string === null) {
+      $string = '';
+    }
     $hash = sha1($string, $raw_output = true);
 
     static $map;

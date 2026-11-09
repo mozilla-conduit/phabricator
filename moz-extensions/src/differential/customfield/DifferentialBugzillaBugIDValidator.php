@@ -6,7 +6,7 @@ class DifferentialBugzillaBugIDValidator extends Phobject {
   const LOGGING_TYPE = 'mozphab.bugfield.validator';
 
   public static function formatBugID($id) {
-    return trim(str_replace('#', '', $id));
+    return trim(str_replace('#', '', $id ?? ''));
   }
 
   public static function validate($bug_id, $account_phid) {

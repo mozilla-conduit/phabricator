@@ -135,7 +135,7 @@ abstract class PhabricatorProfileMenuEngine extends Phobject {
     if ($is_view) {
       $selected_item = $this->selectViewItem($view_list, $item_id);
     } else {
-      if (!strlen($item_id)) {
+      if (!phutil_nonempty_scalar($item_id)) {
         $item_id = self::ITEM_MANAGE;
       }
       $selected_item = $this->selectEditItem($view_list, $item_id);
@@ -190,7 +190,7 @@ abstract class PhabricatorProfileMenuEngine extends Phobject {
       $available_modes = $this->getViewerEditModes();
       if ($available_modes) {
         $available_modes = array_fuse($available_modes);
-        if (isset($available_modes[$edit_mode])) {
+        if ($edit_mode !== null && isset($available_modes[$edit_mode])) {
           $this->editMode = $edit_mode;
         } else {
           if ($item_action != 'configure') {
@@ -1265,7 +1265,9 @@ abstract class PhabricatorProfileMenuEngine extends Phobject {
       pht('No visible menu items can render content.'));
   }
 
-
+  /**
+   * @return PhabricatorProfileMenuItemViewList
+   */
   final public function newProfileMenuItemViewList() {
     $items = $this->getItems();
 
@@ -1308,7 +1310,7 @@ abstract class PhabricatorProfileMenuEngine extends Phobject {
     // render the default view instead.
 
     $selected_view = null;
-    if (strlen($item_id)) {
+    if (phutil_nonempty_string($item_id)) {
       $item_views = $view_list->getViewsWithItemIdentifier($item_id);
       if ($item_views) {
         $selected_view = head($item_views);

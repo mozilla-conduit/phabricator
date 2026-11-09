@@ -27,7 +27,7 @@ final class PhabricatorDashboardProfileMenuItem
     return true;
   }
 
-  private function attachDashboard(PhabricatorDashboard $dashboard = null) {
+  private function attachDashboard(?PhabricatorDashboard $dashboard = null) {
     $this->dashboard = $dashboard;
     return $this;
   }
@@ -117,7 +117,7 @@ final class PhabricatorDashboardProfileMenuItem
       return pht('Archived Dashboard');
     }
 
-    if (strlen($this->getName($config))) {
+    if (phutil_nonempty_string($this->getName($config))) {
       return $this->getName($config);
     } else {
       return $dashboard->getName();

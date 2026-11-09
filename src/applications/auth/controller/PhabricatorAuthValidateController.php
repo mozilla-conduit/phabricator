@@ -11,16 +11,12 @@ final class PhabricatorAuthValidateController
     return true;
   }
 
-  public function shouldAllowLegallyNonCompliantUsers() {
-    return true;
-  }
-
   public function handleRequest(AphrontRequest $request) {
     $viewer = $this->getViewer();
 
     $failures = array();
 
-    if (!strlen($request->getStr('expect'))) {
+    if (!phutil_nonempty_string($request->getStr('expect'))) {
       return $this->renderErrors(
         array(
           pht(

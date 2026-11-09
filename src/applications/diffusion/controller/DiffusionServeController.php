@@ -43,8 +43,8 @@ final class DiffusionServeController extends DiffusionController {
       return null;
     }
 
-    $content_type = $request->getHTTPHeader('Content-Type');
-    $user_agent = idx($_SERVER, 'HTTP_USER_AGENT');
+    $content_type = $request->getHTTPHeader('Content-Type', '');
+    $user_agent = idx($_SERVER, 'HTTP_USER_AGENT', '');
     $request_type = $request->getHTTPHeader('X-Phabricator-Request-Type');
 
     // This may have a "charset" suffix, so only match the prefix.
@@ -183,8 +183,8 @@ final class DiffusionServeController extends DiffusionController {
     // won't prompt users who provide a username but no password otherwise.
     // See T10797 for discussion.
 
-    $have_user = strlen(idx($_SERVER, 'PHP_AUTH_USER'));
-    $have_pass = strlen(idx($_SERVER, 'PHP_AUTH_PW'));
+    $have_user = strlen(idx($_SERVER, 'PHP_AUTH_USER', ''));
+    $have_pass = strlen(idx($_SERVER, 'PHP_AUTH_PW', ''));
     if ($have_user && $have_pass) {
       $username = $_SERVER['PHP_AUTH_USER'];
       $password = new PhutilOpaqueEnvelope($_SERVER['PHP_AUTH_PW']);
