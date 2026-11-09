@@ -16,7 +16,7 @@ final class ReviewHelperFrontmatterRemarkupRuleTestCase
 
   public function testTextModeRendersLabel() {
     $this->assertEqual(
-      '['.$this->getLabel()."]\n\nFix the principal.",
+      $this->getLabel()."\n\nFix the principal.",
       $this->renderText(self::COMMENT),
       pht('Text mode should replace the frontmatter with a bracketed label.'));
   }
@@ -36,9 +36,16 @@ final class ReviewHelperFrontmatterRemarkupRuleTestCase
     $this->assertTrue(
       strpos(
         $html,
-        '<strong>Critical</strong>'.
-          ReviewHelperFrontmatter::LABEL_SEPARATOR.'Security') !== false,
-      pht('The label should show the severity and category.'));
+        '<span class="reviewhelper-severity-part">Critical</span>') !== false,
+      pht('The severity should be rendered in its own part.'));
+    $this->assertTrue(
+      (bool)preg_match(
+        '(<span class="reviewhelper-category-part">'.
+          '<span class="visual-only phui-icon-view phui-font-fa fa-lock"'.
+          '[^>]* aria-hidden="true"></span> Security</span>)',
+        $html),
+      pht('The category should be rendered in its own part, with an icon '.
+        'hidden from screen readers.'));
     $this->assertFalse(
       strpos($html, 'reviewhelper:') !== false,
       pht('The raw YAML should not be rendered.'));
@@ -52,7 +59,7 @@ final class ReviewHelperFrontmatterRemarkupRuleTestCase
     $quoted = '> '.str_replace("\n", "\n> ", self::COMMENT)."\n\nThanks!";
 
     $this->assertEqual(
-      '> ['.$this->getLabel()."]\n>\n> Fix the principal.\n\nThanks!",
+      '> '.$this->getLabel()."\n>\n> Fix the principal.\n\nThanks!",
       $this->renderText($quoted),
       pht('Frontmatter quoted in a reply should also be replaced.'));
   }
@@ -102,7 +109,7 @@ final class ReviewHelperFrontmatterRemarkupRuleTestCase
   }
 
   private function getLabel() {
-    return 'Critical'.ReviewHelperFrontmatter::LABEL_SEPARATOR.'Security';
+    return '[Critical] [Security]';
   }
 
   private function renderText($corpus) {
