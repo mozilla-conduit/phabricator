@@ -1,0 +1,425 @@
+<?php
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+final class DifferentialRevisionEditInlineTestCase extends PhabricatorTestCase {
+
+  protected function getPhabricatorTestCaseConfiguration() {
+    return array(
+      self::PHABRICATOR_TESTCONFIG_BUILD_STORAGE_FIXTURES => true,
+    );
+  }
+
+  public function testPublishInlineComments() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+    $diff = $revision->loadActiveDiff();
+
+    $this->editRevision($reviewer, $revision, array(
+      array(
+        'type' => 'inline',
+        'value' => array(
+          'path' => 'fruit',
+          'line' => 2,
+          'length' => 2,
+          'content' => 'Is this spelled right?',
+          'suggestionText' => "banana\ncherry",
+        ),
+      ),
+    ));
+
+    $inlines = $this->loadInlines($author, $revision);
+    $this->assertEqual(1, count($inlines));
+
+    $inline = head($inlines);
+    $fields = $inline['fields'];
+    $this->assertEqual($reviewer->getPHID(), $inline['authorPHID']);
+    $this->assertEqual(
+      'Is this spelled right?',
+      $inline['comments'][0]['content']['raw']);
+    $this->assertEqual((int)$diff->getID(), $fields['diff']['id']);
+    $this->assertEqual('fruit', $fields['path']);
+    $this->assertEqual(2, $fields['line']);
+    $this->assertEqual(2, $fields['length']);
+    $this->assertEqual(true, $fields['isNewFile']);
+    $this->assertEqual(null, $fields['replyToCommentPHID']);
+    $this->assertEqual(false, $fields['isDone']);
+    $this->assertEqual(true, $fields['hasSuggestion']);
+    // A missing trailing newline is added.
+    $this->assertEqual("banana\ncherry\n", $fields['suggestionText']);
+
+    // A reply goes on the same lines as its parent. The author's own inlines
+    // start out as "Done".
+    $parent_phid = $inline['comments'][0]['phid'];
+    $this->editRevision($author, $revision, array(
+      array(
+        'type' => 'inline',
+        'value' => array(
+          'replyToCommentPHID' => $parent_phid,
+          'content' => 'Fixed.',
+        ),
+      ),
+    ));
+
+    $inlines = $this->loadInlines($author, $revision);
+    $this->assertEqual(2, count($inlines));
+
+    // "transaction.search" returns the newest transactions first.
+    $reply = head($inlines);
+    $fields = $reply['fields'];
+    $this->assertEqual($author->getPHID(), $reply['authorPHID']);
+    $this->assertEqual('Fixed.', $reply['comments'][0]['content']['raw']);
+    $this->assertEqual('fruit', $fields['path']);
+    $this->assertEqual(2, $fields['line']);
+    $this->assertEqual(2, $fields['length']);
+    $this->assertEqual($parent_phid, $fields['replyToCommentPHID']);
+    $this->assertEqual(true, $fields['isDone']);
+    $this->assertEqual(false, $fields['hasSuggestion']);
+
+    // Values from form-encoded calls arrive as strings.
+    $this->editRevision($reviewer, $revision, array(
+      array(
+        'type' => 'inline',
+        'value' => array(
+          'diff' => (string)$diff->getID(),
+          'path' => 'basket',
+          'line' => '2',
+          'isNewFile' => 'false',
+          'content' => 'Old side.',
+        ),
+      ),
+    ));
+
+    $inlines = $this->loadInlines($author, $revision);
+    $fields = head($inlines)['fields'];
+    $this->assertEqual('basket', $fields['path']);
+    $this->assertEqual(2, $fields['line']);
+    $this->assertEqual(1, $fields['length']);
+    $this->assertEqual(false, $fields['isNewFile']);
+  }
+
+  public function testSuggestionTextEndsWithNewline() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $cases = array(
+      'missing newline' => array('banana', "banana\n"),
+      'has newline' => array("banana\n", "banana\n"),
+      'several lines' => array("banana\ncherry", "banana\ncherry\n"),
+      // An empty suggestion deletes the lines, so it stays empty.
+      'deletion' => array('', ''),
+    );
+
+    foreach ($cases as $label => $case) {
+      list($suggestion_text, $expect) = $case;
+
+      $this->editRevision($reviewer, $revision, array(
+        array(
+          'type' => 'inline',
+          'value' => array(
+            'path' => 'fruit',
+            'line' => 2,
+            'content' => $label,
+            'suggestionText' => $suggestion_text,
+          ),
+        ),
+      ));
+
+      $fields = head($this->loadInlines($author, $revision))['fields'];
+      $this->assertEqual(true, $fields['hasSuggestion'], $label);
+      $this->assertEqual($expect, $fields['suggestionText'], $label);
+    }
+  }
+
+  public function testRejectInvalidInlineComments() {
+    $author = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $cases = array(
+      'not a dictionary' => array(array('fruit'), 'must be a dictionary'),
+      'unknown key' => array(
+        array(
+          'path' => 'fruit',
+          'line' => 1,
+          'content' => 'x',
+          'lineNumber' => 1,
+        ),
+        'unknown keys: lineNumber',
+      ),
+      'no path' => array(
+        array('line' => 1, 'content' => 'x'),
+        'must have a "path"',
+      ),
+      'unknown path' => array(
+        array('path' => 'vegetable', 'line' => 1, 'content' => 'x'),
+        'is not a file changed by diff',
+      ),
+      'no line' => array(
+        array('path' => 'fruit', 'content' => 'x'),
+        'must have a "line"',
+      ),
+      'zero line' => array(
+        array('path' => 'fruit', 'line' => 0, 'content' => 'x'),
+        '"line" must be a positive integer',
+      ),
+      'zero length' => array(
+        array('path' => 'fruit', 'line' => 1, 'length' => 0, 'content' => 'x'),
+        '"length" must be a positive integer',
+      ),
+      'bad isNewFile' => array(
+        array(
+          'path' => 'fruit',
+          'line' => 1,
+          'isNewFile' => 'yes',
+          'content' => 'x',
+        ),
+        '"isNewFile" must be a boolean',
+      ),
+      'empty comment' => array(
+        array('path' => 'fruit', 'line' => 1),
+        'must have a nonempty',
+      ),
+      'empty suggestion only' => array(
+        array('path' => 'fruit', 'line' => 1, 'suggestionText' => ''),
+        'must have a nonempty',
+      ),
+      'unknown diff' => array(
+        array(
+          'diff' => 'PHID-DIFF-xxxxxxxxxxxxxxxxxxxx',
+          'path' => 'fruit',
+          'line' => 1,
+          'content' => 'x',
+        ),
+        'is not a diff of this revision',
+      ),
+      'unknown reply' => array(
+        array(
+          'replyToCommentPHID' => 'PHID-XCMT-xxxxxxxxxxxxxxxxxxxx',
+          'content' => 'x',
+        ),
+        'is not a published inline comment',
+      ),
+    );
+
+    foreach ($cases as $label => $case) {
+      list($value, $message) = $case;
+
+      $caught = null;
+      try {
+        $this->editRevision($author, $revision, array(
+          array(
+            'type' => 'inline',
+            'value' => $value,
+          ),
+        ));
+      } catch (Exception $ex) {
+        $caught = $ex;
+      }
+      $this->assertTrue($caught instanceof Exception, $label);
+      $this->assertTrue(
+        strpos($caught->getMessage(), $message) !== false,
+        pht('%s: %s', $label, $caught->getMessage()));
+    }
+
+    $this->assertEqual(array(), $this->loadInlines($author, $revision));
+  }
+
+  public function testInlineWithUpdateGoesOnPreviousDiff() {
+    $author = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+    $old_diff = $revision->loadActiveDiff();
+
+    $new_diff = $this->newDiff($author, <<<EODIFF
+diff --git a/fruit b/fruit
+new file mode 100644
+index 0000000..2b36a4f
+--- /dev/null
++++ b/fruit
+@@ -0,0 +1,3 @@
++apple
++banana
++cherry
+EODIFF
+      );
+
+    // Without a "diff", the inline goes on the diff that was active before
+    // the edit, even if the same edit updates the diff.
+    $this->editRevision($author, $revision, array(
+      array(
+        'type' => 'update',
+        'value' => $new_diff->getPHID(),
+      ),
+      array(
+        'type' => 'inline',
+        'value' => array(
+          'path' => 'fruit',
+          'line' => 2,
+          'content' => 'Is this spelled right?',
+        ),
+      ),
+    ));
+
+    $this->assertEqual(
+      (int)$new_diff->getID(),
+      (int)$revision->loadActiveDiff()->getID());
+
+    $fields = head($this->loadInlines($author, $revision))['fields'];
+    $this->assertEqual((int)$old_diff->getID(), $fields['diff']['id']);
+  }
+
+  public function testRejectReplyLocation() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $this->editRevision($reviewer, $revision, array(
+      array(
+        'type' => 'inline',
+        'value' => array(
+          'path' => 'fruit',
+          'line' => 2,
+          'content' => 'Is this spelled right?',
+        ),
+      ),
+    ));
+    $parent = head($this->loadInlines($author, $revision));
+    $parent_phid = $parent['comments'][0]['phid'];
+
+    // A reply can not move away from the comment it replies to, even to the
+    // same lines.
+    $cases = array(
+      'path' => array('path' => 'fruit'),
+      'line' => array('line' => 1),
+      'length' => array('length' => 2),
+      'isNewFile' => array('isNewFile' => true),
+      'diff' => array('diff' => $parent['fields']['diff']['id']),
+    );
+
+    foreach ($cases as $key => $location) {
+      $caught = null;
+      try {
+        $this->editRevision($author, $revision, array(
+          array(
+            'type' => 'inline',
+            'value' => $location + array(
+              'replyToCommentPHID' => $parent_phid,
+              'content' => 'Fixed.',
+            ),
+          ),
+        ));
+      } catch (Exception $ex) {
+        $caught = $ex;
+      }
+      $this->assertTrue($caught instanceof Exception, $key);
+      $this->assertTrue(
+        strpos($caught->getMessage(), 'can not have these keys: '.$key)
+          !== false,
+        pht('%s: %s', $key, $caught->getMessage()));
+    }
+
+    $this->assertEqual(1, count($this->loadInlines($author, $revision)));
+  }
+
+  private function newRevision(PhabricatorUser $author) {
+    $raw_diff = <<<EODIFF
+diff --git a/fruit b/fruit
+new file mode 100644
+index 0000000..1c0f49d
+--- /dev/null
++++ b/fruit
+@@ -0,0 +1,3 @@
++apple
++banan
++cherry
+diff --git a/basket b/basket
+index 1111111..2222222 100644
+--- a/basket
++++ b/basket
+@@ -1,3 +1,3 @@
+ apple
+-pear
++plum
+ fig
+EODIFF;
+
+    $diff = $this->newDiff($author, $raw_diff);
+
+    $result = id(new ConduitCall(
+      'differential.revision.edit',
+      array(
+        'transactions' => array(
+          array(
+            'type' => 'update',
+            'value' => $diff->getPHID(),
+          ),
+          array(
+            'type' => 'title',
+            'value' => pht('Fruit'),
+          ),
+          array(
+            'type' => 'testPlan',
+            'value' => pht('Ate it.'),
+          ),
+        ),
+      )))
+      ->setUser($author)
+      ->execute();
+
+    return id(new DifferentialRevisionQuery())
+      ->setViewer($author)
+      ->withPHIDs(array($result['object']['phid']))
+      ->executeOne();
+  }
+
+  private function newDiff(PhabricatorUser $author, $raw_diff) {
+    $parser = new ArcanistDiffParser();
+    $changes = $parser->parseDiff($raw_diff);
+
+    return DifferentialDiff::newFromRawChanges($author, $changes)
+      ->setLintStatus(DifferentialLintStatus::LINT_AUTO_SKIP)
+      ->setUnitStatus(DifferentialUnitStatus::UNIT_AUTO_SKIP)
+      ->attachRevision(null)
+      ->save();
+  }
+
+  private function editRevision(
+    PhabricatorUser $actor,
+    DifferentialRevision $revision,
+    array $xactions) {
+
+    return id(new ConduitCall(
+      'differential.revision.edit',
+      array(
+        'objectIdentifier' => $revision->getPHID(),
+        'transactions' => $xactions,
+      )))
+      ->setUser($actor)
+      ->execute();
+  }
+
+  private function loadInlines(
+    PhabricatorUser $viewer,
+    DifferentialRevision $revision) {
+
+    $result = id(new ConduitCall(
+      'transaction.search',
+      array(
+        'objectIdentifier' => $revision->getPHID(),
+      )))
+      ->setUser($viewer)
+      ->execute();
+
+    $inlines = array();
+    foreach ($result['data'] as $xaction) {
+      if ($xaction['type'] === 'inline') {
+        $inlines[] = $xaction;
+      }
+    }
+
+    return $inlines;
+  }
+
+}
