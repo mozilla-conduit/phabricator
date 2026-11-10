@@ -134,8 +134,12 @@ final class DifferentialTransactionEditor
       switch ($xaction->getTransactionType()) {
         case PhabricatorTransactions::TYPE_INLINESTATE:
           // If we have an "Inline State" transaction already, the caller
-          // built it for us so we don't need to expand it again.
-          $this->didExpandInlineState = true;
+          // built it for us so we don't need to expand it again. States set
+          // explicitly with `inline.done` do not include the pending ones, so
+          // those are still expanded and merged in.
+          if (!$xaction->getMetadataValue('inline.explicit')) {
+            $this->didExpandInlineState = true;
+          }
           break;
         case DifferentialRevisionPlanChangesTransaction::TRANSACTIONTYPE:
           if ($xaction->getMetadataValue('draft.demote')) {
@@ -148,6 +152,48 @@ final class DifferentialTransactionEditor
     $this->wasBroadcasting = $object->getShouldBroadcast();
 
     return parent::expandTransactions($object, $xactions);
+  }
+
+  protected function mergeTransactions(
+    PhabricatorApplicationTransaction $u,
+    PhabricatorApplicationTransaction $v) {
+
+    switch ($u->getTransactionType()) {
+      case PhabricatorTransactions::TYPE_INLINESTATE:
+        return $this->mergeInlineStateTransactions($u, $v);
+    }
+
+    return parent::mergeTransactions($u, $v);
+  }
+
+  /**
+   * Merge inline state transactions into one, so they render as one story.
+   * States set explicitly with `inline.done` win over pending ones.
+   */
+  private function mergeInlineStateTransactions(
+    PhabricatorApplicationTransaction $u,
+    PhabricatorApplicationTransaction $v) {
+
+    if ($v->getMetadataValue('inline.explicit') ||
+        !$u->getMetadataValue('inline.explicit')) {
+      $first = $u;
+      $last = $v;
+    } else {
+      $first = $v;
+      $last = $u;
+    }
+
+    $is_explicit = ($u->getMetadataValue('inline.explicit') &&
+      $v->getMetadataValue('inline.explicit'));
+
+    return id(clone $u)
+      ->setMetadataValue('inline.explicit', $is_explicit)
+      ->setMetadataValue(
+        'inline.details',
+        $last->getMetadataValue('inline.details', array()) +
+          $first->getMetadataValue('inline.details', array()))
+      ->setOldValue($first->getOldValue() + $last->getOldValue())
+      ->setNewValue($last->getNewValue() + $first->getNewValue());
   }
 
   protected function expandTransaction(

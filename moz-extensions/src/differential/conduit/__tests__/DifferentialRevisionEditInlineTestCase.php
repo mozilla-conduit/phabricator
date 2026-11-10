@@ -323,6 +323,197 @@ EODIFF
     $this->assertEqual(1, count($this->loadInlines($author, $revision)));
   }
 
+  public function testMarkInlineDone() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $inline_phid = $this->newReviewerInline($reviewer, $revision);
+
+    $this->editRevision($author, $revision, array(
+      $this->newInlineDoneTransaction($inline_phid, true),
+    ));
+    $fields = head($this->loadInlines($author, $revision))['fields'];
+    $this->assertEqual(true, $fields['isDone']);
+
+    // Form-encoded Conduit calls send booleans as strings.
+    $this->editRevision($author, $revision, array(
+      $this->newInlineDoneTransaction($inline_phid, 'false'),
+    ));
+    $fields = head($this->loadInlines($author, $revision))['fields'];
+    $this->assertEqual(false, $fields['isDone']);
+  }
+
+  public function testInlineDoneMergesWithPendingDoneStates() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $first_phid = $this->newReviewerInline($reviewer, $revision);
+    $second_phid = $this->newReviewerInline($reviewer, $revision);
+    $third_phid = $this->newReviewerInline($reviewer, $revision);
+    $fourth_phid = $this->newReviewerInline($reviewer, $revision);
+
+    // Like ticking the "Done" checkbox in the web UI, which saves a pending
+    // state that is published with the author's next comment.
+    foreach (array($first_phid, $fourth_phid) as $pending_phid) {
+      id(new DifferentialTransactionComment())
+        ->loadOneWhere('phid = %s', $pending_phid)
+        ->setFixedState(PhabricatorInlineComment::STATE_DRAFT)
+        ->save();
+    }
+
+    // The explicit state wins over the pending one.
+    $this->editRevision($author, $revision, array(
+      $this->newInlineDoneTransaction($second_phid, true),
+      $this->newInlineDoneTransaction($third_phid, true),
+      $this->newInlineDoneTransaction($fourth_phid, false),
+      array(
+        'type' => 'comment',
+        'value' => 'Fixed these.',
+      ),
+    ));
+
+    $done = array();
+    foreach ($this->loadInlines($author, $revision) as $inline) {
+      $phid = $inline['comments'][0]['phid'];
+      $done[$phid] = $inline['fields']['isDone'];
+    }
+    $this->assertEqual(
+      array(
+        $first_phid => true,
+        $second_phid => true,
+        $third_phid => true,
+        $fourth_phid => false,
+      ),
+      array_select_keys(
+        $done,
+        array($first_phid, $second_phid, $third_phid, $fourth_phid)));
+
+    $first = id(new DifferentialTransactionComment())->loadOneWhere(
+      'phid = %s',
+      $first_phid);
+    $this->assertEqual(
+      PhabricatorInlineComment::STATE_DONE,
+      $first->getFixedState());
+
+    $state_xactions = id(new DifferentialTransactionQuery())
+      ->setViewer($author)
+      ->withObjectPHIDs(array($revision->getPHID()))
+      ->withTransactionTypes(array(PhabricatorTransactions::TYPE_INLINESTATE))
+      ->execute();
+    $this->assertEqual(1, count($state_xactions));
+    $this->assertEqual(
+      array(
+        $first_phid => PhabricatorInlineComment::STATE_DONE,
+        $second_phid => PhabricatorInlineComment::STATE_DONE,
+        $third_phid => PhabricatorInlineComment::STATE_DONE,
+        $fourth_phid => PhabricatorInlineComment::STATE_UNDONE,
+      ),
+      array_select_keys(
+        head($state_xactions)->getNewValue(),
+        array($first_phid, $second_phid, $third_phid, $fourth_phid)));
+  }
+
+  public function testRejectInvalidInlineDone() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $inline_phid = $this->newReviewerInline($reviewer, $revision);
+
+    $cases = array(
+      'not a dictionary' => array(
+        $author,
+        array($inline_phid),
+        'must be a dictionary',
+      ),
+      'unknown key' => array(
+        $author,
+        array('commentPHID' => $inline_phid, 'done' => true, 'x' => 1),
+        'unknown keys: x',
+      ),
+      'no comment' => array(
+        $author,
+        array('done' => true),
+        'must have a "commentPHID"',
+      ),
+      'no done' => array(
+        $author,
+        array('commentPHID' => $inline_phid),
+        'must have a boolean "done"',
+      ),
+      'unknown comment' => array(
+        $author,
+        array(
+          'commentPHID' => 'PHID-XCMT-xxxxxxxxxxxxxxxxxxxx',
+          'done' => true,
+        ),
+        'is not a published inline comment',
+      ),
+      'not the author' => array(
+        $reviewer,
+        array('commentPHID' => $inline_phid, 'done' => true),
+        'Only the author of a revision',
+      ),
+    );
+
+    foreach ($cases as $label => $case) {
+      list($actor, $value, $message) = $case;
+
+      $caught = null;
+      try {
+        $this->editRevision($actor, $revision, array(
+          array(
+            'type' => 'inline.done',
+            'value' => $value,
+          ),
+        ));
+      } catch (Exception $ex) {
+        $caught = $ex;
+      }
+      $this->assertTrue($caught instanceof Exception, $label);
+      $this->assertTrue(
+        strpos($caught->getMessage(), $message) !== false,
+        pht('%s: %s', $label, $caught->getMessage()));
+    }
+
+    $fields = head($this->loadInlines($author, $revision))['fields'];
+    $this->assertEqual(false, $fields['isDone']);
+  }
+
+  /**
+   * Publish an inline comment as a reviewer and return its PHID.
+   */
+  private function newReviewerInline(
+    PhabricatorUser $reviewer,
+    DifferentialRevision $revision) {
+
+    $this->editRevision($reviewer, $revision, array(
+      array(
+        'type' => 'inline',
+        'value' => array(
+          'path' => 'fruit',
+          'line' => 2,
+          'content' => 'Is this spelled right?',
+        ),
+      ),
+    ));
+
+    $inline = head($this->loadInlines($reviewer, $revision));
+    return $inline['comments'][0]['phid'];
+  }
+
+  private function newInlineDoneTransaction($inline_phid, $done) {
+    return array(
+      'type' => 'inline.done',
+      'value' => array(
+        'commentPHID' => $inline_phid,
+        'done' => $done,
+      ),
+    );
+  }
+
   private function newRevision(PhabricatorUser $author) {
     $raw_diff = <<<EODIFF
 diff --git a/fruit b/fruit
