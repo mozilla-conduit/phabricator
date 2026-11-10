@@ -297,6 +297,74 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('A new request should clear the earlier approval.'));
   }
 
+  public function testSearchReturnsStatus() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+
+    $this->assertEqual(
+      'none',
+      $this->searchAIChange($author, $revision)['status'],
+      pht('Search should report "none" before any request.'));
+
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+      'baseDiffID' => (int)$conflict_diff->getID(),
+    ));
+    $found = $this->searchAIChange($author, $revision);
+    $this->assertEqual(
+      'pending',
+      $found['status'],
+      pht('Search should report "pending" after a request.'));
+    $this->assertEqual(
+      'merge-conflict',
+      $found['kind'],
+      pht('Search should report why the approval was requested.'));
+
+    $this->approve($approver, $revision);
+    $found = $this->searchAIChange($author, $revision);
+    $this->assertEqual(
+      'approved',
+      $found['status'],
+      pht('Search should report "approved" after an approval.'));
+    $this->assertEqual(
+      $approver->getPHID(),
+      $found['approverPHID'],
+      pht('Search should report who approved the change.'));
+    $this->assertEqual(
+      (int)$change_diff->getID(),
+      $found['changeDiffID'],
+      pht('Search should report the approved diff.'));
+    $this->assertEqual(
+      (int)$conflict_diff->getID(),
+      $found['baseDiffID'],
+      pht('Search should report the diff to compare with.'));
+
+    $this->updateRevision($author, $revision);
+    $this->assertEqual(
+      'lapsed',
+      $this->searchAIChange($author, $revision)['status'],
+      pht('Search should report "lapsed" after a newer diff.'));
+  }
+
+  private function searchAIChange(
+    PhabricatorUser $viewer,
+    DifferentialRevision $revision) {
+
+    $result = id(new ConduitCall(
+      'differential.revision.search',
+      array(
+        'constraints' => array(
+          'phids' => array($revision->getPHID()),
+        ),
+      )))
+      ->setUser($viewer)
+      ->execute();
+
+    return head($result['data'])['fields']['aiChange'];
+  }
+
   private function approve(
     PhabricatorUser $actor,
     DifferentialRevision $revision) {
