@@ -7,6 +7,7 @@
  */
 return array(
   'names' => array(
+    'rsrc/css/differential/ai-change.css' => '555debeb',
     'rsrc/css/differential/merge-conflict-status.css' => '8af24bdd',
     'rsrc/css/differential/testing-policy.css' => '04037685',
     'rsrc/css/reviewhelper/reviewhelper-feedback.css' => '0f9cbe2d',
@@ -16,6 +17,7 @@ return array(
     'rsrc/js/reviewhelper/behavior-reviewhelper-severity-badge.js' => '02502698',
   ),
   'symbols' => array(
+    'ai-change-css' => '555debeb',
     'javelin-behavior-reviewhelper-feedback' => '834dc29d',
     'javelin-behavior-reviewhelper-severity-badge' => '02502698',
     'javelin-behavior-testing-policy' => 'fa106c7d',
