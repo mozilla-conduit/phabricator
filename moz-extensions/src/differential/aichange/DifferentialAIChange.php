@@ -150,4 +150,11 @@ final class DifferentialAIChange extends Phobject {
     return $this;
   }
 
+  public function writeApproval($approver_phid) {
+    $this->data[self::KEY_APPROVER_PHID] = $approver_phid;
+    $this->data[self::KEY_APPROVAL_EPOCH] = PhabricatorTime::getNow();
+    $this->revision->setProperty(self::PROPERTY, $this->data);
+    return $this;
+  }
+
 }

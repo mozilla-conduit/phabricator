@@ -185,6 +185,319 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('Rejected requests should leave the revision unchanged.'));
   }
 
+  public function testAnyoneCanApprove() {
+    $author = $this->generateNewTestUser();
+    $colleague = $this->generateNewTestUser();
+
+    foreach (array($author, $colleague) as $approver) {
+      list($revision, $conflict_diff, $change_diff) =
+        $this->newResolvedRevision($author);
+      $this->requestApproval($author, $revision, array(
+        'changeDiffID' => (int)$change_diff->getID(),
+      ));
+
+      $this->assertTrue(
+        id(new DifferentialRevisionAIChangeApproveTransaction())
+          ->isActionAvailable($this->reloadRevision(
+            $approver,
+            $revision->getPHID()), $approver),
+        pht('"Approve AI Change" should be offered to any user.'));
+
+      $this->approve($approver, $revision);
+
+      $ai_change = $this->loadAIChange($revision);
+      $this->assertEqual(
+        DifferentialAIChange::STATUS_APPROVED,
+        $ai_change->getStatus(),
+        pht('An approval should mark the change approved.'));
+      $this->assertEqual(
+        $approver->getPHID(),
+        $ai_change->getApproverPHID(),
+        pht('The approval should record who approved it.'));
+    }
+  }
+
+  public function testApprovalRecordsTheDiff() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $this->approve($approver, $revision);
+
+    $approvals = $this->loadTransactions($author, $revision, 'ai-change.approve');
+    $this->assertEqual(
+      1,
+      count($approvals),
+      pht('The approval should appear in the transaction record.'));
+    $this->assertEqual(
+      $approver->getPHID(),
+      head($approvals)['authorPHID'],
+      pht('The approval transaction should belong to the approver.'));
+    $this->assertEqual(
+      (int)$change_diff->getID(),
+      head($approvals)['fields']['diffID'],
+      pht('The approval transaction should record the approved diff.'));
+  }
+
+  public function testApproveCombinesWithAccept() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->editRevision($author, $revision, array(
+      array(
+        'type' => 'reviewers.add',
+        'value' => array($reviewer->getPHID()),
+      ),
+      array('type' => 'request-review', 'value' => true),
+    ));
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $this->editRevision($reviewer, $revision, array(
+      array(
+        'type' => 'ai-change.approve',
+        'value' => (int)$change_diff->getID(),
+      ),
+      array('type' => 'accept', 'value' => true),
+    ));
+
+    $this->assertEqual(
+      DifferentialAIChange::STATUS_APPROVED,
+      $this->loadAIChange($revision)->getStatus(),
+      pht('Approving alongside an accept should record the approval.'));
+    $this->assertTrue(
+      $this->reloadRevision($reviewer, $revision->getPHID())->isAccepted(),
+      pht('Approving alongside an accept should also accept the revision.'));
+  }
+
+  public function testRejectInvalidApprovals() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+
+    list($unrequested) = $this->newResolvedRevision($author);
+    $this->assertApproveFails(
+      $approver,
+      $unrequested,
+      pht('A revision without a request should not be approvable.'));
+
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+    $this->approve($approver, $revision);
+    $this->assertApproveFails(
+      $approver,
+      $revision,
+      pht('An approved change should not be approvable again.'));
+
+    $this->updateRevision($author, $revision);
+    $this->assertApproveFails(
+      $approver,
+      $revision,
+      pht('A lapsed change should not be approvable.'));
+  }
+
+  public function testRejectStaleApproval() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    // The tool replaces the change while the reviewer has the page open.
+    $new_diff = $this->updateRevision($author, $revision);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$new_diff->getID(),
+    ));
+
+    $this->assertApproveFails(
+      $approver,
+      $revision,
+      pht('Approving the diff the reviewer saw should fail once it is replaced.'),
+      (int)$change_diff->getID());
+    $this->assertEqual(
+      DifferentialAIChange::STATUS_PENDING,
+      $this->loadAIChange($revision)->getStatus(),
+      pht('A stale approval should leave the new change pending.'));
+  }
+
+  public function testRejectApprovalWithoutDiffID() {
+    $author = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    // Conduit rejects a value that isn't a diff ID before validation runs, so
+    // this fails as a bad parameter rather than a validation error.
+    $caught = null;
+    try {
+      $this->approve($author, $revision, true);
+    } catch (PhutilProxyException $ex) {
+      $caught = $ex;
+    }
+
+    $this->assertTrue(
+      $caught instanceof PhutilProxyException,
+      pht('An approval should name the diff it approves.'));
+  }
+
+  public function testBotsCannotApprove() {
+    $author = $this->generateNewTestUser();
+    $bot = $this->generateNewTestUser()
+      ->setIsSystemAgent(1)
+      ->save();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($bot, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $this->assertFalse(
+      id(new DifferentialRevisionAIChangeApproveTransaction())
+        ->isActionAvailable(
+          $this->reloadRevision($bot, $revision->getPHID()),
+          $bot),
+      pht('"Approve AI Change" should not be offered to bots.'));
+    $this->assertApproveFails(
+      $bot,
+      $revision,
+      pht('A bot should not be able to approve its own request.'));
+  }
+
+  public function testCommentActionOffersThePendingDiff() {
+    $author = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $field = id(new DifferentialRevisionAIChangeApproveTransaction())
+      ->newEditField(
+        $this->reloadRevision($author, $revision->getPHID()),
+        $author);
+
+    $action = $field->getCommentAction();
+    $this->assertTrue(
+      $action instanceof PhabricatorEditEngineCheckboxesCommentAction,
+      pht('The comment action should be a checkbox, not a one-option menu.'));
+    $this->assertEqual(
+      array((int)$change_diff->getID()),
+      array_keys($action->getOptions()),
+      pht('The comment action should offer only the pending diff.'));
+    $this->assertEqual(
+      array(),
+      $action->getValue(),
+      pht('The checkbox should start unticked.'));
+    $this->assertEqual(
+      (int)$change_diff->getID(),
+      $field
+        ->readValueFromComment(array((string)$change_diff->getID()))
+        ->getValueForTransaction(),
+      pht('A ticked checkbox should become the diff ID.'));
+    $this->assertEqual(
+      null,
+      $field->readValueFromComment(array())->getValueForTransaction(),
+      pht('An unticked checkbox should not become a diff ID.'));
+  }
+
+  public function testNewRequestClearsApproval() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+    $this->approve($approver, $revision);
+
+    $new_diff = $this->updateRevision($author, $revision);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$new_diff->getID(),
+    ));
+
+    $ai_change = $this->loadAIChange($revision);
+    $this->assertEqual(
+      DifferentialAIChange::STATUS_PENDING,
+      $ai_change->getStatus(),
+      pht('A new request should need a new approval.'));
+    $this->assertEqual(
+      null,
+      $ai_change->getApproverPHID(),
+      pht('A new request should clear the earlier approval.'));
+  }
+
+  /**
+   * Approve the AI change, by default in the active diff the actor would see.
+   */
+  private function approve(
+    PhabricatorUser $actor,
+    DifferentialRevision $revision,
+    $diff_id = null) {
+
+    if ($diff_id === null) {
+      $diff_id = (int)$this->reloadRevision($actor, $revision->getPHID())
+        ->loadActiveDiff()
+        ->getID();
+    }
+
+    return $this->editRevision($actor, $revision, array(
+      array('type' => 'ai-change.approve', 'value' => $diff_id),
+    ));
+  }
+
+  private function assertApproveFails(
+    PhabricatorUser $actor,
+    DifferentialRevision $revision,
+    $message,
+    $diff_id = null) {
+
+    $caught = null;
+    try {
+      $this->approve($actor, $revision, $diff_id);
+    } catch (PhabricatorApplicationTransactionValidationException $ex) {
+      $caught = $ex;
+    }
+
+    $this->assertTrue(
+      $caught instanceof PhabricatorApplicationTransactionValidationException,
+      $message);
+  }
+
+  private function loadTransactions(
+    PhabricatorUser $viewer,
+    DifferentialRevision $revision,
+    $type) {
+
+    $result = id(new ConduitCall(
+      'transaction.search',
+      array(
+        'objectIdentifier' => $revision->getPHID(),
+      )))
+      ->setUser($viewer)
+      ->execute();
+
+    $xactions = array();
+    foreach ($result['data'] as $xaction) {
+      if ($xaction['type'] === $type) {
+        $xactions[] = $xaction;
+      }
+    }
+
+    return $xactions;
+  }
+
   public function testRejectRequestSentWithAnUpdate() {
     $author = $this->generateNewTestUser();
     list($revision, $conflict_diff, $change_diff) =
