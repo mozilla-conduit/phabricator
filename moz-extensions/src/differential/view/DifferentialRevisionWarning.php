@@ -12,6 +12,9 @@ class DifferentialRevisionWarning extends Phobject {
   public function createWarnings($viewer, $revision) {
     $this->warnings[] = $this->createSecurityWarning($viewer, $revision);
     $this->warnings[] = $this->createPublicDependencyWarning($viewer, $revision);
+    $this->warnings[] = id(new DifferentialAIChangeView())
+      ->setViewer($viewer)
+      ->setRevision($revision);
     return $this->warnings;
   }
 
