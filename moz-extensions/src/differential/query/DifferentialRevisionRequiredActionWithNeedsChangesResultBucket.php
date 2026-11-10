@@ -1,6 +1,6 @@
 <?php
 
-final class DifferentialRevisionRequiredActionWithNeedsChangesResultBucket
+class DifferentialRevisionRequiredActionWithNeedsChangesResultBucket
   extends DifferentialRevisionRequiredActionResultBucket {
 
   const BUCKETKEY = 'action-with-needs-changes';
@@ -48,12 +48,12 @@ final class DifferentialRevisionRequiredActionWithNeedsChangesResultBucket
     $results = array();
     foreach ($objects as $key => $object) {
       if ($object->isNeedsReview()) {
-        // Same as parent — check voided accepts too.
+        // Same as parent - check voided accepts too.
         if (!$this->hasReviewersWithStatus($object, $phids, $needs_review_statuses, true)) {
           continue;
         }
       } else {
-        // NEEDS_REVISION — only show if this reviewer hasn't acted yet.
+        // NEEDS_REVISION - only show if this reviewer hasn't acted yet.
         if (!$this->hasReviewersWithStatus($object, $phids, $inactive)) {
           continue;
         }
