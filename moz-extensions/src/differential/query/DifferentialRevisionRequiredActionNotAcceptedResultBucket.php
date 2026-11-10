@@ -10,7 +10,9 @@
  *
  * Held-back revisions fall through to the later groups ("Waiting on Other
  * Reviewers" / "Waiting on Authors"). They return to the review groups once
- * the accept is removed, for example when the author uses "Request Review".
+ * the accept is removed, for example when the author uses "Request Review",
+ * or when a new diff is uploaded after the accept (even if
+ * differential.sticky-accept keeps the revision "Accepted").
  */
 final class DifferentialRevisionRequiredActionNotAcceptedResultBucket
   extends DifferentialRevisionRequiredActionWithNeedsChangesResultBucket {
@@ -74,8 +76,16 @@ final class DifferentialRevisionRequiredActionNotAcceptedResultBucket
         continue;
       }
 
-      // Handles voided accepts ("Request Review") and sticky accepts.
-      return $reviewer->isAccepted($diff_phid);
+      // Handles voided accepts ("Request Review").
+      if (!$reviewer->isAccepted($diff_phid)) {
+        return false;
+      }
+
+      // isAccepted() also honors differential.sticky-accept, but an accept
+      // carried over from an older diff should not hide the new changes
+      // from the viewer. Same check as DifferentialRevisionReviewTransaction.
+      $action_phid = $reviewer->getLastActionDiffPHID();
+      return (!$diff_phid || !$action_phid || $action_phid == $diff_phid);
     }
 
     return false;
