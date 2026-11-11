@@ -411,8 +411,9 @@ EOREMARKUP
   private function getInlineDoneConduitDocumentation() {
     return pht(<<<EOREMARKUP
 Use the `inline.done` transaction to mark a published inline comment on the
-revision as done or not done, like the "Done" checkbox in the web UI. Only the
-revision author can use it. The value is a dictionary:
+revision as done or not done, like the "Done" checkbox in the web UI. Unlike
+the web UI, any user who can edit the revision can use it, not only the
+revision author. The value is a dictionary:
 
   - `commentPHID` (phid, required): PHID of a published inline comment on
     this revision.

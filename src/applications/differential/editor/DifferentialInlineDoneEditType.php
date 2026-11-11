@@ -49,15 +49,6 @@ final class DifferentialInlineDoneEditType
         pht('Inline done value must have a boolean "done".'));
     }
 
-    // Like the web UI, only the revision author can mark published inline
-    // comments as "Done".
-    if ($viewer->getPHID() != $revision->getAuthorPHID()) {
-      throw new Exception(
-        pht(
-          'Only the author of a revision can mark its inline comments as '.
-          'done.'));
-    }
-
     $inline = id(new DifferentialDiffInlineCommentQuery())
       ->setViewer($viewer)
       ->withRevisionPHIDs(array($revision->getPHID()))

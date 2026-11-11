@@ -342,6 +342,15 @@ EODIFF
     ));
     $fields = head($this->loadInlines($author, $revision))['fields'];
     $this->assertEqual(false, $fields['isDone']);
+
+    // Unlike the web UI, users other than the revision author, like bots
+    // acting on comments, can mark inline comments as done.
+    $bot = $this->generateNewTestUser();
+    $this->editRevision($bot, $revision, array(
+      $this->newInlineDoneTransaction($inline_phid, true),
+    ));
+    $fields = head($this->loadInlines($author, $revision))['fields'];
+    $this->assertEqual(true, $fields['isDone']);
   }
 
   public function testInlineDoneMergesWithPendingDoneStates() {
@@ -450,11 +459,6 @@ EODIFF
           'done' => true,
         ),
         'is not a published inline comment',
-      ),
-      'not the author' => array(
-        $reviewer,
-        array('commentPHID' => $inline_phid, 'done' => true),
-        'Only the author of a revision',
       ),
     );
 
