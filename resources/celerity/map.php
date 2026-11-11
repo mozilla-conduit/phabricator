@@ -7,7 +7,7 @@
  */
 return array(
   'names' => array(
-    'core.pkg.css' => '44ea0943',
+    'core.pkg.css' => '69647746',
     'core.pkg.js' => 'a9804cce',
     'differential.pkg.css' => '4f5e39bb',
     'differential.pkg.js' => '84b4ced4',
@@ -143,7 +143,7 @@ return array(
     'rsrc/css/phui/phui-two-column-view.css' => 'f96d319f',
     'rsrc/css/sprite-login.css' => '18b368a6',
     'rsrc/css/sprite-tokens.css' => 'f1896dc5',
-    'rsrc/css/syntax/syntax-default.css' => '055fc231',
+    'rsrc/css/syntax/syntax-default.css' => 'bcf61d97',
     'rsrc/externals/font/fontawesome/fontawesome-webfont.eot' => '23f8c698',
     'rsrc/externals/font/fontawesome/fontawesome-webfont.ttf' => '70983df0',
     'rsrc/externals/font/fontawesome/fontawesome-webfont.woff' => 'cd02f93b',
@@ -734,7 +734,7 @@ return array(
     'setup-issue-css' => '5eed85b2',
     'sprite-login-css' => '18b368a6',
     'sprite-tokens-css' => 'f1896dc5',
-    'syntax-default-css' => '055fc231',
+    'syntax-default-css' => 'bcf61d97',
     'syntax-highlighting-css' => '548567f6',
     'trigger-rule' => '41b7b4f6',
     'trigger-rule-control' => '5faf27b9',
