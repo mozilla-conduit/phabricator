@@ -168,6 +168,8 @@ final class DifferentialTransactionEditor
       return $xactions;
     }
 
+    ReviewHelperDraftHold::annotateEarlyPublishes($object, $xactions);
+
     $hold_xactions = ReviewHelperDraftHold::newTransactionsForEdit(
       $this->getActor(),
       $object,
@@ -1337,12 +1339,14 @@ final class DifferentialTransactionEditor
 
   /**
    * @phutil-external-symbol class DifferentialSubmitDraftTransaction
+   * @phutil-external-symbol class ReviewHelperDraftHold
    */
   protected function didApplyInternalEffects(
     PhabricatorLiskDAO $object,
     array $xactions) {
 
     DifferentialSubmitDraftTransaction::resolveSubmissions($object, $xactions);
+    ReviewHelperDraftHold::recordEarlyPublishes($object, $xactions);
 
     return parent::didApplyInternalEffects($object, $xactions);
   }
