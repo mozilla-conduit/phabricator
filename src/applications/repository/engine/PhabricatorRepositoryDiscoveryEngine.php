@@ -2,7 +2,6 @@
 
 /**
  * @task discover   Discovering Repositories
- * @task svn        Discovering Subversion Repositories
  * @task git        Discovering Git Repositories
  * @task hg         Discovering Mercurial Repositories
  * @task internal   Internals
@@ -67,9 +66,6 @@ final class PhabricatorRepositoryDiscoveryEngine
 
     $vcs = $repository->getVersionControlSystem();
     switch ($vcs) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $refs = $this->discoverSubversionCommits();
-        break;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $refs = $this->discoverMercurialCommits();
         break;
@@ -222,122 +218,6 @@ final class PhabricatorRepositoryDiscoveryEngine
       self::MAX_COMMIT_CACHE_SIZE);
 
     return $chunk_iterator;
-  }
-
-
-/* -(  Discovering Subversion Repositories  )-------------------------------- */
-
-
-  /**
-   * @task svn
-   */
-  private function discoverSubversionCommits() {
-    $repository = $this->getRepository();
-
-    if (!$repository->isHosted()) {
-      $this->verifySubversionRoot($repository);
-    }
-
-    $upper_bound = null;
-    $limit = 1;
-    $refs = array();
-    do {
-      // Find all the unknown commits on this path. Note that we permit
-      // importing an SVN subdirectory rather than the entire repository, so
-      // commits may be nonsequential.
-
-      if ($upper_bound === null) {
-        $at_rev = 'HEAD';
-      } else {
-        $at_rev = ($upper_bound - 1);
-      }
-
-      try {
-        list($xml, $stderr) = $repository->execxRemoteCommand(
-          'log --xml --quiet --limit %d %s',
-          $limit,
-          $repository->getSubversionBaseURI($at_rev));
-      } catch (CommandException $ex) {
-        $stderr = $ex->getStderr();
-        if (preg_match('/(path|File) not found/', $stderr)) {
-          // We've gone all the way back through history and this path was not
-          // affected by earlier commits.
-          break;
-        }
-        throw $ex;
-      }
-
-      $xml = phutil_utf8ize($xml);
-      $log = new SimpleXMLElement($xml);
-      foreach ($log->logentry as $entry) {
-        $identifier = (int)$entry['revision'];
-        $epoch = (int)strtotime((string)$entry->date[0]);
-        $refs[$identifier] = id(new PhabricatorRepositoryCommitRef())
-          ->setIdentifier($identifier)
-          ->setEpoch($epoch)
-          ->setIsPermanent(true);
-
-        if ($upper_bound === null) {
-          $upper_bound = $identifier;
-        } else {
-          $upper_bound = min($upper_bound, $identifier);
-        }
-      }
-
-      // Discover 2, 4, 8, ... 256 logs at a time. This allows us to initially
-      // import large repositories fairly quickly, while pulling only as much
-      // data as we need in the common case (when we've already imported the
-      // repository and are just grabbing one commit at a time).
-      $limit = min($limit * 2, 256);
-
-    } while ($upper_bound > 1 && !$this->isKnownCommit($upper_bound));
-
-    krsort($refs);
-    while ($refs && $this->isKnownCommit(last($refs)->getIdentifier())) {
-      array_pop($refs);
-    }
-    $refs = array_reverse($refs);
-
-    $this->didDiscoverRefs($refs);
-
-    return $refs;
-  }
-
-
-  private function verifySubversionRoot(PhabricatorRepository $repository) {
-    list($xml) = $repository->execxRemoteCommand(
-      'info --xml %s',
-      $repository->getSubversionPathURI());
-
-    $xml = phutil_utf8ize($xml);
-    $xml = new SimpleXMLElement($xml);
-
-    $remote_root = (string)($xml->entry[0]->repository[0]->root[0]);
-    $expect_root = $repository->getSubversionPathURI();
-
-    $normal_type_svn = ArcanistRepositoryURINormalizer::TYPE_SVN;
-
-    $remote_normal = id(new ArcanistRepositoryURINormalizer(
-      $normal_type_svn,
-      $remote_root))->getNormalizedPath();
-
-    $expect_normal = id(new ArcanistRepositoryURINormalizer(
-      $normal_type_svn,
-      $expect_root))->getNormalizedPath();
-
-    if ($remote_normal != $expect_normal) {
-      throw new Exception(
-        pht(
-          'Repository "%s" does not have a correctly configured remote URI. '.
-          'The remote URI for a Subversion repository MUST point at the '.
-          'repository root. The root for this repository is "%s", but the '.
-          'configured URI is "%s". To resolve this error, set the remote URI '.
-          'to point at the repository root. If you want to import only part '.
-          'of a Subversion repository, use the "Import Only" option.',
-          $repository->getDisplayName(),
-          $remote_root,
-          $expect_root));
-    }
   }
 
 
@@ -627,9 +507,7 @@ final class PhabricatorRepositoryDiscoveryEngine
       } else {
         // Write an explicit 0 so we can distinguish between "really no
         // parents" and "data not available".
-        if (!$repository->isSVN()) {
-          $parent_ids = array(0);
-        }
+        $parent_ids = array(0);
       }
 
       $commit->openTransaction();
