@@ -10,7 +10,7 @@
 // causes some systems to hang mysteriously. See T7119.
 
 // Commit hooks execute in an unusual context where the environment may be
-// unavailable, particularly in SVN. The first parameter to this script is
+// unavailable. The first parameter to this script is
 // either a bare repository identifier ("X"), or a repository identifier
 // followed by an instance identifier ("X:instance"). If we have an instance
 // identifier, unpack it into the environment before we start up. This allows
@@ -62,62 +62,8 @@ if (!$repository->isHosted()) {
 
 $engine->setRepository($repository);
 
-$args = new PhutilArgumentParser($argv);
-$args->parsePartial(
-  array(
-    array(
-      'name' => 'hook-mode',
-      'param' => 'mode',
-      'help' => pht('Hook execution mode.'),
-    ),
-  ));
-
-$argv = array_merge(
-  array($argv[0]),
-  $args->getUnconsumedArgumentVector());
-
 // Figure out which user is writing the commit.
-$hook_mode = $args->getArg('hook-mode');
-if ($hook_mode !== null) {
-  $known_modes = array(
-    'svn-revprop' => true,
-  );
-
-  if (empty($known_modes[$hook_mode])) {
-    throw new Exception(
-      pht(
-        'Invalid Hook Mode: This hook was invoked in "%s" mode, but this '.
-        'is not a recognized hook mode. Valid modes are: %s.',
-        $hook_mode,
-        implode(', ', array_keys($known_modes))));
-  }
-}
-
-$is_svnrevprop = ($hook_mode == 'svn-revprop');
-
-if ($is_svnrevprop) {
-  // For now, we let these through if the repository allows dangerous changes
-  // and prevent them if it doesn't. See T11208 for discussion.
-
-  $revprop_key = $argv[5];
-
-  if ($repository->shouldAllowDangerousChanges()) {
-    $err = 0;
-  } else {
-    $err = 1;
-
-    $console = PhutilConsole::getConsole();
-    $console->writeErr(
-      pht(
-        "DANGEROUS CHANGE: Dangerous change protection is enabled for this ".
-        "repository, so you can not change revision properties (you are ".
-        "attempting to edit \"%s\").\n".
-        "Edit the repository configuration before making dangerous changes.",
-        $revprop_key));
-  }
-
-  exit($err);
-} else if ($repository->isGit() || $repository->isHg()) {
+if ($repository->isGit() || $repository->isHg()) {
   $username = getenv(DiffusionCommitHookEngine::ENV_USER);
   if (!phutil_nonempty_string($username)) {
     throw new Exception(
@@ -132,21 +78,6 @@ if ($is_svnrevprop) {
     $engine->setMercurialHook($argv[2]);
   }
 
-} else if ($repository->isSVN()) {
-  // NOTE: In Subversion, the entire environment gets wiped so we can't read
-  // DiffusionCommitHookEngine::ENV_USER. Instead, we've set "--tunnel-user" to
-  // specify the correct user; read this user out of the commit log.
-
-  if ($argc < 4) {
-    throw new Exception(pht('usage: commit-hook <repository> <repo> <txn>'));
-  }
-
-  $svn_repo = $argv[2];
-  $svn_txn = $argv[3];
-  list($username) = execx('svnlook author -t %s %s', $svn_txn, $svn_repo);
-  $username = rtrim($username, "\n");
-
-  $engine->setSubversionTransactionInfo($svn_txn, $svn_repo);
 } else {
   throw new Exception(pht('Unknown repository type.'));
 }
@@ -169,8 +100,7 @@ if ($repository->isHg()) {
   // Mercurial leaves stdin open, so we can't just read it until EOF.
   $stdin = '';
 } else {
-  // Git and Subversion write data into stdin and then close it. Read the
-  // data.
+  // Git writes data into stdin and then closes it. Read the data.
   $stdin = @file_get_contents('php://stdin');
   if ($stdin === false) {
     throw new Exception(pht('Failed to read stdin!'));

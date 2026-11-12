@@ -77,15 +77,6 @@ final class DiffusionServeController extends DiffusionController {
       // "application/mercurial-0.1", and a User-Agent like
       // "mercurial/proto-1.0".
       $vcs = PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL;
-    } else {
-      // Subversion also sends an initial OPTIONS request (vs GET/POST), and
-      // has a User-Agent like "SVN/1.8.3 (x86_64-apple-darwin11.4.2)
-      // serf/1.3.2".
-      $dav = $request->getHTTPHeader('DAV');
-      $dav = new PhutilURI($dav);
-      if ($dav->getDomain() === 'subversion.tigris.org') {
-        $vcs = PhabricatorRepositoryType::REPOSITORY_TYPE_SVN;
-      }
     }
 
     return $vcs;
@@ -380,13 +371,6 @@ final class DiffusionServeController extends DiffusionController {
               'This repository ("%s") is not a Mercurial repository.',
               $repository->getDisplayName()));
           break;
-        case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-          $result = new PhabricatorVCSResponse(
-            500,
-            pht(
-              'This repository ("%s") is not a Subversion repository.',
-              $repository->getDisplayName()));
-          break;
         default:
           $result = new PhabricatorVCSResponse(
             500,
@@ -416,13 +400,6 @@ final class DiffusionServeController extends DiffusionController {
               500,
               phutil_string_cast($caught->getMessage()));
           }
-          break;
-        case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-          $result = new PhabricatorVCSResponse(
-            500,
-            pht(
-              'This server does not support HTTP access to Subversion '.
-              'repositories.'));
           break;
         default:
           $result = new PhabricatorVCSResponse(
@@ -529,8 +506,6 @@ final class DiffusionServeController extends DiffusionController {
           return DiffusionMercurialWireProtocol::isReadOnlyBatchCommand($cmds);
         }
         return DiffusionMercurialWireProtocol::isReadOnlyCommand($cmd);
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        break;
     }
 
     return false;

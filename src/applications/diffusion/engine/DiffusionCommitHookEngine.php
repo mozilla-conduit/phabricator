@@ -5,7 +5,6 @@
  * @task hook     Hook Execution
  * @task git      Git Hooks
  * @task hg       Mercurial Hooks
- * @task svn      Subversion Hooks
  * @task internal Internals
  */
 final class DiffusionCommitHookEngine extends Phobject {
@@ -22,8 +21,6 @@ final class DiffusionCommitHookEngine extends Phobject {
   private $repository;
   private $stdin;
   private $originalArgv;
-  private $subversionTransaction;
-  private $subversionRepository;
   private $remoteAddress;
   private $remoteProtocol;
   private $requestIdentifier;
@@ -79,12 +76,6 @@ final class DiffusionCommitHookEngine extends Phobject {
 
   public function getStartTime() {
     return $this->startTime;
-  }
-
-  public function setSubversionTransactionInfo($transaction, $repository) {
-    $this->subversionTransaction = $transaction;
-    $this->subversionRepository = $repository;
-    return $this;
   }
 
   public function setStdin($stdin) {
@@ -260,8 +251,6 @@ final class DiffusionCommitHookEngine extends Phobject {
         return $this->findGitRefUpdates();
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         return $this->findMercurialRefUpdates();
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        return $this->findSubversionRefUpdates();
       default:
         throw new Exception(pht('Unsupported repository type "%s"!', $type));
     }
@@ -305,8 +294,6 @@ final class DiffusionCommitHookEngine extends Phobject {
         return $this->findGitContentUpdates($ref_updates);
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         return $this->findMercurialContentUpdates($ref_updates);
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        return $this->findSubversionContentUpdates($ref_updates);
       default:
         throw new Exception(pht('Unsupported repository type "%s"!', $type));
     }
@@ -1070,33 +1057,6 @@ final class DiffusionCommitHookEngine extends Phobject {
   }
 
 
-/* -(  Subversion  )--------------------------------------------------------- */
-
-
-  private function findSubversionRefUpdates() {
-    // Subversion doesn't have any kind of mutable ref metadata.
-    return array();
-  }
-
-  private function findSubversionContentUpdates(array $ref_updates) {
-    list($youngest) = execx(
-      'svnlook youngest %s',
-      $this->subversionRepository);
-    $ref_new = (int)$youngest + 1;
-
-    $ref_flags = 0;
-    $ref_flags |= PhabricatorRepositoryPushLog::CHANGEFLAG_ADD;
-    $ref_flags |= PhabricatorRepositoryPushLog::CHANGEFLAG_APPEND;
-
-    $ref_content = $this->newPushLog()
-      ->setRefType(PhabricatorRepositoryPushLog::REFTYPE_COMMIT)
-      ->setRefNew($ref_new)
-      ->setChangeFlags($ref_flags);
-
-    return array($ref_content);
-  }
-
-
 /* -(  Internals  )---------------------------------------------------------- */
 
 
@@ -1202,24 +1162,6 @@ final class DiffusionCommitHookEngine extends Phobject {
           ->setByteLimit($byte_limit)
           ->setLinesOfContext(0)
           ->executeInline();
-        break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // TODO: This diff has 3 lines of context, which produces slightly
-        // incorrect "added file content" and "removed file content" results.
-        // This may also choke on binaries, but "svnlook diff" does not support
-        // the "--diff-cmd" flag.
-
-        // For subversion, we need to use `svnlook`.
-        $future = new ExecFuture(
-          'svnlook diff -t %s %s',
-          $this->subversionTransaction,
-          $this->subversionRepository);
-
-        $future->setTimeout($time_limit);
-        $future->setStdoutSizeLimit($byte_limit);
-        $future->setStderrSizeLimit($byte_limit);
-
-        list($raw_diff) = $future->resolvex();
         break;
       default:
         throw new Exception(pht("Unknown VCS '%s!'", $vcs));
@@ -1362,16 +1304,6 @@ final class DiffusionCommitHookEngine extends Phobject {
           ->setRepository($repository)
           ->withIdentifier($identifier)
           ->execute();
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // For subversion, we need to use `svnlook`.
-        list($message) = execx(
-          'svnlook log -t %s %s',
-          $this->subversionTransaction,
-          $this->subversionRepository);
-
-        return id(new DiffusionCommitRef())
-          ->setMessage($message);
-        break;
       default:
         throw new Exception(pht("Unknown VCS '%s!'", $vcs));
     }
@@ -1388,9 +1320,6 @@ final class DiffusionCommitHookEngine extends Phobject {
         // "a list of all branch heads which descend from the commit".
         // This is consistent with Mercurial, but possibly confusing.
         return idx($this->mercurialCommits, $identifier, array());
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // Subversion doesn't have branches.
-        return array();
     }
   }
 
@@ -1418,16 +1347,6 @@ final class DiffusionCommitHookEngine extends Phobject {
 
   private function isInitialImport(array $all_updates) {
     $repository = $this->getRepository();
-
-    $vcs = $repository->getVersionControlSystem();
-    switch ($vcs) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // There is no meaningful way to import history into Subversion by
-        // pushing.
-        return false;
-      default:
-        break;
-    }
 
     // Now, apply a heuristic to guess whether this is a normal commit or
     // an initial import. We guess something is an initial import if:

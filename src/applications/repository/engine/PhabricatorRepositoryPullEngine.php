@@ -6,12 +6,11 @@
  * @{class:PhabricatorRepositoryPullLocalDaemon}.
  *
  * This class also covers initial working copy setup through `git clone`,
- * `git init`, `hg clone`, `hg init`, or `svnadmin create`.
+ * `git init`, `hg clone` or `hg init`.
  *
  * @task pull     Pulling Working Copies
  * @task git      Pulling Git Working Copies
  * @task hg       Pulling Mercurial Working Copies
- * @task svn      Pulling Subversion Working Copies
  * @task internal Internals
  */
 final class PhabricatorRepositoryPullEngine
@@ -61,23 +60,10 @@ final class PhabricatorRepositoryPullEngine
 
     $is_hg = false;
     $is_git = false;
-    $is_svn = false;
 
     $vcs = $repository->getVersionControlSystem();
 
     switch ($vcs) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // We never pull a local copy of non-hosted Subversion repositories.
-        if (!$repository->isHosted()) {
-          $this->skipPull(
-            pht(
-              'Repository "%s" is a non-hosted Subversion repository, which '.
-              'does not require a local working copy to be pulled.',
-              $repository->getDisplayName()));
-          return;
-        }
-        $is_svn = true;
-        break;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
         $is_git = true;
         break;
@@ -112,8 +98,6 @@ final class PhabricatorRepositoryPullEngine
           $this->executeGitCreate();
         } else if ($is_hg) {
           $this->executeMercurialCreate();
-        } else {
-          $this->executeSubversionCreate();
         }
       }
 
@@ -138,8 +122,6 @@ final class PhabricatorRepositoryPullEngine
       if ($repository->isHosted()) {
         if ($is_git) {
           $this->installGitHook();
-        } else if ($is_svn) {
-          $this->installSubversionHook();
         } else if ($is_hg) {
           $this->installMercurialHook();
         }
@@ -813,41 +795,5 @@ final class PhabricatorRepositoryPullEngine
 
     Filesystem::writeFile($path, $data);
   }
-
-
-/* -(  Pulling Subversion Working Copies  )---------------------------------- */
-
-
-  /**
-   * @task svn
-   */
-  private function executeSubversionCreate() {
-    $repository = $this->getRepository();
-
-    $path = rtrim($repository->getLocalPath(), '/');
-    execx('svnadmin create -- %s', $path);
-  }
-
-
-  /**
-   * @task svn
-   */
-  private function installSubversionHook() {
-    $repository = $this->getRepository();
-    $root = $repository->getLocalPath();
-
-    $path = '/hooks/pre-commit';
-    $this->installHook($root.$path);
-
-    $revprop_path = '/hooks/pre-revprop-change';
-
-    $revprop_argv = array(
-      '--hook-mode',
-      'svn-revprop',
-    );
-
-    $this->installHook($root.$revprop_path, $revprop_argv);
-  }
-
 
 }

@@ -172,16 +172,10 @@ final class PhabricatorRepositoryPushLog
   }
 
   public function getRefOldShort() {
-    if ($this->getRepository()->isSVN()) {
-      return $this->getRefOld();
-    }
     return substr($this->getRefOld(), 0, 12);
   }
 
   public function getRefNewShort() {
-    if ($this->getRepository()->isSVN()) {
-      return $this->getRefNew();
-    }
     return substr($this->getRefNew(), 0, 12);
   }
 

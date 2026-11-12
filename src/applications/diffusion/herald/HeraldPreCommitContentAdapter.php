@@ -105,9 +105,6 @@ final class HeraldPreCommitContentAdapter extends HeraldPreCommitAdapter {
           return null;
         }
         return $this->lookupUser($author);
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // In Subversion, the pusher is always the author.
-        return $this->getHookEngine()->getViewer()->getPHID();
     }
   }
 
@@ -126,9 +123,6 @@ final class HeraldPreCommitContentAdapter extends HeraldPreCommitAdapter {
           return $this->getAuthorPHID();
         }
         return $this->lookupUser($committer);
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // In Subversion, the pusher is always the committer.
-        return $this->getHookEngine()->getViewer()->getPHID();
     }
   }
 
@@ -140,9 +134,6 @@ final class HeraldPreCommitContentAdapter extends HeraldPreCommitAdapter {
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $ref = $this->getCommitRef();
         return $ref->getAuthor();
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // In Subversion, the pusher is always the author.
-        return $this->getHookEngine()->getViewer()->getUsername();
     }
   }
 
@@ -160,9 +151,6 @@ final class HeraldPreCommitContentAdapter extends HeraldPreCommitAdapter {
           return $committer;
         }
         return $ref->getAuthor();
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // In Subversion, the pusher is always the committer.
-        return $this->getHookEngine()->getViewer()->getUsername();
     }
   }
 
@@ -241,11 +229,6 @@ final class HeraldPreCommitContentAdapter extends HeraldPreCommitAdapter {
           ->execute();
 
         return (count($parents) > 1);
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // NOTE: For now, we ignore "svn:mergeinfo" at all levels. We might
-        // change this some day, but it's not nearly as clear a signal as
-        // ancestry is in Git/Mercurial.
-        return false;
     }
   }
 
