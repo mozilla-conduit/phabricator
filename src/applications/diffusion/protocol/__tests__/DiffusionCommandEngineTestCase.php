@@ -5,7 +5,6 @@ final class DiffusionCommandEngineTestCase extends PhabricatorTestCase {
   public function testCommandEngine() {
     $type_git = PhabricatorRepositoryType::REPOSITORY_TYPE_GIT;
     $type_hg = PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL;
-    $type_svn = PhabricatorRepositoryType::REPOSITORY_TYPE_SVN;
 
     $root = dirname(phutil_get_library_root('phabricator'));
     $ssh_wrapper = $root.'/bin/ssh-connect';
@@ -33,16 +32,6 @@ final class DiffusionCommandEngineTestCase extends PhabricatorTestCase {
       ),
       array(
         'vcs' => $type_hg,
-        'argv' => 'xyz',
-      ));
-
-    $this->assertCommandEngineFormat(
-      'svn --non-interactive xyz',
-      array(
-        'LANG' => 'en_US.UTF-8',
-      ),
-      array(
-        'vcs' => $type_svn,
         'argv' => 'xyz',
       ));
 
@@ -74,18 +63,6 @@ final class DiffusionCommandEngineTestCase extends PhabricatorTestCase {
         'protocol' => 'ssh',
       ));
 
-    $this->assertCommandEngineFormat(
-      'svn --non-interactive xyz',
-      array(
-        'LANG' => 'en_US.UTF-8',
-        'SVN_SSH' => $ssh_wrapper,
-      ),
-      array(
-        'vcs' => $type_svn,
-        'argv' => 'xyz',
-        'protocol' => 'ssh',
-      ));
-
 
     // Commands with HTTP.
 
@@ -109,17 +86,6 @@ final class DiffusionCommandEngineTestCase extends PhabricatorTestCase {
       ),
       array(
         'vcs' => $type_hg,
-        'argv' => 'xyz',
-        'protocol' => 'https',
-      ));
-
-    $this->assertCommandEngineFormat(
-      'svn --non-interactive --no-auth-cache --trust-server-cert xyz',
-      array(
-        'LANG' => 'en_US.UTF-8',
-      ),
-      array(
-        'vcs' => $type_svn,
         'argv' => 'xyz',
         'protocol' => 'https',
       ));

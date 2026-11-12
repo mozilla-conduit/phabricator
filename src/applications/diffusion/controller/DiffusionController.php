@@ -447,11 +447,6 @@ abstract class DiffusionController extends PhabricatorController {
   protected function renderSearchForm($path = '/') {
     $drequest = $this->getDiffusionRequest();
     $viewer = $this->getViewer();
-    switch ($drequest->getRepository()->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        return null;
-    }
-
     $search_term = $this->getRequest()->getStr('grep');
     require_celerity_resource('diffusion-icons-css');
     require_celerity_resource('diffusion-css');
@@ -513,31 +508,27 @@ abstract class DiffusionController extends PhabricatorController {
           )))
         ->setSelected($key == 'code'));
 
-    if (!$repository->isSVN()) {
-      $view->addMenuItem(
-        id(new PHUIListItemView())
-          ->setKey('branch')
-          ->setName(pht('Branches'))
-          ->setIcon('fa-code-fork')
-          ->setHref($drequest->generateURI(
-          array(
-            'action' => 'branches',
-          )))
-          ->setSelected($key == 'branch'));
-    }
+    $view->addMenuItem(
+      id(new PHUIListItemView())
+        ->setKey('branch')
+        ->setName(pht('Branches'))
+        ->setIcon('fa-code-fork')
+        ->setHref($drequest->generateURI(
+        array(
+          'action' => 'branches',
+        )))
+        ->setSelected($key == 'branch'));
 
-    if (!$repository->isSVN()) {
-      $view->addMenuItem(
-        id(new PHUIListItemView())
-          ->setKey('tags')
-          ->setName(pht('Tags'))
-          ->setIcon('fa-tags')
-          ->setHref($drequest->generateURI(
-          array(
-            'action' => 'tags',
-          )))
-          ->setSelected($key == 'tags'));
-    }
+    $view->addMenuItem(
+      id(new PHUIListItemView())
+        ->setKey('tags')
+        ->setName(pht('Tags'))
+        ->setIcon('fa-tags')
+        ->setHref($drequest->generateURI(
+        array(
+          'action' => 'tags',
+        )))
+        ->setSelected($key == 'tags'));
 
     $view->addMenuItem(
       id(new PHUIListItemView())

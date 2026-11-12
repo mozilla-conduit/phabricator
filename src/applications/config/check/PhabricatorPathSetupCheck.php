@@ -19,11 +19,10 @@ final class PhabricatorPathSetupCheck extends PhabricatorSetupCheck {
 
       $message = pht(
         "The environmental variable %s is empty. This server needs to execute ".
-        "some system commands, like `%s`, `%s`, `%s`, and `%s`. To execute ".
+        "some system commands, like `%s`, `%s`, and `%s`. To execute ".
         "these commands, the binaries must be available in the webserver's ".
         "%s. You can set additional paths in configuration.",
         '$PATH',
-        'svn',
         'git',
         'hg',
         'diff',

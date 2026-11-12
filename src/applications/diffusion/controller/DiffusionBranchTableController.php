@@ -79,10 +79,8 @@ final class DiffusionBranchTableController extends DiffusionController {
       ->setHeader(pht('Branches'))
       ->setHeaderIcon('fa-code-fork');
 
-    if (!$repository->isSVN()) {
-      $branch_tag = $this->renderBranchTag($drequest);
-      $header->addTag($branch_tag);
-    }
+    $branch_tag = $this->renderBranchTag($drequest);
+    $header->addTag($branch_tag);
 
     $tabs = $this->buildTabsView('branch');
 

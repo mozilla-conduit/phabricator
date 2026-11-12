@@ -368,25 +368,19 @@ final class DiffusionBrowseController extends DiffusionController {
       ->readFromRequest($request);
 
     $search_mode = null;
-    switch ($repository->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $results = array();
-        break;
-      default:
-        if (strlen($this->getRequest()->getStr('grep'))) {
-          $search_mode = 'grep';
-          $query_string = $request->getStr('grep');
-          $results = $this->callConduitWithDiffusionRequest(
-            'diffusion.searchquery',
-            array(
-              'grep' => $query_string,
-              'commit' => $drequest->getStableCommit(),
-              'path' => $drequest->getPath(),
-              'limit' => $pager->getPageSize() + 1,
-              'offset' => $pager->getOffset(),
-            ));
-        }
-        break;
+    $results = array();
+    if (strlen($this->getRequest()->getStr('grep'))) {
+      $search_mode = 'grep';
+      $query_string = $request->getStr('grep');
+      $results = $this->callConduitWithDiffusionRequest(
+        'diffusion.searchquery',
+        array(
+          'grep' => $query_string,
+          'commit' => $drequest->getStableCommit(),
+          'path' => $drequest->getPath(),
+          'limit' => $pager->getPageSize() + 1,
+          'offset' => $pager->getOffset(),
+        ));
     }
     $results = $pager->sliceResults($results);
 
@@ -736,10 +730,8 @@ final class DiffusionBrowseController extends DiffusionController {
       ->addTag($commit_tag)
       ->addClass('diffusion-browse-header');
 
-    if (!$repository->isSVN()) {
-      $branch_tag = $this->renderBranchTag($drequest);
-      $header->addTag($branch_tag);
-    }
+    $branch_tag = $this->renderBranchTag($drequest);
+    $header->addTag($branch_tag);
 
     return $header;
   }

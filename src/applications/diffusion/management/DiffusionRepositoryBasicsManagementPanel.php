@@ -354,13 +354,9 @@ final class DiffusionRepositoryBasicsManagementPanel
     }
 
     $binaries = array();
-    $svnlook_check = false;
     switch ($repository->getVersionControlSystem()) {
       case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
         $binaries[] = 'git';
-        break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $binaries[] = 'svn';
         break;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $binaries[] = 'hg';
@@ -378,12 +374,6 @@ final class DiffusionRepositoryBasicsManagementPanel
           case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
             $binaries[] = 'git-http-backend';
             break;
-          case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-            $binaries[] = 'svnserve';
-            $binaries[] = 'svnadmin';
-            $binaries[] = 'svnlook';
-            $svnlook_check = true;
-            break;
           case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
             $binaries[] = 'hg';
             break;
@@ -399,12 +389,6 @@ final class DiffusionRepositoryBasicsManagementPanel
           case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
             $binaries[] = 'git-receive-pack';
             $binaries[] = 'git-upload-pack';
-            break;
-          case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-            $binaries[] = 'svnserve';
-            $binaries[] = 'svnadmin';
-            $binaries[] = 'svnlook';
-            $svnlook_check = true;
             break;
           case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
             $binaries[] = 'hg';
@@ -439,39 +423,6 @@ final class DiffusionRepositoryBasicsManagementPanel
               ->setTarget(
                 pht('Found Binary %s', phutil_tag('tt', array(), $binary)))
               ->setNote(phutil_tag('tt', array(), $where)));
-        }
-      }
-
-      // This gets checked generically above. However, for svn commit hooks, we
-      // need this to be in environment.append-paths because subversion strips
-      // PATH.
-      if ($svnlook_check) {
-        $where = Filesystem::resolveBinary('svnlook');
-        if ($where) {
-          $path = substr($where, 0, strlen($where) - strlen('svnlook'));
-          $dirs = PhabricatorEnv::getEnvConfig('environment.append-paths');
-          $in_path = false;
-          foreach ($dirs as $dir) {
-            if (Filesystem::isDescendant($path, $dir)) {
-              $in_path = true;
-              break;
-            }
-          }
-          if (!$in_path) {
-            $view->addItem(
-              id(new PHUIStatusItemView())
-              ->setIcon(PHUIStatusItemView::ICON_WARNING, 'red')
-              ->setTarget(
-                pht('Commit Hooks: %s', phutil_tag('tt', array(), $binary)))
-              ->setNote(
-                pht(
-                  'The directory containing the "svnlook" binary is not '.
-                  'listed in "environment.append-paths", so commit hooks '.
-                  '(which execute with an empty "PATH") will not be able to '.
-                  'find "svnlook". Add `%s` to %s.',
-                  $path,
-                  $this->getEnvConfigLink())));
-          }
         }
       }
     }

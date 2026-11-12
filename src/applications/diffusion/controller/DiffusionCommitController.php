@@ -114,7 +114,6 @@ final class DiffusionCommitController extends DiffusionController {
     $audit_requests = $commit->getAudits();
 
     $commit_data = $commit->getCommitData();
-    $is_foreign = $commit_data->getCommitDetail('foreign-svn-stub');
     $error_panel = null;
     $unpublished_panel = null;
 
@@ -149,148 +148,133 @@ final class DiffusionCommitController extends DiffusionController {
       }
     }
 
-    if ($is_foreign) {
-      $subpath = $commit_data->getCommitDetail('svn-subpath');
+    $engine = PhabricatorMarkupEngine::newDifferentialMarkupEngine();
+    $engine->setConfig('viewer', $viewer);
 
-      $error_panel = new PHUIInfoView();
-      $error_panel->setTitle(pht('Commit Not Tracked'));
-      $error_panel->setSeverity(PHUIInfoView::SEVERITY_WARNING);
-      $error_panel->appendChild(
-        pht(
-          "This Diffusion repository is configured to track only one ".
-          "subdirectory of the entire Subversion repository, and this commit ".
-          "didn't affect the tracked subdirectory ('%s'), so no ".
-          "information is available.",
-          $subpath));
-    } else {
-      $engine = PhabricatorMarkupEngine::newDifferentialMarkupEngine();
-      $engine->setConfig('viewer', $viewer);
+    $commit_tag = $this->renderCommitHashTag($drequest);
+    $header = id(new PHUIHeaderView())
+      ->setHeader(nonempty($commit->getSummary(), pht('Commit Detail')))
+      ->setHeaderIcon('fa-code-fork')
+      ->addTag($commit_tag);
 
-      $commit_tag = $this->renderCommitHashTag($drequest);
-      $header = id(new PHUIHeaderView())
-        ->setHeader(nonempty($commit->getSummary(), pht('Commit Detail')))
-        ->setHeaderIcon('fa-code-fork')
-        ->addTag($commit_tag);
+    if (!$commit->isAuditStatusNoAudit()) {
+      $status = $commit->getAuditStatusObject();
 
-      if (!$commit->isAuditStatusNoAudit()) {
-        $status = $commit->getAuditStatusObject();
+      $icon = $status->getIcon();
+      $color = $status->getColor();
+      $status = $status->getName();
 
-        $icon = $status->getIcon();
-        $color = $status->getColor();
-        $status = $status->getName();
+      $header->setStatus($icon, $color, $status);
+    }
 
-        $header->setStatus($icon, $color, $status);
-      }
+    $curtain = $this->buildCurtain($commit, $repository);
+    $details = $this->buildPropertyListView(
+      $commit,
+      $commit_data,
+      $audit_requests);
 
-      $curtain = $this->buildCurtain($commit, $repository);
-      $details = $this->buildPropertyListView(
-        $commit,
-        $commit_data,
-        $audit_requests);
+    $message = $commit_data->getCommitMessage();
 
-      $message = $commit_data->getCommitMessage();
+    $revision = $commit->getCommitIdentifier();
+    $message = $this->linkBugtraq($message);
+    $message = $engine->markupText($message);
 
-      $revision = $commit->getCommitIdentifier();
-      $message = $this->linkBugtraq($message);
-      $message = $engine->markupText($message);
+    $detail_list = new PHUIPropertyListView();
+    $detail_list->addTextContent(
+      phutil_tag(
+        'div',
+        array(
+          'class' => 'diffusion-commit-message phabricator-remarkup',
+        ),
+        $message));
 
-      $detail_list = new PHUIPropertyListView();
-      $detail_list->addTextContent(
-        phutil_tag(
-          'div',
-          array(
-            'class' => 'diffusion-commit-message phabricator-remarkup',
-          ),
-          $message));
+    if ($commit->isUnreachable()) {
+      $did_rewrite = false;
+      if ($hint) {
+        if ($hint->isRewritten()) {
+          $rewritten = id(new DiffusionCommitQuery())
+            ->setViewer($viewer)
+            ->withRepository($repository)
+            ->withIdentifiers(array($hint->getNewCommitIdentifier()))
+            ->executeOne();
+          if ($rewritten) {
+            $did_rewrite = true;
+            $rewritten_uri = $rewritten->getURI();
+            $rewritten_name = $rewritten->getLocalName();
 
-      if ($commit->isUnreachable()) {
-        $did_rewrite = false;
-        if ($hint) {
-          if ($hint->isRewritten()) {
-            $rewritten = id(new DiffusionCommitQuery())
-              ->setViewer($viewer)
-              ->withRepository($repository)
-              ->withIdentifiers(array($hint->getNewCommitIdentifier()))
-              ->executeOne();
-            if ($rewritten) {
-              $did_rewrite = true;
-              $rewritten_uri = $rewritten->getURI();
-              $rewritten_name = $rewritten->getLocalName();
+            $rewritten_link = phutil_tag(
+              'a',
+              array(
+                'href' => $rewritten_uri,
+              ),
+              $rewritten_name);
 
-              $rewritten_link = phutil_tag(
-                'a',
-                array(
-                  'href' => $rewritten_uri,
-                ),
-                $rewritten_name);
-
-              $this->commitErrors[] = pht(
-                'This commit was rewritten after it was published, which '.
-                'changed the commit hash. This old version of the commit is '.
-                'no longer reachable from any branch, tag or ref. The new '.
-                'version of this commit is %s.',
-                $rewritten_link);
-            }
+            $this->commitErrors[] = pht(
+              'This commit was rewritten after it was published, which '.
+              'changed the commit hash. This old version of the commit is '.
+              'no longer reachable from any branch, tag or ref. The new '.
+              'version of this commit is %s.',
+              $rewritten_link);
           }
         }
-
-        if (!$did_rewrite) {
-          $this->commitErrors[] = pht(
-            'This commit has been deleted in the repository: it is no longer '.
-            'reachable from any branch, tag, or ref.');
-        }
       }
-      if (!$commit->isPermanentCommit()) {
-        $nonpermanent_tag = id(new PHUITagView())
-          ->setType(PHUITagView::TYPE_SHADE)
-          ->setName(pht('Unpublished'))
-          ->setColor(PHUITagView::COLOR_ORANGE);
 
-        $header->addTag($nonpermanent_tag);
+      if (!$did_rewrite) {
+        $this->commitErrors[] = pht(
+          'This commit has been deleted in the repository: it is no longer '.
+          'reachable from any branch, tag, or ref.');
+      }
+    }
+    if (!$commit->isPermanentCommit()) {
+      $nonpermanent_tag = id(new PHUITagView())
+        ->setType(PHUITagView::TYPE_SHADE)
+        ->setName(pht('Unpublished'))
+        ->setColor(PHUITagView::COLOR_ORANGE);
 
-        $holds = $commit_data->newPublisherHoldReasons();
+      $header->addTag($nonpermanent_tag);
 
-        $reasons = array();
-        foreach ($holds as $hold) {
-          $reasons[] = array(
-            phutil_tag('strong', array(), pht('%s:', $hold->getName())),
-            ' ',
-            $hold->getSummary(),
-          );
-        }
+      $holds = $commit_data->newPublisherHoldReasons();
 
-        if (!$holds) {
-          $reasons[] = pht('No further details are available.');
-        }
-
-        $doc_href = PhabricatorEnv::getDoclink(
-          'Diffusion User Guide: Permanent Refs');
-        $doc_link = phutil_tag(
-          'a',
-          array(
-            'href' => $doc_href,
-            'target' => '_blank',
-          ),
-          pht('Learn More'));
-
-        $title = array(
-          pht('Unpublished Commit'),
-          pht(" \xC2\xB7 "),
-          $doc_link,
+      $reasons = array();
+      foreach ($holds as $hold) {
+        $reasons[] = array(
+          phutil_tag('strong', array(), pht('%s:', $hold->getName())),
+          ' ',
+          $hold->getSummary(),
         );
-
-        $unpublished_panel = id(new PHUIInfoView())
-          ->setTitle($title)
-          ->setErrors($reasons)
-          ->setSeverity(PHUIInfoView::SEVERITY_WARNING);
       }
 
-
-      if ($this->getCommitErrors()) {
-        $error_panel = id(new PHUIInfoView())
-          ->appendChild($this->getCommitErrors())
-          ->setSeverity(PHUIInfoView::SEVERITY_WARNING);
+      if (!$holds) {
+        $reasons[] = pht('No further details are available.');
       }
+
+      $doc_href = PhabricatorEnv::getDoclink(
+        'Diffusion User Guide: Permanent Refs');
+      $doc_link = phutil_tag(
+        'a',
+        array(
+          'href' => $doc_href,
+          'target' => '_blank',
+        ),
+        pht('Learn More'));
+
+      $title = array(
+        pht('Unpublished Commit'),
+        pht(" \xC2\xB7 "),
+        $doc_link,
+      );
+
+      $unpublished_panel = id(new PHUIInfoView())
+        ->setTitle($title)
+        ->setErrors($reasons)
+        ->setSeverity(PHUIInfoView::SEVERITY_WARNING);
+    }
+
+
+    if ($this->getCommitErrors()) {
+      $error_panel = id(new PHUIInfoView())
+        ->appendChild($this->getCommitErrors())
+        ->setSeverity(PHUIInfoView::SEVERITY_WARNING);
     }
 
     $timeline = $this->buildComments($commit);
@@ -307,8 +291,6 @@ final class DiffusionCommitController extends DiffusionController {
           'This commit has been marked as unreadable by an administrator. '.
           'It may have been corrupted or created improperly by an external '.
           'tool.'));
-    } else if ($is_foreign) {
-      // Don't render anything else.
     } else if (!$commit->isImported()) {
       $info_panel = $this->renderStatusMessage(
         pht('Still Importing...'),
@@ -369,27 +351,12 @@ final class DiffusionCommitController extends DiffusionController {
         $change_header,
         $warning_view);
 
-      $vcs = $repository->getVersionControlSystem();
-      switch ($vcs) {
-        case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-          $vcs_supports_directory_changes = true;
-          break;
-        case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
-        case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
-          $vcs_supports_directory_changes = false;
-          break;
-        default:
-          throw new Exception(pht('Unknown VCS.'));
-      }
-
       $references = array();
       foreach ($changesets as $key => $changeset) {
         $file_type = $changeset->getFileType();
         if ($file_type == DifferentialChangeType::FILE_DIRECTORY) {
-          if (!$vcs_supports_directory_changes) {
-            unset($changesets[$key]);
-            continue;
-          }
+          unset($changesets[$key]);
+          continue;
         }
 
         $references[$key] = $drequest->generateURI(
@@ -567,12 +534,8 @@ final class DiffusionCommitController extends DiffusionController {
     // chains of events). This should be rare, but does not indicate a bug
     // or data issue.
 
-    // NOTE: We never query push logs in SVN because the committer is always
-    // the pusher and the commit time is always the push time; the push log
-    // is redundant and we save a query by skipping it.
-
     $push_logs = array();
-    if ($repository->isHosted() && !$repository->isSVN()) {
+    if ($repository->isHosted()) {
       $push_logs = id(new PhabricatorRepositoryPushLogQuery())
         ->setViewer($viewer)
         ->withRepositoryPHIDs(array($repository->getPHID()))
@@ -1015,17 +978,13 @@ final class DiffusionCommitController extends DiffusionController {
     $merge_limit = $this->getMergeDisplayLimit();
 
     try {
-      if ($repository->isSVN()) {
-        $this->commitMerges = array();
-      } else {
-        $merges = $this->callConduitWithDiffusionRequest(
-          'diffusion.mergedcommitsquery',
-          array(
-            'commit' => $commit,
-            'limit' => $merge_limit + 1,
-          ));
-        $this->commitMerges = DiffusionPathChange::newFromConduit($merges);
-      }
+      $merges = $this->callConduitWithDiffusionRequest(
+        'diffusion.mergedcommitsquery',
+        array(
+          'commit' => $commit,
+          'limit' => $merge_limit + 1,
+        ));
+      $this->commitMerges = DiffusionPathChange::newFromConduit($merges);
     } catch (Exception $ex) {
       $this->commitMerges = false;
       $exceptions[] = $ex;

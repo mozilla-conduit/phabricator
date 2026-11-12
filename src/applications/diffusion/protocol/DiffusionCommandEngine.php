@@ -231,14 +231,6 @@ abstract class DiffusionCommandEngine extends Phobject {
     return ($this->getProtocol() == 'ssh');
   }
 
-  public function isSVNProtocol() {
-    return ($this->getProtocol() == 'svn');
-  }
-
-  public function isSVNSSHProtocol() {
-    return ($this->getProtocol() == 'svn+ssh');
-  }
-
   public function isHTTPProtocol() {
     return ($this->getProtocol() == 'http');
   }
@@ -252,7 +244,7 @@ abstract class DiffusionCommandEngine extends Phobject {
   }
 
   public function isAnySSHProtocol() {
-    return ($this->isSSHProtocol() || $this->isSVNSSHProtocol());
+    return $this->isSSHProtocol();
   }
 
   public function isCredentialSupported() {
@@ -272,7 +264,7 @@ abstract class DiffusionCommandEngine extends Phobject {
       return pht('SSH Key');
     }
 
-    if ($this->isAnyHTTPProtocol() || $this->isSVNProtocol()) {
+    if ($this->isAnyHTTPProtocol()) {
       return pht('Password');
     }
 
@@ -284,7 +276,7 @@ abstract class DiffusionCommandEngine extends Phobject {
       return PassphraseSSHPrivateKeyTextCredentialType::CREDENTIAL_TYPE;
     }
 
-    if ($this->isAnyHTTPProtocol() || $this->isSVNProtocol()) {
+    if ($this->isAnyHTTPProtocol()) {
       return PassphrasePasswordCredentialType::CREDENTIAL_TYPE;
     }
 
@@ -296,7 +288,7 @@ abstract class DiffusionCommandEngine extends Phobject {
       return PassphraseSSHPrivateKeyCredentialType::PROVIDES_TYPE;
     }
 
-    if ($this->isAnyHTTPProtocol() || $this->isSVNProtocol()) {
+    if ($this->isAnyHTTPProtocol()) {
       return PassphrasePasswordCredentialType::PROVIDES_TYPE;
     }
 

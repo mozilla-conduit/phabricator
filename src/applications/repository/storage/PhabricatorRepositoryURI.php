@@ -197,8 +197,6 @@ final class PhabricatorRepositoryURI
     $map = array(
       PhabricatorRepositoryType::REPOSITORY_TYPE_GIT =>
         ArcanistRepositoryURINormalizer::TYPE_GIT,
-      PhabricatorRepositoryType::REPOSITORY_TYPE_SVN =>
-        ArcanistRepositoryURINormalizer::TYPE_SVN,
       PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL =>
         ArcanistRepositoryURINormalizer::TYPE_MERCURIAL,
     );
@@ -228,12 +226,9 @@ final class PhabricatorRepositoryURI
     $command_engine = $this->newCommandEngine();
 
     $is_http = $command_engine->isAnyHTTPProtocol();
-    // For SVN, we use `--username` and `--password` flags separately in the
-    // CommandEngine, so we don't need to add any credentials here.
-    $is_svn = $this->getRepository()->isSVN();
     $credential_phid = $this->getCredentialPHID();
 
-    if ($is_http && !$is_svn && $credential_phid) {
+    if ($is_http && $credential_phid) {
       $key = PassphrasePasswordKey::loadFromPHID(
         $credential_phid,
         PhabricatorUser::getOmnipotentUser());
@@ -310,15 +305,9 @@ final class PhabricatorRepositoryURI
 
 
   private function getForcedProtocol() {
-    $repository = $this->getRepository();
-
     switch ($this->getBuiltinProtocol()) {
       case self::BUILTIN_PROTOCOL_SSH:
-        if ($repository->isSVN()) {
-          return 'svn+ssh';
-        } else {
-          return 'ssh';
-        }
+        return 'ssh';
       case self::BUILTIN_PROTOCOL_HTTP:
         return 'http';
       case self::BUILTIN_PROTOCOL_HTTPS:

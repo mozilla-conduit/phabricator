@@ -116,11 +116,7 @@ final class DiffusionRepositoryController extends DiffusionController {
         'action' => 'clone',
       ));
 
-    if ($repository->isSVN()) {
-      $clone_text = pht('Checkout');
-    } else {
-      $clone_text = pht('Clone');
-    }
+    $clone_text = pht('Clone');
 
     $actions_button = id(new PHUIButtonView())
       ->setTag('a')
@@ -299,12 +295,10 @@ final class DiffusionRepositoryController extends DiffusionController {
       $header->setStatus('fa-check', 'bluegrey', pht('Active'));
     }
 
-    if (!$repository->isSVN()) {
-      $default = $repository->getDefaultBranch();
-      if ($default != $drequest->getBranch()) {
-        $branch_tag = $this->renderBranchTag($drequest);
-        $header->addTag($branch_tag);
-      }
+    $default = $repository->getDefaultBranch();
+    if ($default != $drequest->getBranch()) {
+      $branch_tag = $this->renderBranchTag($drequest);
+      $header->addTag($branch_tag);
     }
 
     return $header;

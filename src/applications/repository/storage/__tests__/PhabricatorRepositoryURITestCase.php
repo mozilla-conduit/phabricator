@@ -51,7 +51,6 @@ final class PhabricatorRepositoryURITestCase
   }
 
   public function testURIGeneration() {
-    $svn = PhabricatorRepositoryType::REPOSITORY_TYPE_SVN;
     $git = PhabricatorRepositoryType::REPOSITORY_TYPE_GIT;
     $hg = PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL;
 
@@ -67,7 +66,7 @@ final class PhabricatorRepositoryURITestCase
       ->save();
 
     $repo = PhabricatorRepository::initializeNewRepository($user)
-      ->setVersionControlSystem($svn)
+      ->setVersionControlSystem($git)
       ->setName(pht('Test Repo'))
       ->setCallsign('TESTREPO')
       ->setCredentialPHID($http_credential->getPHID())
@@ -76,13 +75,6 @@ final class PhabricatorRepositoryURITestCase
     // Test HTTP URIs.
 
     $repo->setDetail('remote-uri', 'http://example.com/');
-    $repo->setVersionControlSystem($svn);
-
-    $this->assertEqual('http://example.com/', $repo->getRemoteURI());
-    $this->assertEqual('http://example.com/', $repo->getPublicCloneURI());
-    $this->assertEqual('http://example.com/',
-      $repo->getRemoteURIEnvelope()->openEnvelope());
-
     $repo->setVersionControlSystem($git);
 
     $this->assertEqual('http://example.com/', $repo->getRemoteURI());
@@ -100,13 +92,6 @@ final class PhabricatorRepositoryURITestCase
     // Test SSH URIs.
 
     $repo->setDetail('remote-uri', 'ssh://example.com/');
-    $repo->setVersionControlSystem($svn);
-
-    $this->assertEqual('ssh://example.com/', $repo->getRemoteURI());
-    $this->assertEqual('ssh://example.com/', $repo->getPublicCloneURI());
-    $this->assertEqual('ssh://example.com/',
-      $repo->getRemoteURIEnvelope()->openEnvelope());
-
     $repo->setVersionControlSystem($git);
 
     $this->assertEqual('ssh://example.com/', $repo->getRemoteURI());
@@ -130,20 +115,6 @@ final class PhabricatorRepositoryURITestCase
     $this->assertEqual('git@example.com:path.git', $repo->getPublicCloneURI());
     $this->assertEqual('git@example.com:path.git',
       $repo->getRemoteURIEnvelope()->openEnvelope());
-
-    // Test SVN "Import Only" paths.
-
-    $repo->setDetail('remote-uri', 'http://example.com/');
-    $repo->setVersionControlSystem($svn);
-    $repo->setDetail('svn-subpath', 'projects/example/');
-
-    $this->assertEqual('http://example.com/', $repo->getRemoteURI());
-    $this->assertEqual(
-      'http://example.com/projects/example/',
-      $repo->getPublicCloneURI());
-    $this->assertEqual('http://example.com/',
-      $repo->getRemoteURIEnvelope()->openEnvelope());
-
   }
 
 }

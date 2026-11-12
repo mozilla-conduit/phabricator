@@ -32,11 +32,7 @@ final class DiffusionCloneController extends DiffusionController {
         continue;
       }
 
-      if ($repository->isSVN()) {
-        $label = phutil_tag_div('diffusion-clone-label', pht('Checkout'));
-      } else {
-        $label = phutil_tag_div('diffusion-clone-label', pht('Clone'));
-      }
+      $label = phutil_tag_div('diffusion-clone-label', pht('Clone'));
 
       $view->addProperty(
         $label,
@@ -100,14 +96,7 @@ final class DiffusionCloneController extends DiffusionController {
     PhabricatorRepository $repository,
     PhabricatorRepositoryURI $uri) {
 
-    if ($repository->isSVN()) {
-      $display = csprintf(
-        'svn checkout %R %R',
-        (string)$uri->getDisplayURI(),
-        $repository->getCloneName());
-    } else {
-      $display = csprintf('%R', (string)$uri->getDisplayURI());
-    }
+    $display = csprintf('%R', (string)$uri->getDisplayURI());
 
     $display = (string)$display;
     $viewer = $this->getViewer();

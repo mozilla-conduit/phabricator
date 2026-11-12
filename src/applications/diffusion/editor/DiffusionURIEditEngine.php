@@ -127,19 +127,6 @@ final class DiffusionURIEditEngine
             "|-----------------------\n".
             "| `ssh://hg@bitbucket.org/example/repository`\n".
             "| `https://bitbucket.org/example/repository`");
-        } else if ($repository->isSVN()) {
-          $uri_instructions = pht(
-            "Provide the **Repository Root** of a Subversion repository. ".
-            "You can identify this by running `svn info` in a working ".
-            "copy. It should usually look like one of these examples:\n".
-            "\n".
-            "| Example Subversion URIs\n".
-            "|-----------------------\n".
-            "| `http://svn.example.org/svnroot/`\n".
-            "| `svn+ssh://svn.example.com/svnroot/`\n".
-            "| `svn://svn.example.net/svnroot/`\n\n".
-            "You **MUST** specify the root of the repository, not a ".
-            "subdirectory.");
         }
       }
     }

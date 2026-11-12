@@ -279,47 +279,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       ));
   }
 
-  public function getSubversionBaseURI($commit = null) {
-    $subpath = $this->getDetail('svn-subpath');
-
-    if (!phutil_nonempty_string($subpath)) {
-      $subpath = null;
-    }
-
-    return $this->getSubversionPathURI($subpath, $commit);
-  }
-
-  public function getSubversionPathURI($path = null, $commit = null) {
-    $vcs = $this->getVersionControlSystem();
-    if ($vcs != PhabricatorRepositoryType::REPOSITORY_TYPE_SVN) {
-      throw new Exception(pht('Not a subversion repository!'));
-    }
-
-    if ($this->isHosted()) {
-      $uri = 'file://'.$this->getLocalPath();
-    } else {
-      $uri = $this->getDetail('remote-uri');
-    }
-
-    $uri = rtrim($uri, '/');
-
-    if (phutil_nonempty_string($path)) {
-      $path = rawurlencode($path);
-      $path = str_replace('%2F', '/', $path);
-      $uri = $uri.'/'.ltrim($path, '/');
-    }
-
-    if ($path !== null || $commit !== null) {
-      $uri .= '@';
-    }
-
-    if ($commit !== null) {
-      $uri .= $commit;
-    }
-
-    return $uri;
-  }
-
   public function attachProjectPHIDs(array $project_phids) {
     $this->projectPHIDs = $project_phids;
     return $this;
@@ -698,8 +657,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       case 'compare':
         break;
       case 'branch':
-        // NOTE: This does not actually require a branch, and won't have one
-        // in Subversion. Possibly this should be more clear.
+        // NOTE: This does not actually require a branch.
         break;
       case 'commit':
       case 'rendering-ref':
@@ -878,7 +836,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   }
 
   public function getDefaultArcanistBranch() {
-    return coalesce($this->getDefaultBranch(), 'svn');
+    return $this->getDefaultBranch();
   }
 
   private function isBranchInFilter($branch, $filter_key) {
@@ -1108,18 +1066,14 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
     $remote_protocol = $this->getRemoteProtocol();
     if ($remote_protocol == 'http' || $remote_protocol == 'https') {
-      // For SVN, we use `--username` and `--password` flags separately, so
-      // don't add any credentials here.
-      if (!$this->isSVN()) {
-        $credential_phid = $this->getCredentialPHID();
-        if ($credential_phid) {
-          $key = PassphrasePasswordKey::loadFromPHID(
-            $credential_phid,
-            PhabricatorUser::getOmnipotentUser());
+      $credential_phid = $this->getCredentialPHID();
+      if ($credential_phid) {
+        $key = PassphrasePasswordKey::loadFromPHID(
+          $credential_phid,
+          PhabricatorUser::getOmnipotentUser());
 
-          $uri->setUser($key->getUsernameEnvelope()->openEnvelope());
-          $uri->setPass($key->getPasswordEnvelope()->openEnvelope());
-        }
+        $uri->setUser($key->getUsernameEnvelope()->openEnvelope());
+        $uri->setPass($key->getPasswordEnvelope()->openEnvelope());
       }
     }
 
@@ -1176,28 +1130,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
    */
   public function getCloneURIObject() {
     if (!$this->isHosted()) {
-      if ($this->isSVN()) {
-        // Make sure we pick up the "Import Only" path for Subversion, so
-        // the user clones the repository starting at the correct path, not
-        // from the root.
-        $base_uri = $this->getSubversionBaseURI();
-        $base_uri = new PhutilURI($base_uri);
-        $path = $base_uri->getPath();
-        if (!$path) {
-          $path = '/';
-        }
-
-        // If the trailing "@" is not required to escape the URI, strip it for
-        // readability.
-        if (!preg_match('/@.*@/', $path)) {
-          $path = rtrim($path, '@');
-        }
-
-        $base_uri->setPath($path);
-        return $base_uri;
-      } else {
-        return $this->getRemoteURIObject();
-      }
+      return $this->getRemoteURIObject();
     }
 
     // TODO: This should be cleaned up to deal with all the new URI handling.
@@ -1267,22 +1200,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   }
 
 
-  /**
-   * Determine if we should connect to the remote using SVN flags and
-   * credentials.
-   *
-   * @return bool True to use the SVN protocol.
-   * @task uri
-   */
-  private function shouldUseSVNProtocol() {
-    if ($this->isHosted()) {
-      return false;
-    }
-
-    $protocol = $this->getRemoteProtocol();
-    return ($protocol == 'svn');
-  }
-
 
   /**
    * Determine if a protocol is SSH or SSH-like.
@@ -1292,7 +1209,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
    * @task uri
    */
   private function isSSHProtocol($protocol) {
-    return ($protocol == 'ssh' || $protocol == 'svn+ssh');
+    return ($protocol == 'ssh');
   }
 
   public function delete() {
@@ -1347,11 +1264,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   public function isGit() {
     $vcs = $this->getVersionControlSystem();
     return ($vcs == PhabricatorRepositoryType::REPOSITORY_TYPE_GIT);
-  }
-
-  public function isSVN() {
-    $vcs = $this->getVersionControlSystem();
-    return ($vcs == PhabricatorRepositoryType::REPOSITORY_TYPE_SVN);
   }
 
   public function isHg() {
@@ -1437,7 +1349,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
    */
   public function isWorkingCopyBare() {
     switch ($this->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         return false;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
@@ -1452,8 +1363,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
   public function usesLocalWorkingCopy() {
     switch ($this->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        return $this->isHosted();
       case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         return true;
@@ -1475,9 +1384,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
         } else {
           $directories[] = $root.'/.git/hooks/pre-receive-phabricator.d/';
         }
-        break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $directories[] = $root.'/hooks/pre-commit-phabricator.d/';
         break;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         // NOTE: We don't support custom Mercurial hooks for now because they're
@@ -1501,7 +1407,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   }
 
   public function canUsePathTree() {
-    return !$this->isSVN();
+    return true;
   }
 
   public function canUseGitLFS() {
@@ -1549,7 +1455,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     }
 
     // In Git and Mercurial, ref deletions and rewrites are dangerous.
-    // In Subversion, editing revprops is dangerous.
 
     return true;
   }
@@ -1653,8 +1558,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       case 'http':
       case 'https':
       case 'git':
-      case 'svn':
-      case 'svn+ssh':
         break;
       default:
         // NOTE: We're explicitly rejecting 'file://' because it can be
@@ -1664,13 +1567,11 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
         throw new Exception(
           pht(
             'The URI protocol is unrecognized. It should begin with '.
-            '"%s", "%s", "%s", "%s", "%s", "%s", or be in the form "%s".',
+            '"%s", "%s", "%s", "%s", or be in the form "%s".',
             'ssh://',
             'http://',
             'https://',
             'git://',
-            'svn://',
-            'svn+ssh://',
             'git@domain.com:path'));
     }
 
@@ -2065,10 +1966,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
 
   public function supportsRefs() {
-    if ($this->isSVN()) {
-      return false;
-    }
-
     return true;
   }
 
@@ -2461,11 +2358,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     $has_http = !PhabricatorEnv::getEnvConfig('security.require-https');
     $has_http = ($has_http && $allow_http);
 
-    // HTTP is not supported for Subversion.
-    if ($this->isSVN()) {
-      $has_http = false;
-      $has_https = false;
-    }
 
     $phd_user = PhabricatorEnv::getEnvConfig('phd.user');
     $has_ssh = phutil_nonempty_string($phd_user);
@@ -2710,7 +2602,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
         ->setKey('vcs')
         ->setType('string')
         ->setDescription(
-          pht('The VCS this repository uses ("git", "hg" or "svn").')),
+          pht('The VCS this repository uses ("git" or "hg").')),
       id(new PhabricatorConduitSearchFieldSpecification())
         ->setKey('callsign')
         ->setType('string')
