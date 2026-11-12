@@ -163,6 +163,87 @@ final class ReviewHelperDraftHold extends Phobject {
       ));
   }
 
+/* -(  Responding to Edits  )------------------------------------------------ */
+
+  /**
+   * Builds the transactions that move a held revision along in response to an
+   * edit, for the editor to add to that edit.
+   *
+   * When Review Helper posts its review, the revision is published if there
+   * are no inline findings, and otherwise waits on the author. Once it is
+   * waiting, the author updating the diff publishes it.
+   */
+  public static function newTransactionsForEdit(
+    PhabricatorUser $actor,
+    DifferentialRevision $revision,
+    array $xactions): array {
+
+    if (self::isWaitingForReview($revision) && self::isBotUser($actor)) {
+      return self::newTransactionsForReview($xactions);
+    }
+
+    $is_author = ($actor->getPHID() === $revision->getAuthorPHID());
+    if (self::hasFindings($revision) && $is_author) {
+      return self::newTransactionsForAuthorEdit($xactions);
+    }
+
+    return array();
+  }
+
+  private static function newTransactionsForReview(array $xactions): array {
+    $types = mpull($xactions, 'getTransactionType');
+
+    $finding_count = count(
+      array_keys($types, DifferentialTransaction::TYPE_INLINE));
+    if ($finding_count) {
+      return array(
+        ReviewHelperFindingsTransaction::newTransaction($finding_count),
+      );
+    }
+
+    if (in_array(PhabricatorTransactions::TYPE_COMMENT, $types, true)) {
+      return array(
+        ReviewHelperReleaseHoldTransaction::newTransaction(
+          ReviewHelperReleaseHoldTransaction::REASON_NO_FINDINGS),
+      );
+    }
+
+    return array();
+  }
+
+  private static function newTransactionsForAuthorEdit(array $xactions): array {
+    $types = mpull($xactions, 'getTransactionType');
+
+    // A "Request Review" in the same edit, which `moz-phab` sends when it
+    // updates a draft, already publishes the revision.
+    $requests_review = in_array(
+      DifferentialRevisionRequestReviewTransaction::TRANSACTIONTYPE,
+      $types,
+      true);
+    $updates_diff = in_array(
+      DifferentialRevisionUpdateTransaction::TRANSACTIONTYPE,
+      $types,
+      true);
+
+    if ($updates_diff && !$requests_review) {
+      return array(
+        ReviewHelperReleaseHoldTransaction::newTransaction(
+          ReviewHelperReleaseHoldTransaction::REASON_AUTHOR_UPDATED),
+      );
+    }
+
+    return array();
+  }
+
+  private static function isBotUser(PhabricatorUser $user): bool {
+    $bot_username = PhabricatorEnv::getEnvConfig('reviewhelper.bot-username');
+    if (!$bot_username) {
+      return false;
+    }
+
+    return $user->getUsername() === $bot_username;
+  }
+
 /* -(  Publishing  )--------------------------------------------------------- */
 
   /**
