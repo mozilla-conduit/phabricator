@@ -250,21 +250,6 @@ final class DifferentialRevisionEditEngine
       ->setConduitTypeDescription(pht('New repository.'))
       ->setSingleValue($object->getRepositoryPHID());
 
-    // This is a little flimsy, but allows "Maniphest Tasks: ..." to continue
-    // working properly in commit messages until we fully sort out T5873.
-    $fields[] = id(new PhabricatorHandlesEditField())
-      ->setKey('tasks')
-      ->setUseEdgeTransactions(true)
-      ->setIsFormField(false)
-      ->setTransactionType(PhabricatorTransactions::TYPE_EDGE)
-      ->setMetadataValue(
-        'edge:type',
-        DifferentialRevisionHasTaskEdgeType::EDGECONST)
-      ->setDescription(pht('Tasks associated with this revision.'))
-      ->setConduitDescription(pht('Change associated tasks.'))
-      ->setConduitTypeDescription(pht('List of tasks.'))
-      ->setValue(array());
-
     $fields[] = id(new PhabricatorHandlesEditField())
       ->setKey('parents')
       ->setUseEdgeTransactions(true)

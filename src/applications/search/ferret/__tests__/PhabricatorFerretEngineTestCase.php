@@ -12,7 +12,7 @@ final class PhabricatorFerretEngineTestCase
         ' http example org path to file jpg ',
     );
 
-    $engine = new ManiphestTaskFerretEngine();
+    $engine = new DifferentialRevisionFerretEngine();
 
     foreach ($map as $input => $expect) {
       $actual = $engine->newTermsCorpus($input);

@@ -156,12 +156,7 @@ final class DifferentialTransactionEditor
 
     $results = parent::expandTransaction($object, $xaction);
 
-    $actor = $this->getActor();
     $actor_phid = $this->getActingAsPHID();
-    $type_edge = PhabricatorTransactions::TYPE_EDGE;
-
-    $edge_ref_task = DifferentialRevisionHasTaskEdgeType::EDGECONST;
-
     $want_downgrade = array();
     $must_downgrade = array();
     if ($this->getIsCloseByCommit()) {
@@ -201,44 +196,6 @@ final class DifferentialTransactionEditor
 
     $new_author_phid = null;
     switch ($xaction->getTransactionType()) {
-      case DifferentialRevisionUpdateTransaction::TRANSACTIONTYPE:
-        if ($this->getIsCloseByCommit()) {
-          // Don't bother with any of this if this update is a side effect of
-          // commit detection.
-          break;
-        }
-
-        // When a revision is updated and the diff comes from a branch named
-        // "T123" or similar, automatically associate the commit with the
-        // task that the branch names.
-
-        $maniphest = 'PhabricatorManiphestApplication';
-        if (PhabricatorApplication::isClassInstalled($maniphest)) {
-          $diff = $this->requireDiff($xaction->getNewValue());
-          $branch = $diff->getBranch();
-
-          // No "$", to allow for branches like T123_demo.
-          $match = null;
-          if ($branch !== null && preg_match('/^T(\d+)/i', $branch, $match)) {
-            $task_id = $match[1];
-            $tasks = id(new ManiphestTaskQuery())
-              ->setViewer($this->getActor())
-              ->withIDs(array($task_id))
-              ->execute();
-            if ($tasks) {
-              $task = head($tasks);
-              $task_phid = $task->getPHID();
-
-              $results[] = id(new DifferentialTransaction())
-                ->setTransactionType($type_edge)
-                ->setMetadataValue('edge:type', $edge_ref_task)
-                ->setIgnoreOnNoEffect(true)
-                ->setNewValue(array('+' => array($task_phid => $task_phid)));
-            }
-          }
-        }
-        break;
-
       case DifferentialRevisionCommandeerTransaction::TRANSACTIONTYPE:
         $new_author_phid = $actor_phid;
         break;
@@ -844,16 +801,6 @@ final class DifferentialTransactionEditor
       return array();
     }
     $content_block = implode("\n\n", $content_parts);
-    $task_map = array();
-    $task_refs = id(new ManiphestCustomFieldStatusParser())
-      ->parseCorpus($content_block);
-    foreach ($task_refs as $match) {
-      foreach ($match['monograms'] as $monogram) {
-        $task_id = (int)trim($monogram, 'tT');
-        $task_map[$task_id] = true;
-      }
-    }
-
     $rev_map = array();
     $rev_refs = id(new DifferentialCustomFieldDependsOnParser())
       ->parseCorpus($content_block);
@@ -865,21 +812,7 @@ final class DifferentialTransactionEditor
     }
 
     $edges = array();
-    $task_phids = array();
     $rev_phids = array();
-
-    if ($task_map) {
-      $tasks = id(new ManiphestTaskQuery())
-        ->setViewer($this->getActor())
-        ->withIDs(array_keys($task_map))
-        ->execute();
-
-      if ($tasks) {
-        $task_phids = mpull($tasks, 'getPHID', 'getPHID');
-        $edge_related = DifferentialRevisionHasTaskEdgeType::EDGECONST;
-        $edges[$edge_related] = $task_phids;
-      }
-    }
 
     if ($rev_map) {
       $revs = id(new DifferentialRevisionQuery())
@@ -923,7 +856,6 @@ final class DifferentialTransactionEditor
       $revert_phids = array();
     }
 
-    $this->addUnmentionablePHIDs($task_phids);
     $this->addUnmentionablePHIDs($rev_phids);
     $this->addUnmentionablePHIDs($revert_phids);
 

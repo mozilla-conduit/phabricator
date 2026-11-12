@@ -33,7 +33,6 @@ final class PhabricatorMailTestAdapter
   public function getSupportedMessageTypes() {
     return array(
       PhabricatorMailEmailMessage::MESSAGETYPE,
-      PhabricatorMailSMSMessage::MESSAGETYPE,
     );
   }
 
@@ -67,9 +66,6 @@ final class PhabricatorMailTestAdapter
     switch ($message->getMessageType()) {
       case PhabricatorMailEmailMessage::MESSAGETYPE:
         $guts = $this->newEmailGuts($message);
-        break;
-      case PhabricatorMailSMSMessage::MESSAGETYPE:
-        $guts = $this->newSMSGuts($message);
         break;
     }
 
@@ -145,15 +141,6 @@ final class PhabricatorMailTestAdapter
       );
     }
     $guts['attachments'] = $file_list;
-
-    return $guts;
-  }
-
-  private function newSMSGuts(PhabricatorMailExternalMessage $message) {
-    $guts = array();
-
-    $guts['to'] = $message->getToNumber();
-    $guts['body'] = $message->getTextBody();
 
     return $guts;
   }

@@ -80,20 +80,21 @@ final class PhabricatorPolicyDataTestCase extends PhabricatorTestCase {
         ))
       ->save();
 
-    $task = ManiphestTask::initializeNewTask($author);
-    $task->setViewPolicy($policy->getPHID());
-    $task->save();
+    $event = PhabricatorCalendarEvent::initializeNewCalendarEvent($author);
+    $event->setName(pht('Policy Test Event'));
+    $event->setViewPolicy($policy->getPHID());
+    $event->save();
 
     $can_a_view = PhabricatorPolicyFilter::hasCapability(
       $user_a,
-      $task,
+      $event,
       PhabricatorPolicyCapability::CAN_VIEW);
 
     $this->assertTrue($can_a_view);
 
     $can_b_view = PhabricatorPolicyFilter::hasCapability(
       $user_b,
-      $task,
+      $event,
       PhabricatorPolicyCapability::CAN_VIEW);
 
     $this->assertFalse($can_b_view);
@@ -116,20 +117,21 @@ final class PhabricatorPolicyDataTestCase extends PhabricatorTestCase {
         ))
       ->save();
 
-    $task = ManiphestTask::initializeNewTask($author);
-    $task->setViewPolicy($policy->getPHID());
-    $task->save();
+    $event = PhabricatorCalendarEvent::initializeNewCalendarEvent($author);
+    $event->setName(pht('Policy Test Event'));
+    $event->setViewPolicy($policy->getPHID());
+    $event->save();
 
     $can_a_view = PhabricatorPolicyFilter::hasCapability(
       $user_a,
-      $task,
+      $event,
       PhabricatorPolicyCapability::CAN_VIEW);
 
     $this->assertTrue($can_a_view);
 
     $can_b_view = PhabricatorPolicyFilter::hasCapability(
       $user_b,
-      $task,
+      $event,
       PhabricatorPolicyCapability::CAN_VIEW);
 
     $this->assertFalse($can_b_view);
@@ -150,15 +152,16 @@ final class PhabricatorPolicyDataTestCase extends PhabricatorTestCase {
         ))
       ->save();
 
-    $task = ManiphestTask::initializeNewTask($author);
-    $task->setViewPolicy($policy->getPHID());
-    $task->save();
+    $event = PhabricatorCalendarEvent::initializeNewCalendarEvent($author);
+    $event->setName(pht('Policy Test Event'));
+    $event->setViewPolicy($policy->getPHID());
+    $event->save();
 
     $time_a = PhabricatorTime::pushTime(934354800, 'UTC');
 
       $can_a_view = PhabricatorPolicyFilter::hasCapability(
         $user_a,
-        $task,
+        $event,
         PhabricatorPolicyCapability::CAN_VIEW);
       $this->assertTrue($can_a_view);
 
@@ -169,61 +172,66 @@ final class PhabricatorPolicyDataTestCase extends PhabricatorTestCase {
 
       $can_a_view = PhabricatorPolicyFilter::hasCapability(
         $user_a,
-        $task,
+        $event,
         PhabricatorPolicyCapability::CAN_VIEW);
       $this->assertFalse($can_a_view);
 
     unset($time_b);
   }
 
-  public function testObjectPolicyRuleTaskAuthor() {
+  public function testObjectPolicyRuleEventHost() {
     $author = $this->generateNewTestUser();
     $viewer = $this->generateNewTestUser();
 
-    $rule = new ManiphestTaskAuthorPolicyRule();
+    $rule = new PhabricatorCalendarEventHostPolicyRule();
 
-    $task = ManiphestTask::initializeNewTask($author);
-    $task->setViewPolicy($rule->getObjectPolicyFullKey());
-    $task->save();
+    $event = PhabricatorCalendarEvent::initializeNewCalendarEvent($author);
+    $event->setName(pht('Policy Test Event'));
+    $event->setViewPolicy($rule->getObjectPolicyFullKey());
+    $event->save();
 
     $this->assertTrue(
       PhabricatorPolicyFilter::hasCapability(
         $author,
-        $task,
+        $event,
         PhabricatorPolicyCapability::CAN_VIEW));
 
     $this->assertFalse(
       PhabricatorPolicyFilter::hasCapability(
         $viewer,
-        $task,
+        $event,
         PhabricatorPolicyCapability::CAN_VIEW));
   }
 
   public function testObjectPolicyRuleSubscribers() {
     $author = $this->generateNewTestUser();
 
+    // The host of an event can always view it, so someone else hosts it.
+    $host = $this->generateNewTestUser();
+
     $rule = new PhabricatorSubscriptionsSubscribersPolicyRule();
 
-    $task = ManiphestTask::initializeNewTask($author);
-    $task->setViewPolicy($rule->getObjectPolicyFullKey());
-    $task->save();
+    $event = PhabricatorCalendarEvent::initializeNewCalendarEvent($host);
+    $event->setName(pht('Policy Test Event'));
+    $event->setViewPolicy($rule->getObjectPolicyFullKey());
+    $event->save();
 
     $this->assertFalse(
       PhabricatorPolicyFilter::hasCapability(
         $author,
-        $task,
+        $event,
         PhabricatorPolicyCapability::CAN_VIEW));
 
     id(new PhabricatorSubscriptionsEditor())
       ->setActor($author)
-      ->setObject($task)
+      ->setObject($event)
       ->subscribeExplicit(array($author->getPHID()))
       ->save();
 
     $this->assertTrue(
       PhabricatorPolicyFilter::hasCapability(
         $author,
-        $task,
+        $event,
         PhabricatorPolicyCapability::CAN_VIEW));
   }
 
