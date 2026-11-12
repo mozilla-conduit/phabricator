@@ -89,12 +89,6 @@ final class DiffusionBranchQueryConduitAPIMethod
     return $this->processBranchRefs($request, $refs);
   }
 
-  protected function getSVNResult(ConduitAPIRequest $request) {
-    // Since SVN doesn't have meaningful branches, just return nothing for all
-    // queries.
-    return array();
-  }
-
   private function processBranchRefs(ConduitAPIRequest $request, array $refs) {
     $drequest = $this->getDiffusionRequest();
     $repository = $drequest->getRepository();

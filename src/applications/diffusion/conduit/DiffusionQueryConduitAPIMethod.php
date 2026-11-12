@@ -62,13 +62,9 @@ abstract class DiffusionQueryConduitAPIMethod
    * Subclasses should override these methods with the proper result for the
    * pertinent version control system, e.g. getGitResult for Git.
    *
-   * If the result is not supported for that VCS, do not implement it. e.g.
-   * Subversion (SVN) does not support branches.
+   * If the result is not supported for that VCS, do not implement it.
    */
   protected function getGitResult(ConduitAPIRequest $request) {
-    throw new ConduitException('ERR-UNSUPPORTED-VCS');
-  }
-  protected function getSVNResult(ConduitAPIRequest $request) {
     throw new ConduitException('ERR-UNSUPPORTED-VCS');
   }
   protected function getMercurialResult(ConduitAPIRequest $request) {
@@ -156,9 +152,6 @@ abstract class DiffusionQueryConduitAPIMethod
         break;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $result = $this->getMercurialResult($request);
-        break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $result = $this->getSVNResult($request);
         break;
       default:
         throw new ConduitException('ERR-UNKNOWN-VCS-TYPE');

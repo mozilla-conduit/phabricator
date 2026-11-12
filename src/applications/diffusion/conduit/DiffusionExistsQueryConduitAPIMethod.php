@@ -30,18 +30,6 @@ final class DiffusionExistsQueryConduitAPIMethod
     return !$err;
   }
 
-  protected function getSVNResult(ConduitAPIRequest $request) {
-    $repository = $this->getDiffusionRequest()->getRepository();
-    $commit = $request->getValue('commit');
-
-    $refs = id(new DiffusionCachedResolveRefsQuery())
-      ->setRepository($repository)
-      ->withRefs(array($commit))
-      ->execute();
-
-    return (bool)$refs;
-  }
-
   protected function getMercurialResult(ConduitAPIRequest $request) {
     $repository = $this->getDiffusionRequest()->getRepository();
     $commit = $request->getValue('commit');

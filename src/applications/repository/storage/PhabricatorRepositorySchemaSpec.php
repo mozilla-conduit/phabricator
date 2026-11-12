@@ -29,27 +29,6 @@ final class PhabricatorRepositorySchemaSpec
 
     $this->buildRawSchema(
       id(new PhabricatorRepository())->getApplicationName(),
-      PhabricatorRepository::TABLE_FILESYSTEM,
-      array(
-        'repositoryID' => 'id',
-        'parentID' => 'id',
-        'svnCommit' => 'uint32',
-        'pathID' => 'id',
-        'existed' => 'bool',
-        'fileType' => 'uint32',
-      ),
-      array(
-        'PRIMARY' => array(
-          'columns' => array('repositoryID', 'parentID', 'pathID', 'svnCommit'),
-          'unique' => true,
-        ),
-        'repositoryID' => array(
-          'columns' => array('repositoryID', 'svnCommit'),
-        ),
-      ));
-
-    $this->buildRawSchema(
-      id(new PhabricatorRepository())->getApplicationName(),
       PhabricatorRepository::TABLE_LINTMESSAGE,
       array(
         'id' => 'auto',

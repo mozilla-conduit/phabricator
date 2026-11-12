@@ -110,7 +110,11 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
           'project_triggerusage',
         ),
       ),
-      'db.repository' => array(),
+      'db.repository' => array(
+        'retired' => array(
+          'repository_filesystem',
+        ),
+      ),
       'db.search' => array(),
       'db.slowvote' => array(
         'dead' => true,

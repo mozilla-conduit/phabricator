@@ -38,7 +38,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
   const TABLE_PATH = 'repository_path';
   const TABLE_PATHCHANGE = 'repository_pathchange';
-  const TABLE_FILESYSTEM = 'repository_filesystem';
   const TABLE_SUMMARY = 'repository_summary';
   const TABLE_LINTMESSAGE = 'repository_lintmessage';
   const TABLE_PARENTS = 'repository_parents';
@@ -1326,12 +1325,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       }
 
       $conn_w = $this->establishConnection('w');
-
-      queryfx(
-        $conn_w,
-        'DELETE FROM %T WHERE repositoryID = %d',
-        self::TABLE_FILESYSTEM,
-        $this->getID());
 
       queryfx(
         $conn_w,

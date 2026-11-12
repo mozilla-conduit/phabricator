@@ -27,7 +27,6 @@ abstract class DiffusionQuery extends PhabricatorQuery {
     $map = array(
       PhabricatorRepositoryType::REPOSITORY_TYPE_GIT        => 'Git',
       PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL  => 'Mercurial',
-      PhabricatorRepositoryType::REPOSITORY_TYPE_SVN        => 'Svn',
     );
 
     $name = idx($map, $repository->getVersionControlSystem());

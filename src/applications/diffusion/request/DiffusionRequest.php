@@ -179,7 +179,6 @@ abstract class DiffusionRequest extends Phobject {
 
     $map = array(
       PhabricatorRepositoryType::REPOSITORY_TYPE_GIT => 'DiffusionGitRequest',
-      PhabricatorRepositoryType::REPOSITORY_TYPE_SVN => 'DiffusionSvnRequest',
       PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL =>
         'DiffusionMercurialRequest',
     );

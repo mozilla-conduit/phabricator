@@ -4162,23 +4162,6 @@ USE `{$NAMESPACE}_repository`;
 
  SET character_set_client = {$CHARSET} ;
 
-CREATE TABLE `repository_filesystem` (
-  `repositoryID` int(10) unsigned NOT NULL,
-  `parentID` int(10) unsigned NOT NULL,
-  `svnCommit` int(10) unsigned NOT NULL,
-  `pathID` int(10) unsigned NOT NULL,
-  `existed` tinyint(1) NOT NULL,
-  `fileType` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`repositoryID`,`parentID`,`pathID`,`svnCommit`),
-  KEY `repositoryID` (`repositoryID`,`svnCommit`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_repository`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
 CREATE TABLE `repository_gitlfsref` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `repositoryPHID` varbinary(64) NOT NULL,
