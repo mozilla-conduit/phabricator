@@ -424,6 +424,39 @@ EODIFF
         array($first_phid, $second_phid, $third_phid, $fourth_phid)));
   }
 
+  public function testInlineDoneRereadsStateUnderLock() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $inline_phid = $this->newReviewerInline($reviewer, $revision);
+
+    // Like a request which read the comment as "Not Done" before another
+    // request marked it as "Done" and committed.
+    $this->loadInlineStorage($inline_phid)
+      ->setFixedState(PhabricatorInlineComment::STATE_DONE)
+      ->save();
+
+    $xaction = id(new DifferentialTransaction())
+      ->setTransactionType(PhabricatorTransactions::TYPE_INLINESTATE)
+      ->setIgnoreOnNoEffect(true)
+      ->setMetadataValue('inline.explicit', true)
+      ->setOldValue(
+        array($inline_phid => PhabricatorInlineComment::STATE_UNDONE))
+      ->setNewValue(
+        array($inline_phid => PhabricatorInlineComment::STATE_UNDONE));
+
+    id(new DifferentialTransactionEditor())
+      ->setActor($author)
+      ->setContentSource($this->newContentSource())
+      ->setContinueOnNoEffect(true)
+      ->applyTransactions($revision, array($xaction));
+
+    $this->assertEqual(
+      PhabricatorInlineComment::STATE_UNDONE,
+      $this->loadInlineStorage($inline_phid)->getFixedState());
+  }
+
   public function testRejectInvalidInlineDone() {
     $author = $this->generateNewTestUser();
     $reviewer = $this->generateNewTestUser();
@@ -506,6 +539,12 @@ EODIFF
 
     $inline = head($this->loadInlines($reviewer, $revision));
     return $inline['comments'][0]['phid'];
+  }
+
+  private function loadInlineStorage($inline_phid) {
+    return id(new DifferentialTransactionComment())->loadOneWhere(
+      'phid = %s',
+      $inline_phid);
   }
 
   private function newInlineDoneTransaction($inline_phid, $done) {

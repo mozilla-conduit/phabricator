@@ -137,7 +137,9 @@ final class DifferentialTransactionEditor
           // built it for us so we don't need to expand it again. States set
           // explicitly with `inline.done` do not include the pending ones, so
           // those are still expanded and merged in.
-          if (!$xaction->getMetadataValue('inline.explicit')) {
+          if ($xaction->getMetadataValue('inline.explicit')) {
+            $this->refreshInlineStateOldValue($xaction);
+          } else {
             $this->didExpandInlineState = true;
           }
           break;
@@ -152,6 +154,28 @@ final class DifferentialTransactionEditor
     $this->wasBroadcasting = $object->getShouldBroadcast();
 
     return parent::expandTransactions($object, $xactions);
+  }
+
+  /**
+   * Read the current states of the inlines in an explicit state transaction.
+   *
+   * The `inline.done` edit type reads them before the revision is locked, so
+   * another edit may have changed them since.
+   */
+  private function refreshInlineStateOldValue(
+    PhabricatorApplicationTransaction $xaction) {
+
+    $phids = array_keys($xaction->getNewValue());
+    $comments = id(new DifferentialTransactionComment())->loadAllWhere(
+      'phid IN (%Ls)',
+      $phids);
+
+    $states = array();
+    foreach ($comments as $comment) {
+      $states[$comment->getPHID()] = $comment->getFixedState();
+    }
+
+    $xaction->setOldValue(array_select_keys($states, $phids));
   }
 
   protected function mergeTransactions(
