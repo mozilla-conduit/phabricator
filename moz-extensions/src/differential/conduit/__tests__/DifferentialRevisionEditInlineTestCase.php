@@ -424,6 +424,46 @@ EODIFF
         array($first_phid, $second_phid, $third_phid, $fourth_phid)));
   }
 
+  public function testInlineDoneSkipsUnchangedInlines() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $first_phid = $this->newReviewerInline($reviewer, $revision);
+    $second_phid = $this->newReviewerInline($reviewer, $revision);
+    $third_phid = $this->newReviewerInline($reviewer, $revision);
+
+    // An inline which has never been marked is already "Not Done".
+    $this->editRevision($author, $revision, array(
+      $this->newInlineDoneTransaction($first_phid, false),
+    ));
+    $this->assertEqual(array(), $this->loadInlineStateTransactions($revision));
+
+    $this->editRevision($author, $revision, array(
+      $this->newInlineDoneTransaction($first_phid, true),
+      $this->newInlineDoneTransaction($second_phid, true),
+    ));
+    $this->assertEqual(1, count($this->loadInlineStateTransactions($revision)));
+
+    // Merged in either order, inlines which are already "Done" are no change.
+    $this->editRevision($author, $revision, array(
+      $this->newInlineDoneTransaction($second_phid, true),
+      $this->newInlineDoneTransaction($first_phid, true),
+    ));
+    $this->assertEqual(1, count($this->loadInlineStateTransactions($revision)));
+
+    // Only the inlines which change are recorded, and rendered.
+    $this->editRevision($author, $revision, array(
+      $this->newInlineDoneTransaction($first_phid, true),
+      $this->newInlineDoneTransaction($third_phid, true),
+    ));
+    $state_xactions = $this->loadInlineStateTransactions($revision);
+    $this->assertEqual(2, count($state_xactions));
+    $this->assertEqual(
+      array($third_phid => PhabricatorInlineComment::STATE_DONE),
+      head($state_xactions)->getNewValue());
+  }
+
   public function testInlineDoneRereadsStateUnderLock() {
     $author = $this->generateNewTestUser();
     $reviewer = $this->generateNewTestUser();
@@ -539,6 +579,16 @@ EODIFF
 
     $inline = head($this->loadInlines($reviewer, $revision));
     return $inline['comments'][0]['phid'];
+  }
+
+  private function loadInlineStateTransactions(
+    DifferentialRevision $revision) {
+
+    return id(new DifferentialTransactionQuery())
+      ->setViewer(PhabricatorUser::getOmnipotentUser())
+      ->withObjectPHIDs(array($revision->getPHID()))
+      ->withTransactionTypes(array(PhabricatorTransactions::TYPE_INLINESTATE))
+      ->execute();
   }
 
   private function loadInlineStorage($inline_phid) {

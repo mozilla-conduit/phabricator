@@ -178,6 +178,55 @@ final class DifferentialTransactionEditor
     $xaction->setOldValue(array_select_keys($states, $phids));
   }
 
+  protected function filterTransactions(
+    PhabricatorLiskDAO $object,
+    array $xactions) {
+
+    foreach ($xactions as $xaction) {
+      $type = $xaction->getTransactionType();
+      if ($type === PhabricatorTransactions::TYPE_INLINESTATE) {
+        $this->removeUnchangedInlineStates($xaction);
+      }
+    }
+
+    return parent::filterTransactions($object, $xactions);
+  }
+
+  /**
+   * Remove inlines which are already in their new state from a transaction.
+   *
+   * Otherwise they render as changes, and maps merged in different orders
+   * compare as different, so a transaction which changes nothing has effect.
+   */
+  private function removeUnchangedInlineStates(
+    PhabricatorApplicationTransaction $xaction) {
+
+    $old = $xaction->getOldValue();
+    $new = $xaction->getNewValue();
+
+    foreach ($new as $phid => $state) {
+      // An inline which has never been marked is "Not Done".
+      $old_state = idx($old, $phid);
+      if ($old_state === null) {
+        $old_state = PhabricatorInlineComment::STATE_UNDONE;
+      }
+
+      if ($old_state === $state) {
+        unset($new[$phid]);
+      }
+    }
+
+    $phids = array_keys($new);
+    sort($phids);
+
+    $details = $xaction->getMetadataValue('inline.details', array());
+
+    $xaction
+      ->setMetadataValue('inline.details', array_select_keys($details, $phids))
+      ->setOldValue(array_select_keys($old, $phids))
+      ->setNewValue(array_select_keys($new, $phids));
+  }
+
   protected function mergeTransactions(
     PhabricatorApplicationTransaction $u,
     PhabricatorApplicationTransaction $v) {
