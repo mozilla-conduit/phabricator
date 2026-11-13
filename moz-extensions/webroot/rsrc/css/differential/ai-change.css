@@ -1,0 +1,20 @@
+/**
+ * @provides ai-change-css
+ */
+
+.ai-change p {
+  margin: 0 0 6px;
+}
+
+.ai-change-confidence {
+  color: {$greytext};
+}
+
+.ai-change-details > summary {
+  cursor: pointer;
+  color: {$anchor};
+}
+
+.ai-change-details[open] > summary {
+  margin-bottom: 6px;
+}
