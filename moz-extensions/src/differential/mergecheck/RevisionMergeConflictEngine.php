@@ -79,7 +79,6 @@ final class RevisionMergeConflictEngine extends Phobject {
   // instead of holding it until the task lease expires two hours later.
   const GIT_TIMEOUT_SECONDS = 300;
 
-  // Where the merge base came from, as returned by `selectBaseCommit`.
   const BASE_RECORDED = 'recorded';
   const BASE_LANDED_PARENT = 'landed-parent';
   const BASE_FIRST_PUBLIC_PARENT = 'first-public-parent';
@@ -518,10 +517,6 @@ final class RevisionMergeConflictEngine extends Phobject {
     return self::getFirstPublicParent($property->getData());
   }
 
-  /**
-   * Returns the `firstPublicParent` moz-phab recorded in a diff's
-   * `local:commits` property, or `null` if it recorded none.
-   */
   public static function getFirstPublicParent($local_commits): ?string {
     if (!is_array($local_commits)) {
       return null;

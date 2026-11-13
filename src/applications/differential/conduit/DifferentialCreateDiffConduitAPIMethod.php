@@ -41,6 +41,7 @@ final class DifferentialCreateDiffConduitAPIMethod
       'lintStatus'                => 'optional '.$status_const,
       'unitStatus'                => 'optional '.$status_const,
       'repositoryPHID'            => 'optional phid',
+      'properties'                => 'optional map<string, wild>',
 
       'parentRevisionID'          => 'deprecated',
       'authorPHID'                => 'deprecated',
@@ -56,6 +57,8 @@ final class DifferentialCreateDiffConduitAPIMethod
     return array(
       'ERR-NO-CONTENT' => pht('Diff may not be empty.'),
       'ERR-USAGE-NO-SOURCE-PATH' => pht('You must specify a source path.'),
+      'ERR-INVALID-PROPERTIES' => pht(
+        'Properties must be a map of property names to values.'),
     );
   }
 
@@ -65,6 +68,12 @@ final class DifferentialCreateDiffConduitAPIMethod
 
     if (!$change_data) {
       throw new ConduitException('ERR-NO-CONTENT');
+    }
+
+    $properties = $request->getValue('properties', array());
+    if (!is_array($properties) ||
+        ($properties && phutil_is_natural_list($properties))) {
+      throw new ConduitException('ERR-INVALID-PROPERTIES');
     }
 
     $changes = array();
@@ -166,6 +175,14 @@ final class DifferentialCreateDiffConduitAPIMethod
       ->setContentSource($request->newContentSource())
       ->setContinueOnNoEffect(true)
       ->applyTransactions($diff, $xactions);
+
+    foreach ($properties as $name => $data) {
+      id(new DifferentialDiffProperty())
+        ->setDiffID($diff->getID())
+        ->setName($name)
+        ->setData($data)
+        ->save();
+    }
 
     $path = '/differential/diff/'.$diff->getID().'/';
     $uri = PhabricatorEnv::getURI($path);
