@@ -155,6 +155,195 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('Rejected requests should leave the revision unchanged.'));
   }
 
+  public function testAnyoneCanApprove() {
+    $author = $this->generateNewTestUser();
+    $colleague = $this->generateNewTestUser();
+
+    foreach (array($author, $colleague) as $approver) {
+      list($revision, $conflict_diff, $change_diff) =
+        $this->newResolvedRevision($author);
+      $this->requestApproval($author, $revision, array(
+        'changeDiffID' => (int)$change_diff->getID(),
+      ));
+
+      $this->assertTrue(
+        id(new DifferentialRevisionAIChangeApproveTransaction())
+          ->isActionAvailable($this->reloadRevision(
+            $approver,
+            $revision->getPHID()), $approver),
+        pht('"Approve AI Change" should be offered to any user.'));
+
+      $this->approve($approver, $revision);
+
+      $ai_change = $this->loadAIChange($revision);
+      $this->assertEqual(
+        DifferentialAIChange::STATUS_APPROVED,
+        $ai_change->getStatus(),
+        pht('An approval should mark the change approved.'));
+      $this->assertEqual(
+        $approver->getPHID(),
+        $ai_change->getApproverPHID(),
+        pht('The approval should record who approved it.'));
+    }
+  }
+
+  public function testApprovalRecordsTheDiff() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $this->approve($approver, $revision);
+
+    $approvals = $this->loadTransactions($author, $revision, 'ai-change.approve');
+    $this->assertEqual(
+      1,
+      count($approvals),
+      pht('The approval should appear in the transaction record.'));
+    $this->assertEqual(
+      $approver->getPHID(),
+      head($approvals)['authorPHID'],
+      pht('The approval transaction should belong to the approver.'));
+    $this->assertEqual(
+      (int)$change_diff->getID(),
+      head($approvals)['fields']['diffID'],
+      pht('The approval transaction should record the approved diff.'));
+  }
+
+  public function testApproveCombinesWithAccept() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->editRevision($author, $revision, array(
+      array(
+        'type' => 'reviewers.add',
+        'value' => array($reviewer->getPHID()),
+      ),
+      array('type' => 'request-review', 'value' => true),
+    ));
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $this->editRevision($reviewer, $revision, array(
+      array('type' => 'ai-change.approve', 'value' => true),
+      array('type' => 'accept', 'value' => true),
+    ));
+
+    $this->assertEqual(
+      DifferentialAIChange::STATUS_APPROVED,
+      $this->loadAIChange($revision)->getStatus(),
+      pht('Approving alongside an accept should record the approval.'));
+    $this->assertTrue(
+      $this->reloadRevision($reviewer, $revision->getPHID())->isAccepted(),
+      pht('Approving alongside an accept should also accept the revision.'));
+  }
+
+  public function testRejectInvalidApprovals() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+
+    list($unrequested) = $this->newResolvedRevision($author);
+    $this->assertApproveFails(
+      $approver,
+      $unrequested,
+      pht('A revision without a request should not be approvable.'));
+
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+    $this->approve($approver, $revision);
+    $this->assertApproveFails(
+      $approver,
+      $revision,
+      pht('An approved change should not be approvable again.'));
+
+    $this->updateRevision($author, $revision);
+    $this->assertApproveFails(
+      $approver,
+      $revision,
+      pht('A lapsed change should not be approvable.'));
+  }
+
+  public function testNewRequestClearsApproval() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+    $this->approve($approver, $revision);
+
+    $new_diff = $this->updateRevision($author, $revision);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$new_diff->getID(),
+    ));
+
+    $ai_change = $this->loadAIChange($revision);
+    $this->assertEqual(
+      DifferentialAIChange::STATUS_PENDING,
+      $ai_change->getStatus(),
+      pht('A new request should need a new approval.'));
+    $this->assertEqual(
+      null,
+      $ai_change->getApproverPHID(),
+      pht('A new request should clear the earlier approval.'));
+  }
+
+  private function approve(
+    PhabricatorUser $actor,
+    DifferentialRevision $revision) {
+
+    return $this->editRevision($actor, $revision, array(
+      array('type' => 'ai-change.approve', 'value' => true),
+    ));
+  }
+
+  private function assertApproveFails(
+    PhabricatorUser $actor,
+    DifferentialRevision $revision,
+    $message) {
+
+    $caught = null;
+    try {
+      $this->approve($actor, $revision);
+    } catch (Exception $ex) {
+      $caught = $ex;
+    }
+
+    $this->assertTrue(($caught instanceof Exception), $message);
+  }
+
+  private function loadTransactions(
+    PhabricatorUser $viewer,
+    DifferentialRevision $revision,
+    $type) {
+
+    $result = id(new ConduitCall(
+      'transaction.search',
+      array(
+        'objectIdentifier' => $revision->getPHID(),
+      )))
+      ->setUser($viewer)
+      ->execute();
+
+    $xactions = array();
+    foreach ($result['data'] as $xaction) {
+      if ($xaction['type'] === $type) {
+        $xactions[] = $xaction;
+      }
+    }
+
+    return $xactions;
+  }
+
   /**
    * Create a revision whose first diff is a merge conflict and whose second,
    * active diff is the change.
