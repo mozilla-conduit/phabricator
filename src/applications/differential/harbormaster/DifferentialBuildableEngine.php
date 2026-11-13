@@ -28,6 +28,20 @@ final class DifferentialBuildableEngine
       return;
     }
 
+    // Don't publish information about the buildable to a revision if
+    // the associated diff is not the current one for the revision.
+    // This allows us to abort previous buildables without causing
+    // confusion in the primary UI. Note that this causes us to
+    // suppress _all_ results (including pass and fail). This is OK
+    // because the only results that are important are those for the
+    // latest diff of a revision.
+    // See also https://github.com/mozilla/code-review/issues/3835
+    $object = $this->getObject();
+    if ($object instanceof DifferentialDiff &&
+        $object->getPHID() !== $revision->getActiveDiffPHID()) {
+      return;
+    }
+
     // Don't publish manual buildables.
     if ($new->getIsManualBuildable()) {
       return;
