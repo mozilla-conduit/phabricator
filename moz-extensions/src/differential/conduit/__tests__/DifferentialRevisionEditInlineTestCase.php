@@ -424,6 +424,39 @@ EODIFF
         array($first_phid, $second_phid, $third_phid, $fourth_phid)));
   }
 
+  public function testInlineDoneOnlyEditPublishesPendingDoneStates() {
+    $author = $this->generateNewTestUser();
+    $reviewer = $this->generateNewTestUser();
+    $revision = $this->newRevision($author);
+
+    $pending_phid = $this->newReviewerInline($reviewer, $revision);
+    $explicit_phid = $this->newReviewerInline($reviewer, $revision);
+
+    $this->loadInlineStorage($pending_phid)
+      ->setFixedState(PhabricatorInlineComment::STATE_DRAFT)
+      ->save();
+
+    // Without a comment, the pending state is still published.
+    $this->editRevision($author, $revision, array(
+      $this->newInlineDoneTransaction($explicit_phid, true),
+    ));
+
+    $this->assertEqual(
+      PhabricatorInlineComment::STATE_DONE,
+      $this->loadInlineStorage($pending_phid)->getFixedState());
+
+    $state_xactions = $this->loadInlineStateTransactions($revision);
+    $this->assertEqual(1, count($state_xactions));
+    $this->assertEqual(
+      array(
+        $pending_phid => PhabricatorInlineComment::STATE_DONE,
+        $explicit_phid => PhabricatorInlineComment::STATE_DONE,
+      ),
+      array_select_keys(
+        head($state_xactions)->getNewValue(),
+        array($pending_phid, $explicit_phid)));
+  }
+
   public function testInlineDoneSkipsUnchangedInlines() {
     $author = $this->generateNewTestUser();
     $reviewer = $this->generateNewTestUser();

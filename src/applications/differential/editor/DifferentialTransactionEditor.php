@@ -382,6 +382,9 @@ final class DifferentialTransactionEditor
         case PhabricatorTransactions::TYPE_COMMENT:
         case DifferentialRevisionUpdateTransaction::TRANSACTIONTYPE:
         case DifferentialTransaction::TYPE_INLINE:
+        // Only explicit `inline.done` states get here, since other inline
+        // state transactions already include the pending states.
+        case PhabricatorTransactions::TYPE_INLINESTATE:
           $this->didExpandInlineState = true;
 
           $query_template = id(new DifferentialDiffInlineCommentQuery())
