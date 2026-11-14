@@ -289,6 +289,20 @@ final class DifferentialRevisionEditEngine
       ->setIsDefaultable(false)
       ->setIsLockable(false);
 
+    $fields[] = id(new DifferentialInlineDoneEditField())
+      ->setKey('inline.done')
+      ->setLabel(pht('Inline Comment Done'))
+      ->setIsFormField(false)
+      ->setTransactionType(PhabricatorTransactions::TYPE_INLINESTATE)
+      ->setDescription(pht('Mark an inline comment as done or not done.'))
+      ->setConduitDescription(
+        pht('Mark a published inline comment as done or not done.'))
+      ->setConduitTypeDescription(pht('Inline comment and its new state.'))
+      ->setConduitDocumentation($this->getInlineDoneConduitDocumentation())
+      ->setIsReorderable(false)
+      ->setIsDefaultable(false)
+      ->setIsLockable(false);
+
     $actions = DifferentialRevisionActionTransaction::loadAllActions();
     $actions = msortv($actions, 'getRevisionActionOrderVector');
 
@@ -375,6 +389,35 @@ not have `path`, `line`, `length`, `isNewFile` or `diff`.
   }
 }
 ```
+EOREMARKUP
+      );
+  }
+
+  private function getInlineDoneConduitDocumentation() {
+    return pht(<<<EOREMARKUP
+Use the `inline.done` transaction to mark a published inline comment on the
+revision as done or not done, like the "Done" checkbox in the web UI. Unlike
+the web UI, any user who can edit the revision can use it, not only the
+revision author. The value is a dictionary:
+
+  - `commentPHID` (phid, required): PHID of a published inline comment on
+    this revision.
+  - `done` (bool, required): `true` to mark the comment as done, `false` to
+    mark it as not done.
+
+```lang=json
+{
+  "type": "inline.done",
+  "value": {
+    "commentPHID": "PHID-XCMT-abcdefghijklmnopqrst",
+    "done": true
+  }
+}
+```
+
+To change several comments at once, send one `inline.done` transaction per
+comment in the same edit. They are published together as one change, so
+subscribers get one notification.
 EOREMARKUP
       );
   }

@@ -134,8 +134,14 @@ final class DifferentialTransactionEditor
       switch ($xaction->getTransactionType()) {
         case PhabricatorTransactions::TYPE_INLINESTATE:
           // If we have an "Inline State" transaction already, the caller
-          // built it for us so we don't need to expand it again.
-          $this->didExpandInlineState = true;
+          // built it for us so we don't need to expand it again. States set
+          // explicitly with `inline.done` do not include the pending ones, so
+          // those are still expanded and merged in.
+          if ($xaction->getMetadataValue('inline.explicit')) {
+            $this->refreshInlineStateOldValue($xaction);
+          } else {
+            $this->didExpandInlineState = true;
+          }
           break;
         case DifferentialRevisionPlanChangesTransaction::TRANSACTIONTYPE:
           if ($xaction->getMetadataValue('draft.demote')) {
@@ -148,6 +154,119 @@ final class DifferentialTransactionEditor
     $this->wasBroadcasting = $object->getShouldBroadcast();
 
     return parent::expandTransactions($object, $xactions);
+  }
+
+  /**
+   * Read the current states of the inlines in an explicit state transaction.
+   *
+   * The `inline.done` edit type reads them before the revision is locked, so
+   * another edit may have changed them since.
+   */
+  private function refreshInlineStateOldValue(
+    PhabricatorApplicationTransaction $xaction) {
+
+    $phids = array_keys($xaction->getNewValue());
+    $comments = id(new DifferentialTransactionComment())->loadAllWhere(
+      'phid IN (%Ls)',
+      $phids);
+
+    $states = array();
+    foreach ($comments as $comment) {
+      $states[$comment->getPHID()] = $comment->getFixedState();
+    }
+
+    $xaction->setOldValue(array_select_keys($states, $phids));
+  }
+
+  protected function filterTransactions(
+    PhabricatorLiskDAO $object,
+    array $xactions) {
+
+    foreach ($xactions as $xaction) {
+      $type = $xaction->getTransactionType();
+      if ($type === PhabricatorTransactions::TYPE_INLINESTATE) {
+        $this->removeUnchangedInlineStates($xaction);
+      }
+    }
+
+    return parent::filterTransactions($object, $xactions);
+  }
+
+  /**
+   * Remove inlines which are already in their new state from a transaction.
+   *
+   * Otherwise they render as changes, and maps merged in different orders
+   * compare as different, so a transaction which changes nothing has effect.
+   */
+  private function removeUnchangedInlineStates(
+    PhabricatorApplicationTransaction $xaction) {
+
+    $old = $xaction->getOldValue();
+    $new = $xaction->getNewValue();
+
+    foreach ($new as $phid => $state) {
+      // An inline which has never been marked is "Not Done".
+      $old_state = idx($old, $phid);
+      if ($old_state === null) {
+        $old_state = PhabricatorInlineComment::STATE_UNDONE;
+      }
+
+      if ($old_state === $state) {
+        unset($new[$phid]);
+      }
+    }
+
+    $phids = array_keys($new);
+    sort($phids);
+
+    $details = $xaction->getMetadataValue('inline.details', array());
+
+    $xaction
+      ->setMetadataValue('inline.details', array_select_keys($details, $phids))
+      ->setOldValue(array_select_keys($old, $phids))
+      ->setNewValue(array_select_keys($new, $phids));
+  }
+
+  protected function mergeTransactions(
+    PhabricatorApplicationTransaction $u,
+    PhabricatorApplicationTransaction $v) {
+
+    switch ($u->getTransactionType()) {
+      case PhabricatorTransactions::TYPE_INLINESTATE:
+        return $this->mergeInlineStateTransactions($u, $v);
+    }
+
+    return parent::mergeTransactions($u, $v);
+  }
+
+  /**
+   * Merge inline state transactions into one, so they render as one story.
+   * States set explicitly with `inline.done` win over pending ones.
+   */
+  private function mergeInlineStateTransactions(
+    PhabricatorApplicationTransaction $u,
+    PhabricatorApplicationTransaction $v) {
+
+    if ($v->getMetadataValue('inline.explicit') ||
+        !$u->getMetadataValue('inline.explicit')) {
+      $first = $u;
+      $last = $v;
+    } else {
+      $first = $v;
+      $last = $u;
+    }
+
+    $is_explicit = ($u->getMetadataValue('inline.explicit') &&
+      $v->getMetadataValue('inline.explicit'));
+
+    return id(clone $u)
+      ->setMetadataValue('inline.explicit', $is_explicit)
+      ->setMetadataValue(
+        'inline.details',
+        $last->getMetadataValue('inline.details', array()) +
+          $first->getMetadataValue('inline.details', array()))
+      ->setOldValue($first->getOldValue() + $last->getOldValue())
+      ->setNewValue($last->getNewValue() + $first->getNewValue());
   }
 
   protected function expandTransaction(
@@ -220,6 +339,9 @@ final class DifferentialTransactionEditor
         case PhabricatorTransactions::TYPE_COMMENT:
         case DifferentialRevisionUpdateTransaction::TRANSACTIONTYPE:
         case DifferentialTransaction::TYPE_INLINE:
+        // Only explicit `inline.done` states get here, since other inline
+        // state transactions already include the pending states.
+        case PhabricatorTransactions::TYPE_INLINESTATE:
           $this->didExpandInlineState = true;
 
           $query_template = id(new DifferentialDiffInlineCommentQuery())
