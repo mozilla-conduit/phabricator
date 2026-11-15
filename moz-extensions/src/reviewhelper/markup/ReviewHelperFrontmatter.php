@@ -11,17 +11,15 @@
  */
 final class ReviewHelperFrontmatter extends Phobject {
 
-  // A middle dot with spaces around it, escaped to keep this file ASCII.
-  const LABEL_SEPARATOR = " \xC2\xB7 ";
-
   private static $severities = array('critical', 'major', 'minor', 'nit');
-  private static $categories = array(
-    'security',
-    'correctness',
-    'performance',
-    'maintainability',
-    'style',
-    'scope',
+  // Each category and the Font Awesome icon shown on its badge.
+  private static $categoryIcons = array(
+    'security' => 'fa-lock',
+    'correctness' => 'fa-bug',
+    'performance' => 'fa-bolt',
+    'maintainability' => 'fa-wrench',
+    'style' => 'fa-paint-brush',
+    'scope' => 'fa-bullseye',
   );
 
   private $severity;
@@ -58,7 +56,7 @@ final class ReviewHelperFrontmatter extends Phobject {
     $frontmatter->severity = self::readValue(
       $values, 'severity', self::$severities, true);
     $frontmatter->category = self::readValue(
-      $values, 'category', self::$categories, false);
+      $values, 'category', array_keys(self::$categoryIcons), false);
 
     return $frontmatter;
   }
@@ -71,17 +69,44 @@ final class ReviewHelperFrontmatter extends Phobject {
     return $this->category;
   }
 
+  public function getSeverityLabel() {
+    return ucfirst($this->severity);
+  }
+
   /**
-   * A short human-readable label: the severity and category joined by
-   * `LABEL_SEPARATOR`, or only the severity when there is no category.
+   * The human-readable category, or `null` when there is no category.
    */
-  public function getLabel() {
+  public function getCategoryLabel() {
     if ($this->category === null) {
-      return ucfirst($this->severity);
+      return null;
     }
 
-    return ucfirst($this->severity).self::LABEL_SEPARATOR.
-      ucfirst($this->category);
+    return ucfirst($this->category);
+  }
+
+  /**
+   * The Font Awesome icon for the category, or `null` when there is no
+   * category.
+   */
+  public function getCategoryIcon() {
+    if ($this->category === null) {
+      return null;
+    }
+
+    return self::$categoryIcons[$this->category];
+  }
+
+  /**
+   * The severity and category as bracketed labels, such as
+   * `[Critical] [Security]`, for plain-text contexts like email.
+   */
+  public function getTextLabel() {
+    $text = '['.$this->getSeverityLabel().']';
+    if ($this->category !== null) {
+      $text .= ' ['.$this->getCategoryLabel().']';
+    }
+
+    return $text;
   }
 
   /**

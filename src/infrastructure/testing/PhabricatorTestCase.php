@@ -110,12 +110,6 @@ abstract class PhabricatorTestCase extends PhutilTestCase {
       'phabricator.application-settings',
       array());
 
-    // We can't stub this service right now, and it's not generally useful
-    // to publish notifications about test execution.
-    $this->env->overrideEnvConfig(
-      'notification.servers',
-      array());
-
     $this->env->overrideEnvConfig(
       'phabricator.base-uri',
       'http://phabricator.example.com');
@@ -128,10 +122,6 @@ abstract class PhabricatorTestCase extends PhutilTestCase {
     $this->env->overrideEnvConfig('phabricator.silent', false);
 
     $this->env->overrideEnvConfig('cluster.read-only', false);
-
-    $this->env->overrideEnvConfig(
-      'maniphest.custom-field-definitions',
-      array());
   }
 
   protected function didRunTests() {

@@ -15,10 +15,10 @@
  *   ---
  *
  * This rule extracts the block, parses it into a `ReviewHelperFrontmatter`,
- * and replaces it with a short label of the severity and category. If the
+ * and replaces it with short labels of the severity and category. If the
  * block can't be parsed, nothing is rendered in its place. The label carries
- * the parsed values as JSON so the `reviewhelper-feedback` behavior can turn it
- * into a badge. This rule cannot see the comment author, so the HTML label is
+ * the parsed values as JSON so the `reviewhelper-severity-badge` behavior can
+ * turn each part into its own badge. This rule cannot see the comment author, so the HTML label is
  * hidden and only the behavior shows it, for comments by accounts in
  * `reviewhelper.severity-badge-user-phids`.
  */
@@ -26,6 +26,14 @@ final class ReviewHelperFrontmatterRemarkupRule
   extends PhabricatorRemarkupCustomBlockRule {
 
   const MAX_LINES = 12;
+
+  /**
+   * Part of the markup cache key, so bump this whenever the rendered HTML
+   * changes. Otherwise comments cached with the old HTML won't get badges.
+   */
+  public function getRuleVersion() {
+    return 2;
+  }
 
   /**
    * Run before `PhutilRemarkupHorizontalRuleBlockRule` (priority 300), which
@@ -64,15 +72,25 @@ final class ReviewHelperFrontmatterRemarkupRule
     }
 
     if ($this->getEngine()->isTextMode()) {
-      return '['.$frontmatter->getLabel().']';
+      return $frontmatter->getTextLabel();
     }
 
     $label = array(
-      phutil_tag('strong', array(), ucfirst($frontmatter->getSeverity())),
+      phutil_tag(
+        'span',
+        array('class' => 'reviewhelper-severity-part'),
+        $frontmatter->getSeverityLabel()),
     );
-    if ($frontmatter->getCategory() !== null) {
-      $label[] = ReviewHelperFrontmatter::LABEL_SEPARATOR.
-        ucfirst($frontmatter->getCategory());
+    if ($frontmatter->getCategoryLabel() !== null) {
+      $label[] = ' ';
+      // `PHUIIconView` is hidden from screen readers, so they read the category
+      // name instead of the icon.
+      $icon = id(new PHUIIconView())
+        ->setIcon($frontmatter->getCategoryIcon());
+      $label[] = phutil_tag(
+        'span',
+        array('class' => 'reviewhelper-category-part'),
+        array($icon, ' ', $frontmatter->getCategoryLabel()));
     }
 
     return phutil_tag(

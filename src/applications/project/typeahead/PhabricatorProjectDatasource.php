@@ -50,18 +50,6 @@ final class PhabricatorProjectDatasource
 
     $projs = mpull($projs, null, 'getPHID');
 
-    $must_have_cols = $this->getParameter('mustHaveColumns', false);
-    if ($must_have_cols) {
-      $columns = id(new PhabricatorProjectColumnQuery())
-        ->setViewer($viewer)
-        ->withProjectPHIDs(array_keys($projs))
-        ->withIsProxyColumn(false)
-        ->execute();
-      $has_cols = mgroup($columns, 'getProjectPHID');
-    } else {
-      $has_cols = array_fill_keys(array_keys($projs), true);
-    }
-
     $is_browse = $this->getIsBrowse();
     if ($is_browse && $projs) {
       // TODO: This is a little ad-hoc, but we don't currently have
@@ -79,10 +67,6 @@ final class PhabricatorProjectDatasource
     $results = array();
     foreach ($projs as $proj) {
       $phid = $proj->getPHID();
-
-      if (!isset($has_cols[$phid])) {
-        continue;
-      }
 
       $slug = $proj->getPrimarySlug();
       if (!phutil_nonempty_string($slug)) {

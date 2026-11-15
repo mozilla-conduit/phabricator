@@ -1,9 +1,5 @@
 FROM php:8.4.27-fpm-alpine3.23 AS base
 
-# Used for some file paths in the image. MUST match the version in the Docker
-# image above.
-ENV PHPSHORT=84
-
 LABEL maintainer="dkl@mozilla.com"
 
 # From https://github.com/marco-c/risk-analysis-addon/releases
@@ -38,6 +34,13 @@ RUN apk --no-cache --update add \
     py3-pip \
     py3-pygments \
     python3-dev
+
+# MariaDB client >= 11.4 verifies server TLS certificates by default, and the
+# self-signed certificate MySQL generates fails that check, which breaks
+# `bin/storage shell` and `bin/storage dump`. Turn off only the verification;
+# the connection still uses TLS when the server offers it (bug 2088629).
+RUN printf '[client-mariadb]\nssl-verify-server-cert=OFF\n' \
+        > /etc/my.cnf.d/phabricator-client.cnf
 
 # Build PHP extensions. `zip` comes with PHP's source, so only APCu needs PECL,
 # and pecl.php.net sometimes answers with an HTTP 500, so retry it.
@@ -84,7 +87,7 @@ RUN { \
 # one (despite it not being used), to counter CVE-2026-109619.
 RUN sed -i \
   's/^;session.upload_progress.enabled.*/session.upload_progress.enabled = Off/' \
-  /etc/php${PHPSHORT}/php.ini \
+  /etc/php*/php.ini \
   /usr/local/etc/php/php.ini-production \
   /usr/local/etc/php/php.ini-development
 

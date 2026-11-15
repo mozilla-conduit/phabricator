@@ -207,22 +207,6 @@ abstract class PhabricatorApplication
       }
     }
 
-    $command_specs = $this->getMailCommandObjects();
-    if ($command_specs) {
-      foreach ($command_specs as $key => $spec) {
-        $object = $spec['object'];
-
-        $class = get_class($this);
-        $href = '/applications/mailcommands/'.$class.'/'.$key.'/';
-        $item = id(new PhabricatorActionView())
-          ->setName($spec['name'])
-          ->setHref($href)
-          ->addSigil('help-item')
-          ->setOpenInNewWindow(true);
-        $items[] = $item;
-      }
-    }
-
     if ($items) {
       $divider = id(new PhabricatorActionView())
         ->addSigil('help-item')
@@ -258,10 +242,6 @@ abstract class PhabricatorApplication
     return array();
   }
 
-  public function getMailCommandObjects() {
-    return array();
-  }
-
 
 /* -(  URI Routing  )-------------------------------------------------------- */
 
@@ -274,21 +254,6 @@ abstract class PhabricatorApplication
     return array();
   }
 
-
-/* -(  Email Integration  )-------------------------------------------------- */
-
-
-  public function supportsEmailIntegration() {
-    return false;
-  }
-
-  final protected function getInboundEmailSupportLink() {
-    return PhabricatorEnv::getDoclink('Configuring Inbound Email');
-  }
-
-  public function getAppEmailBlurb() {
-    throw new PhutilMethodNotImplementedException();
-  }
 
 /* -(  UI Integration  )----------------------------------------------------- */
 

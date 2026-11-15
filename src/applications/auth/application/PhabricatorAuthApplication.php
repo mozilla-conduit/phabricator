@@ -111,19 +111,6 @@ final class PhabricatorAuthApplication extends PhabricatorApplication {
           '(?P<id>[^/]+)/' =>
             'PhabricatorAuthMessageViewController',
         ),
-
-        'contact/' => array(
-          $this->getEditRoutePattern('edit/') =>
-            'PhabricatorAuthContactNumberEditController',
-          '(?P<id>[1-9]\d*)/' =>
-            'PhabricatorAuthContactNumberViewController',
-          '(?P<action>disable|enable)/(?P<id>[1-9]\d*)/' =>
-            'PhabricatorAuthContactNumberDisableController',
-          'primary/(?P<id>[1-9]\d*)/' =>
-            'PhabricatorAuthContactNumberPrimaryController',
-          'test/(?P<id>[1-9]\d*)/' =>
-            'PhabricatorAuthContactNumberTestController',
-        ),
       ),
 
       '/login/' => array(

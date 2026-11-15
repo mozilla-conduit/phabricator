@@ -36,11 +36,6 @@ abstract class PhabricatorConfigServicesController
 
     $nav->addLabel(pht('Other Services'));
 
-    $nav->newLink('notification-servers')
-      ->setName(pht('Notification Servers'))
-      ->setIcon('fa-bell-o')
-      ->setHref(urisprintf('%s%s/', $services_uri, 'cluster/notifications'));
-
     $nav->newLink('repository-servers')
       ->setName(pht('Repository Servers'))
       ->setIcon('fa-code')

@@ -50,15 +50,6 @@ final class PhabricatorNotificationPanelController
       ),
       pht('Notifications'));
 
-    $connection_status = new PhabricatorNotificationStatusView();
-
-    $connection_ui = phutil_tag(
-      'div',
-      array(
-        'class' => 'phabricator-notification-footer',
-      ),
-      $connection_status);
-
     $header = phutil_tag(
       'div',
       array(
@@ -70,11 +61,10 @@ final class PhabricatorNotificationPanelController
       ));
 
     $content = hsprintf(
-      '%s%s%s%s',
+      '%s%s%s',
       $header,
       $warning,
-      $content,
-      $connection_ui);
+      $content);
 
     $json = array(
       'content' => $content,

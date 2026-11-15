@@ -29,7 +29,6 @@ abstract class HeraldAdapter extends Phobject {
 
   private $contentSource;
   private $isNewObject;
-  private $applicationEmail;
   private $appliedTransactions = array();
   private $queuedTransactions = array();
   private $emailPHIDs = array();
@@ -108,20 +107,6 @@ abstract class HeraldAdapter extends Phobject {
   public function setIsNewObject($new) {
     $this->isNewObject = (bool)$new;
     return $this;
-  }
-
-  public function supportsApplicationEmail() {
-    return false;
-  }
-
-  public function setApplicationEmail(
-    PhabricatorMetaMTAApplicationEmail $email) {
-    $this->applicationEmail = $email;
-    return $this;
-  }
-
-  public function getApplicationEmail() {
-    return $this->applicationEmail;
   }
 
   public function getPHID() {

@@ -14,8 +14,4 @@ final class ProjectReplyHandler
     return PhabricatorProjectProjectPHIDType::TYPECONST;
   }
 
-  protected function shouldCreateCommentFromMailBody() {
-    return false;
-  }
-
 }

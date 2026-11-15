@@ -468,14 +468,6 @@ final class PhabricatorUserEditor extends PhabricatorEditor {
     if (!PhabricatorUserEmail::isAllowedAddress($email->getAddress())) {
       throw new Exception(PhabricatorUserEmail::describeAllowedAddresses());
     }
-
-    $application_email = id(new PhabricatorMetaMTAApplicationEmailQuery())
-      ->setViewer(PhabricatorUser::getOmnipotentUser())
-      ->withAddresses(array($email->getAddress()))
-      ->executeOne();
-    if ($application_email) {
-      throw new Exception($application_email->getInUseMessage());
-    }
   }
 
   public function revokePasswordResetLinks(PhabricatorUser $user) {

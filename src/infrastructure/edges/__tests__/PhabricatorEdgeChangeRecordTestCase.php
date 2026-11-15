@@ -132,11 +132,11 @@ EOJSON
       'PHID-PROJ-zzzzqs7prifhajtvia3t',
     );
 
-    $bulky_xaction = new ManiphestTransaction();
+    $bulky_xaction = new DifferentialTransaction();
     $bulky_xaction->setOldValue($old_bulky);
     $bulky_xaction->setNewValue($new_bulky);
 
-    $slim_xaction = new ManiphestTransaction();
+    $slim_xaction = new DifferentialTransaction();
     $slim_xaction->setOldValue($old_slim);
     $slim_xaction->setNewValue($new_slim);
 

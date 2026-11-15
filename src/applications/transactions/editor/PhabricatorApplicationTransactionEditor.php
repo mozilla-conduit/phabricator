@@ -55,7 +55,6 @@ abstract class PhabricatorApplicationTransactionEditor
   private $subscribers;
   private $unmentionablePHIDMap = array();
   private $transactionGroupID;
-  private $applicationEmail;
 
   private $isPreview;
   private $isHeraldEditor;
@@ -276,16 +275,6 @@ abstract class PhabricatorApplicationTransactionEditor
     PhabricatorLiskDAO $object,
     array $xactions) {
     return true;
-  }
-
-  public function setApplicationEmail(
-    PhabricatorMetaMTAApplicationEmail $email) {
-    $this->applicationEmail = $email;
-    return $this;
-  }
-
-  public function getApplicationEmail() {
-    return $this->applicationEmail;
   }
 
   public function setRaiseWarnings($raise_warnings) {
@@ -945,8 +934,6 @@ abstract class PhabricatorApplicationTransactionEditor
         }
 
         $editor->save();
-
-        $this->updateWorkboardColumns($object, $const, $old, $new);
         break;
       case PhabricatorTransactions::TYPE_VIEW_POLICY:
       case PhabricatorTransactions::TYPE_SPACE:
@@ -4268,10 +4255,6 @@ abstract class PhabricatorApplicationTransactionEditor
       ->setActingAsPHID($this->getActingAsPHID())
       ->setAppliedTransactions($xactions);
 
-    if ($this->getApplicationEmail()) {
-      $adapter->setApplicationEmail($this->getApplicationEmail());
-    }
-
     // If this editor is operating in silent mode, tell Herald that we aren't
     // going to send any mail. This allows it to skip "the first time this
     // rule matches, send me an email" rules which would otherwise match even
@@ -4906,49 +4889,6 @@ abstract class PhabricatorApplicationTransactionEditor
     }
 
     return true;
-  }
-
-  private function updateWorkboardColumns($object, $const, $old, $new) {
-    // If an object is removed from a project, remove it from any proxy
-    // columns for that project. This allows a task which is moved up from a
-    // milestone to the parent to move back into the "Backlog" column on the
-    // parent workboard.
-
-    if ($const != PhabricatorProjectObjectHasProjectEdgeType::EDGECONST) {
-      return;
-    }
-
-    // TODO: This should likely be some future WorkboardInterface.
-    $appears_on_workboards = ($object instanceof ManiphestTask);
-    if (!$appears_on_workboards) {
-      return;
-    }
-
-    $removed_phids = array_keys(array_diff_key($old, $new));
-    if (!$removed_phids) {
-      return;
-    }
-
-    // Find any proxy columns for the removed projects.
-    $proxy_columns = id(new PhabricatorProjectColumnQuery())
-      ->setViewer(PhabricatorUser::getOmnipotentUser())
-      ->withProxyPHIDs($removed_phids)
-      ->execute();
-    if (!$proxy_columns) {
-      return array();
-    }
-
-    $proxy_phids = mpull($proxy_columns, 'getPHID');
-
-    $position_table = new PhabricatorProjectColumnPosition();
-    $conn_w = $position_table->establishConnection('w');
-
-    queryfx(
-      $conn_w,
-      'DELETE FROM %T WHERE objectPHID = %s AND columnPHID IN (%Ls)',
-      $position_table->getTableName(),
-      $object->getPHID(),
-      $proxy_phids);
   }
 
   private function getModularTransactionTypes(
