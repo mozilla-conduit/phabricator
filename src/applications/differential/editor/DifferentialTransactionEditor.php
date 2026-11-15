@@ -170,10 +170,7 @@ final class DifferentialTransactionEditor
       'phid IN (%Ls)',
       $phids);
 
-    $states = array();
-    foreach ($comments as $comment) {
-      $states[$comment->getPHID()] = $comment->getFixedState();
-    }
+    $states = mpull($comments, 'getFixedState', 'getPHID');
 
     $xaction->setOldValue(array_select_keys($states, $phids));
   }
