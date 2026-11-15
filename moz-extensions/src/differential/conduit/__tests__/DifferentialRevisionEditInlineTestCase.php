@@ -558,6 +558,11 @@ EODIFF
         array('commentPHID' => $inline_phid),
         'must have a boolean "done"',
       ),
+      'non-boolean done' => array(
+        $author,
+        array('commentPHID' => $inline_phid, 'done' => 'yes'),
+        'Expected boolean',
+      ),
       'unknown comment' => array(
         $author,
         array(

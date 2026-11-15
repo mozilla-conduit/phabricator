@@ -43,11 +43,15 @@ final class DifferentialInlineDoneEditType
         pht('Inline done value must have a "commentPHID" string.'));
     }
 
-    $is_done = $this->readBool(idx($value, 'done'));
-    if ($is_done === null) {
+    if (!array_key_exists('done', $value)) {
       throw new Exception(
         pht('Inline done value must have a boolean "done".'));
     }
+
+    // Non-strict parsing also accepts the strings sent by form-encoded
+    // Conduit calls.
+    $is_done = id(new ConduitBoolParameterType())
+      ->getValue($value, 'done', false);
 
     $inline = id(new DifferentialDiffInlineCommentQuery())
       ->setViewer($viewer)
@@ -99,29 +103,6 @@ final class DifferentialInlineDoneEditType
       ->setNewValue(array($phid => $value['state']));
 
     return array($xaction);
-  }
-
-  /**
-   * Read a boolean, also accepting the strings sent by form-encoded Conduit
-   * calls. Returns null for anything else.
-   */
-  private function readBool($value) {
-    if (is_bool($value)) {
-      return $value;
-    }
-
-    $map = array(
-      'true' => true,
-      '1' => true,
-      'false' => false,
-      '0' => false,
-    );
-
-    if (is_string($value) && isset($map[$value])) {
-      return $map[$value];
-    }
-
-    return null;
   }
 
 }
