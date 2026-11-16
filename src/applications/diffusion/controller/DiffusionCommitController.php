@@ -528,25 +528,6 @@ final class DiffusionCommitController extends DiffusionController {
     $phids[] = $commit->getCommitterDisplayPHID();
     $phids[] = $commit->getAuthorDisplayPHID();
 
-    // NOTE: We should never normally have more than a single push log, but
-    // it can occur naturally if a commit is pushed, then the branch it was
-    // on is deleted, then the commit is pushed again (or through other similar
-    // chains of events). This should be rare, but does not indicate a bug
-    // or data issue.
-
-    $push_logs = array();
-    if ($repository->isHosted()) {
-      $push_logs = id(new PhabricatorRepositoryPushLogQuery())
-        ->setViewer($viewer)
-        ->withRepositoryPHIDs(array($repository->getPHID()))
-        ->withNewRefs(array($commit->getCommitIdentifier()))
-        ->withRefTypes(array(PhabricatorRepositoryPushLog::REFTYPE_COMMIT))
-        ->execute();
-      foreach ($push_logs as $log) {
-        $phids[] = $log->getPusherPHID();
-      }
-    }
-
     $handles = array();
     if ($phids) {
       $handles = $this->loadViewerHandles($phids);
@@ -602,22 +583,6 @@ final class DiffusionCommitController extends DiffusionController {
           id(new PHUIStatusItemView())
             ->setTarget($committer_view)
             ->setNote(pht('Committed on %s', $committer_date)));
-      }
-    }
-
-    if ($push_logs) {
-      $pushed_list = new PHUIStatusListView();
-
-      foreach ($push_logs as $push_log) {
-        $pusher_date = $push_log->getEpoch();
-        $pusher_date = phabricator_datetime($pusher_date, $viewer);
-
-        $pusher_view = $handles[$push_log->getPusherPHID()]->renderLink();
-
-        $provenance_list->addItem(
-          id(new PHUIStatusItemView())
-            ->setTarget($pusher_view)
-            ->setNote(pht('Pushed on %s', $pusher_date)));
       }
     }
 

@@ -146,16 +146,12 @@ final class DiffusionRepositoryStorageManagementPanel
           $version_number = $version->getRepositoryVersion();
 
           $href = null;
-          if ($repository->isHosted()) {
-            $href = "/diffusion/pushlog/view/{$version_number}/";
-          } else {
-            $commit = id(new DiffusionCommitQuery())
-              ->setViewer($viewer)
-              ->withIDs(array($version_number))
-              ->executeOne();
-            if ($commit) {
-              $href = $commit->getURI();
-            }
+          $commit = id(new DiffusionCommitQuery())
+            ->setViewer($viewer)
+            ->withIDs(array($version_number))
+            ->executeOne();
+          if ($commit) {
+            $href = $commit->getURI();
           }
 
           if ($href) {

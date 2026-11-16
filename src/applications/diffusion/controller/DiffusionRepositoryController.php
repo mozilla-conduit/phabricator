@@ -319,15 +319,6 @@ final class DiffusionRepositoryController extends DiffusionController {
         ->setHref($edit_uri));
 
     if ($repository->isHosted()) {
-      $push_uri = $this->getApplicationURI(
-        'pushlog/?repositories='.$repository->getPHID());
-
-      $action_view->addAction(
-        id(new PhabricatorActionView())
-          ->setName(pht('View Push Logs'))
-          ->setIcon('fa-upload')
-          ->setHref($push_uri));
-
       $pull_uri = $this->getApplicationURI(
         'synclog/?repositories='.$repository->getPHID());
 
@@ -337,15 +328,6 @@ final class DiffusionRepositoryController extends DiffusionController {
           ->setIcon('fa-exchange')
           ->setHref($pull_uri));
     }
-
-    $pull_uri = $this->getApplicationURI(
-      'pulllog/?repositories='.$repository->getPHID());
-
-    $action_view->addAction(
-      id(new PhabricatorActionView())
-        ->setName(pht('View Pull Logs'))
-        ->setIcon('fa-download')
-        ->setHref($pull_uri));
 
     return $action_view;
   }

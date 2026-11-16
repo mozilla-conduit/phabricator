@@ -119,18 +119,6 @@ final class PhabricatorRepositoryPullEngine
         }
       }
 
-      if ($repository->isHosted()) {
-        if ($is_git) {
-          $this->installGitHook();
-        } else if ($is_hg) {
-          $this->installMercurialHook();
-        }
-
-        foreach ($repository->getHookDirectories() as $directory) {
-          $this->installHookDirectory($directory);
-        }
-      }
-
       if ($is_git) {
         $this->updateGitWorkingCopyConfiguration();
       }
@@ -180,51 +168,6 @@ final class PhabricatorRepositoryPullEngine
       array(
         'message' => $message,
       ));
-  }
-
-  private function installHook($path, array $hook_argv = array()) {
-    $this->log(pht('Installing commit hook to "%s"...', $path));
-
-    $repository = $this->getRepository();
-    $identifier = $this->getHookContextIdentifier($repository);
-
-    $root = dirname(phutil_get_library_root('phabricator'));
-    $bin = $root.'/bin/commit-hook';
-
-    $full_php_path = Filesystem::resolveBinary('php');
-    $cmd = csprintf(
-      'exec %s -f %s -- %s %Ls "$@"',
-      $full_php_path,
-      $bin,
-      $identifier,
-      $hook_argv);
-
-    $hook = "#!/bin/sh\nexport TERM=dumb\n{$cmd}\n";
-
-    Filesystem::writeFile($path, $hook);
-    Filesystem::changePermissions($path, 0755);
-  }
-
-  private function installHookDirectory($path) {
-    $readme = pht(
-      "To add custom hook scripts to this repository, add them to this ".
-      "directory.\n\nPhabricator will run any executables in this directory ".
-      "after running its own checks, as though they were normal hook ".
-      "scripts.");
-
-    Filesystem::createDirectory($path, 0755);
-    Filesystem::writeFile($path.'/README', $readme);
-  }
-
-  private function getHookContextIdentifier(PhabricatorRepository $repository) {
-    $identifier = $repository->getPHID();
-
-    $instance = PhabricatorEnv::getEnvConfig('cluster.instance');
-    if (phutil_nonempty_string($instance)) {
-      $identifier = "{$identifier}:{$instance}";
-    }
-
-    return $identifier;
   }
 
 
@@ -474,22 +417,6 @@ final class PhabricatorRepositoryPullEngine
     }
 
     return $fetch_rules;
-  }
-
-  /**
-   * @task git
-   */
-  private function installGitHook() {
-    $repository = $this->getRepository();
-    $root = $repository->getLocalPath();
-
-    if ($repository->isWorkingCopyBare()) {
-      $path = '/hooks/pre-receive';
-    } else {
-      $path = '/.git/hooks/pre-receive';
-    }
-
-    $this->installHook($root.$path);
   }
 
   private function updateGitWorkingCopyConfiguration() {
@@ -757,43 +684,5 @@ final class PhabricatorRepositoryPullEngine
       $message);
   }
 
-
-  /**
-   * @task hg
-   */
-  private function installMercurialHook() {
-    $repository = $this->getRepository();
-    $path = $repository->getLocalPath().'/.hg/hgrc';
-
-    $identifier = $this->getHookContextIdentifier($repository);
-
-    $root = dirname(phutil_get_library_root('phabricator'));
-    $bin = $root.'/bin/commit-hook';
-
-    $data = array();
-    $data[] = '[hooks]';
-
-    // This hook handles normal pushes.
-    $data[] = csprintf(
-      'pretxnchangegroup.phabricator = TERM=dumb %s %s %s',
-      $bin,
-      $identifier,
-      'pretxnchangegroup');
-
-    // This one handles creating bookmarks.
-    $data[] = csprintf(
-      'prepushkey.phabricator = TERM=dumb %s %s %s',
-      $bin,
-      $identifier,
-      'prepushkey');
-
-    $data[] = null;
-
-    $data = implode("\n", $data);
-
-    $this->log('%s', pht('Installing commit hook config to "%s"...', $path));
-
-    Filesystem::writeFile($path, $data);
-  }
 
 }

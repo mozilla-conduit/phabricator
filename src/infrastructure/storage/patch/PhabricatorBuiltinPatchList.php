@@ -114,6 +114,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
         'retired' => array(
           'repository_filesystem',
           'repository_gitlfsref',
+          'repository_pullevent',
+          'repository_pushevent',
+          'repository_pushlog',
         ),
       ),
       'db.search' => array(),
