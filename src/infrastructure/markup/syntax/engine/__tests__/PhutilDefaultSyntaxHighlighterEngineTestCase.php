@@ -25,4 +25,22 @@ final class PhutilDefaultSyntaxHighlighterEngineTestCase
     }
   }
 
+  public function testLanguagesUsePygments() {
+    $languages = array(
+      'java',
+      'py',
+      'python',
+    );
+
+    $engine = id(new PhutilDefaultSyntaxHighlighterEngine())
+      ->setConfig('pygments.enabled', true);
+
+    foreach ($languages as $language) {
+      $future = $engine->getHighlightFuture($language, 'x');
+      $this->assertTrue(
+        $future instanceof PhutilDefaultSyntaxHighlighterEnginePygmentsFuture,
+        pht('Language "%s" should be highlighted by Pygments.', $language));
+    }
+  }
+
 }
