@@ -28,6 +28,7 @@ final class PhutilDefaultSyntaxHighlighterEngineTestCase
   public function testLanguagesUsePygments() {
     $languages = array(
       'java',
+      'json',
       'php',
       'py',
       'python',
