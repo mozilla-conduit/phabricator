@@ -34,7 +34,7 @@ final class PhabricatorSyntaxHighlightingConfigOptions
             'You can provide a custom highlighter engine by extending '.
             'class %s.',
             'PhutilSyntaxHighlighterEngine')),
-      $this->newOption('pygments.enabled', 'bool', false)
+      $this->newOption('pygments.enabled', 'bool', true)
         ->setSummary(
           pht('Use Pygments to highlight code?'))
         ->setBoolOptions(
@@ -44,17 +44,13 @@ final class PhabricatorSyntaxHighlightingConfigOptions
           ))
         ->setDescription(
           pht(
-            'Syntax highlighting a supported for a few languages by '.
-            'default, but you can install Pygments (a third-party syntax '.
-            'highlighting tool) to provide support for many more languages.'.
+            'Source code is syntax highlighted with Pygments, a third-party '.
+            'syntax highlighting tool. If you disable this option, source '.
+            'code is shown without syntax highlighting.'.
             "\n\n".
             'To install Pygments, visit '.
             '[[ http://pygments.org | pygments.org ]] and follow the '.
             'download and install instructions.'.
-            "\n\n".
-            'Once Pygments is installed, enable this option '.
-            '(`pygments.enabled`) to make use of Pygments when '.
-            'highlighting source code.'.
             "\n\n".
             'After you install and enable Pygments, newly created source '.
             'code (like diffs and pastes) should highlight correctly. '.
