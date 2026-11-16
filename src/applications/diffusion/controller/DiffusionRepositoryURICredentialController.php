@@ -28,22 +28,9 @@ final class DiffusionRepositoryURICredentialController
       return new Aphront404Response();
     }
 
-    $is_builtin = $uri->isBuiltin();
     $has_credential = (bool)$uri->getCredentialPHID();
     $view_uri = $uri->getViewURI();
     $is_remove = ($request->getURIData('action') == 'remove');
-
-    if ($is_builtin) {
-      return $this->newDialog()
-        ->setTitle(pht('Builtin URIs Do Not Use Credentials'))
-        ->appendParagraph(
-          pht(
-            'You can not set a credential for builtin URIs which this '.
-            'server hosts. These URIs are not fetched from or pushed to, '.
-            'and credentials are not required to authenticate any '.
-            'activity against them.'))
-        ->addCancelButton($view_uri);
-    }
 
     if ($request->isFormPost()) {
       $xactions = array();

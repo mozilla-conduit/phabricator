@@ -313,24 +313,8 @@ final class DiffusionURIEditor
           }
 
           // If we are setting this URI to use "Observe", we must have no
-          // other "Observe" URIs and must also have no "Read/Write" URIs.
-
-          // If we are setting this URI to "Read/Write", we must have no
-          // other "Observe" URIs. It's OK to have other "Read/Write" URIs.
-
-          $no_observers = false;
-          $no_readwrite = false;
-          switch ($new) {
-            case PhabricatorRepositoryURI::IO_OBSERVE:
-              $no_readwrite = true;
-              $no_observers = true;
-              break;
-            case PhabricatorRepositoryURI::IO_READWRITE:
-              $no_observers = true;
-              break;
-          }
-
-          if ($no_observers || $no_readwrite) {
+          // other "Observe" URIs.
+          if ($new == PhabricatorRepositoryURI::IO_OBSERVE) {
             $repository = id(new PhabricatorRepositoryQuery())
               ->setViewer(PhabricatorUser::getOmnipotentUser())
               ->withPHIDs(array($this->repositoryPHID))
@@ -339,7 +323,6 @@ final class DiffusionURIEditor
             $uris = $repository->getURIs();
 
             $observe_conflict = null;
-            $readwrite_conflict = null;
             foreach ($uris as $uri) {
               // If this is the URI being edited, it can not conflict with
               // itself.
@@ -347,59 +330,23 @@ final class DiffusionURIEditor
                 continue;
               }
 
-              $io_type = $uri->getEffectiveIOType();
-
-              if ($io_type == PhabricatorRepositoryURI::IO_READWRITE) {
-                if ($no_readwrite) {
-                  $readwrite_conflict = $uri;
-                  break;
-                }
-              }
-
-              if ($io_type == PhabricatorRepositoryURI::IO_OBSERVE) {
-                if ($no_observers) {
-                  $observe_conflict = $uri;
-                  break;
-                }
+              $io_observe = PhabricatorRepositoryURI::IO_OBSERVE;
+              if ($uri->getEffectiveIOType() == $io_observe) {
+                $observe_conflict = $uri;
+                break;
               }
             }
 
             if ($observe_conflict) {
-              if ($new == PhabricatorRepositoryURI::IO_OBSERVE) {
-                $message = pht(
+              $errors[] = new PhabricatorApplicationTransactionValidationError(
+                $type,
+                pht('Invalid'),
+                pht(
                   'You can not set this URI to use Observe IO because '.
                   'another URI for this repository is already configured '.
                   'in Observe IO mode. A repository can not observe two '.
                   'different remotes simultaneously. Turn off IO for the '.
-                  'other URI first.');
-              } else {
-                $message = pht(
-                  'You can not set this URI to use Read/Write IO because '.
-                  'another URI for this repository is already configured '.
-                  'in Observe IO mode. An observed repository can not be '.
-                  'made writable. Turn off IO for the other URI first.');
-              }
-
-              $errors[] = new PhabricatorApplicationTransactionValidationError(
-                $type,
-                pht('Invalid'),
-                $message,
-                $xaction);
-              continue;
-            }
-
-            if ($readwrite_conflict) {
-              $message = pht(
-                'You can not set this URI to use Observe IO because '.
-                'another URI for this repository is already configured '.
-                'in Read/Write IO mode. A repository can not simultaneously '.
-                'be writable and observe a remote. Turn off IO for the '.
-                'other URI first.');
-
-              $errors[] = new PhabricatorApplicationTransactionValidationError(
-                $type,
-                pht('Invalid'),
-                $message,
+                  'other URI first.'),
                 $xaction);
               continue;
             }
@@ -422,26 +369,6 @@ final class DiffusionURIEditor
                 $new,
                 implode(', ', array_keys($available))));
           }
-        }
-        break;
-
-      case PhabricatorRepositoryURITransaction::TYPE_DISABLE:
-        $old = $object->getIsDisabled();
-        foreach ($xactions as $xaction) {
-          $new = $xaction->getNewValue();
-
-          if ($old == $new) {
-            continue;
-          }
-
-          if (!$object->isBuiltin()) {
-            continue;
-          }
-
-          $errors[] = new PhabricatorApplicationTransactionValidationError(
-            $type,
-            pht('Invalid'),
-            pht('You can not manually disable builtin URIs.'));
         }
         break;
     }

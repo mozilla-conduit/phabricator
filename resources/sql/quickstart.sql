@@ -4162,25 +4162,6 @@ USE `{$NAMESPACE}_repository`;
 
  SET character_set_client = {$CHARSET} ;
 
-CREATE TABLE `repository_gitlfsref` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `repositoryPHID` varbinary(64) NOT NULL,
-  `objectHash` binary(64) NOT NULL,
-  `byteSize` bigint(20) unsigned NOT NULL,
-  `authorPHID` varbinary(64) NOT NULL,
-  `filePHID` varbinary(64) NOT NULL,
-  `dateCreated` int(10) unsigned NOT NULL,
-  `dateModified` int(10) unsigned NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `key_hash` (`repositoryPHID`,`objectHash`)
-) ENGINE=InnoDB DEFAULT CHARSET={$CHARSET} COLLATE={$COLLATE_TEXT};
-
-USE `{$NAMESPACE}_repository`;
-
- SET NAMES utf8 ;
-
- SET character_set_client = {$CHARSET} ;
-
 CREATE TABLE `repository_identity` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `phid` varbinary(64) NOT NULL,

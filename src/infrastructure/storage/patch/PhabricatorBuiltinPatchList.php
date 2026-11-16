@@ -113,6 +113,7 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.repository' => array(
         'retired' => array(
           'repository_filesystem',
+          'repository_gitlfsref',
         ),
       ),
       'db.search' => array(),

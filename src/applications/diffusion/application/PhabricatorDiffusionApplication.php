@@ -91,10 +91,8 @@ final class PhabricatorDiffusionApplication extends PhabricatorApplication {
         'pathtree/(?P<dblob>.*)' => 'DiffusionPathTreeController',
       ),
 
-      // NOTE: This must come after the rules above; it just gives us a
-      // catch-all for serving repositories over HTTP. We must accept requests
-      // without the trailing "/" because SVN commands don't necessarily
-      // include it.
+      // NOTE: This must come after the rules above; it is a catch-all for
+      // other paths under the repository.
       '(?:/.*)?' => 'DiffusionRepositoryDefaultController',
     );
 

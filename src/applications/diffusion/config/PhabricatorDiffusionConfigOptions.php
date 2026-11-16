@@ -98,37 +98,6 @@ final class PhabricatorDiffusionConfigOptions
             'Regular expression to link external bug tracker. See '.
             'http://tortoisesvn.net/docs/release/TortoiseSVN_en/'.
             'tsvn-dug-bugtracker.html for further explanation.')),
-      $this->newOption('diffusion.allow-http-auth', 'bool', false)
-        ->setBoolOptions(
-          array(
-            pht('Allow HTTP Basic Auth'),
-            pht('Disallow HTTP Basic Auth'),
-          ))
-        ->setSummary(pht('Enable HTTP Basic Auth for repositories.'))
-        ->setDescription(
-          pht(
-            "This server can serve repositories over HTTP, using HTTP basic ".
-            "auth.\n\n".
-            "Because HTTP basic auth is less secure than SSH auth, it is ".
-            "disabled by default. You can enable it here if you'd like to use ".
-            "it anyway. There's nothing fundamentally insecure about it as ".
-            "long as this server uses HTTPS, but it presents a much lower ".
-            "barrier to attackers than SSH does.\n\n".
-            "Consider using SSH for authenticated access to repositories ".
-            "instead of HTTP.")),
-      $this->newOption('diffusion.allow-git-lfs', 'bool', false)
-        ->setBoolOptions(
-          array(
-            pht('Allow Git LFS'),
-            pht('Disallow Git LFS'),
-          ))
-        ->setLocked(true)
-        ->setSummary(pht('Allow Git Large File Storage (LFS).'))
-        ->setDescription(
-          pht(
-            'This server supports Git LFS, a Git extension for storing large '.
-            'files alongside a repository. Activate this setting to allow '.
-            'the extension to store file data.')),
       $this->newOption('diffusion.ssh-user', 'string', null)
         ->setLocked(true)
         ->setSummary(pht('Login username for SSH connections to repositories.'))
@@ -137,22 +106,6 @@ final class PhabricatorDiffusionConfigOptions
             'When constructing clone URIs to show to users, Diffusion will '.
             'fill in this login username. If you have configured a VCS user '.
             'like `git`, you should provide it here.')),
-      $this->newOption('diffusion.ssh-port', 'int', null)
-        ->setLocked(true)
-        ->setSummary(pht('Port for SSH connections to repositories.'))
-        ->setDescription(
-          pht(
-            'When constructing clone URIs to show to users, Diffusion by '.
-            'default will not display a port assuming the default for your '.
-            'VCS. Explicitly declare when running on a non-standard port.')),
-      $this->newOption('diffusion.ssh-host', 'string', null)
-        ->setLocked(true)
-        ->setSummary(pht('Host for SSH connections to repositories.'))
-        ->setDescription(
-          pht(
-            'If you accept SSH traffic on a different host from web traffic '.
-            '(for example, if you use different SSH and web load balancers), '.
-            'you can set the SSH hostname here. This is an advanced option.')),
       $this->newOption('diffusion.fields', $custom_field_type, $default_fields)
         ->setCustomData(
           id(new PhabricatorRepositoryCommit())

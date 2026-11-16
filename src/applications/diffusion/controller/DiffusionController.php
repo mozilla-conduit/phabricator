@@ -15,21 +15,6 @@ abstract class DiffusionController extends PhabricatorController {
     return (bool)$this->diffusionRequest;
   }
 
-  public function willBeginExecution() {
-    $request = $this->getRequest();
-
-    // Check if this is a VCS request, e.g. from "git clone", "hg clone", or
-    // "svn checkout". If it is, we jump off into repository serving code to
-    // process the request.
-
-    $serve_controller = new DiffusionServeController();
-    if ($serve_controller->isVCSRequest($request)) {
-      return $this->delegateToController($serve_controller);
-    }
-
-    return parent::willBeginExecution();
-  }
-
   protected function loadDiffusionContextForEdit() {
     return $this->loadContext(
       array(

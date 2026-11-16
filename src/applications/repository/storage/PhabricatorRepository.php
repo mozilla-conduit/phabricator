@@ -1133,32 +1133,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       return $this->getRemoteURIObject();
     }
 
-    // TODO: This should be cleaned up to deal with all the new URI handling.
-    $another_copy = id(new PhabricatorRepositoryQuery())
-      ->setViewer(PhabricatorUser::getOmnipotentUser())
-      ->withPHIDs(array($this->getPHID()))
-      ->needURIs(true)
-      ->executeOne();
-
-    $clone_uris = $another_copy->getCloneURIs();
-    if (!$clone_uris) {
-      return null;
-    }
-
-    return head($clone_uris)->getEffectiveURI();
-  }
-
-  private function getRawHTTPCloneURIObject() {
-    $uri = PhabricatorEnv::getProductionURI($this->getURI());
-    $uri = new PhutilURI($uri);
-
-    if ($this->isGit()) {
-      $uri->setPath($uri->getPath().$this->getCloneName().'.git');
-    } else if ($this->isHg()) {
-      $uri->setPath($uri->getPath().$this->getCloneName().'/');
-    }
-
-    return $uri;
+    return null;
   }
 
 
@@ -1279,47 +1254,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     return $this->setDetail('hosting-enabled', $enabled);
   }
 
-  public function canServeProtocol(
-    $protocol,
-    $write,
-    $is_intracluster = false) {
-
-    // See T13192. If a repository is inactive, don't serve it to users. We
-    // still synchronize it within the cluster and serve it to other repository
-    // nodes.
-    if (!$is_intracluster) {
-      if (!$this->isTracked()) {
-        return false;
-      }
-    }
-
-    $clone_uris = $this->getCloneURIs();
-    foreach ($clone_uris as $uri) {
-      if ($uri->getBuiltinProtocol() !== $protocol) {
-        continue;
-      }
-
-      $io_type = $uri->getEffectiveIoType();
-      if ($io_type == PhabricatorRepositoryURI::IO_READWRITE) {
-        return true;
-      }
-
-      if (!$write) {
-        if ($io_type == PhabricatorRepositoryURI::IO_READ) {
-          return true;
-        }
-      }
-    }
-
-    if ($write) {
-      if ($this->isReadOnly()) {
-        return false;
-      }
-    }
-
-    return false;
-  }
-
   public function hasLocalWorkingCopy() {
     try {
       self::assertLocalExists();
@@ -1408,37 +1342,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
   public function canUsePathTree() {
     return true;
-  }
-
-  public function canUseGitLFS() {
-    if (!$this->isGit()) {
-      return false;
-    }
-
-    if (!$this->isHosted()) {
-      return false;
-    }
-
-    if (!PhabricatorEnv::getEnvConfig('diffusion.allow-git-lfs')) {
-      return false;
-    }
-
-    return true;
-  }
-
-  public function getGitLFSURI($path = null) {
-    if (!$this->canUseGitLFS()) {
-      throw new Exception(
-        pht(
-          'This repository does not support Git LFS, so Git LFS URIs can '.
-          'not be generated for it.'));
-    }
-
-    $uri = $this->getRawHTTPCloneURIObject();
-    $uri = (string)$uri;
-    $uri = $uri.'/'.$path;
-
-    return $uri;
   }
 
   public function canMirror() {
@@ -2255,42 +2158,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
 
   public function attachURIs(array $uris) {
-    $custom_map = array();
-    foreach ($uris as $key => $uri) {
-      $builtin_key = $uri->getRepositoryURIBuiltinKey();
-      if ($builtin_key !== null) {
-        $custom_map[$builtin_key] = $key;
-      }
-    }
-
-    $builtin_uris = $this->newBuiltinURIs();
-    $seen_builtins = array();
-    foreach ($builtin_uris as $builtin_uri) {
-      $builtin_key = $builtin_uri->getRepositoryURIBuiltinKey();
-      $seen_builtins[$builtin_key] = true;
-
-      // If this builtin URI is disabled, don't attach it and remove the
-      // persisted version if it exists.
-      if ($builtin_uri->getIsDisabled()) {
-        if (isset($custom_map[$builtin_key])) {
-          unset($uris[$custom_map[$builtin_key]]);
-        }
-        continue;
-      }
-
-      // If the URI exists, make sure it's marked as not being disabled.
-      if (isset($custom_map[$builtin_key])) {
-        $uris[$custom_map[$builtin_key]]->setIsDisabled(false);
-      }
-    }
-
-    // Remove any builtins which no longer exist.
-    foreach ($custom_map as $builtin_key => $key) {
-      if (empty($seen_builtins[$builtin_key])) {
-        unset($uris[$key]);
-      }
-    }
-
     $this->uris = $uris;
 
     return $this;
@@ -2300,92 +2167,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     return $this->assertAttached($this->uris);
   }
 
-  public function getCloneURIs() {
-    $uris = $this->getURIs();
-
-    $clone = array();
-    foreach ($uris as $uri) {
-      if (!$uri->isBuiltin()) {
-        continue;
-      }
-
-      if ($uri->getIsDisabled()) {
-        continue;
-      }
-
-      $io_type = $uri->getEffectiveIoType();
-      $is_clone =
-        ($io_type == PhabricatorRepositoryURI::IO_READ) ||
-        ($io_type == PhabricatorRepositoryURI::IO_READWRITE);
-
-      if (!$is_clone) {
-        continue;
-      }
-
-      $clone[] = $uri;
-    }
-
-    $clone = msort($clone, 'getURIScore');
-    $clone = array_reverse($clone);
-
-    return $clone;
-  }
-
-
-  public function newBuiltinURIs() {
-    $has_callsign = ($this->getCallsign() !== null);
-    $has_shortname = ($this->getRepositorySlug() !== null);
-
-    $identifier_map = array(
-      PhabricatorRepositoryURI::BUILTIN_IDENTIFIER_CALLSIGN => $has_callsign,
-      PhabricatorRepositoryURI::BUILTIN_IDENTIFIER_SHORTNAME => $has_shortname,
-      PhabricatorRepositoryURI::BUILTIN_IDENTIFIER_ID => true,
-    );
-
-    // If the view policy of the repository is public, support anonymous HTTP
-    // even if authenticated HTTP is not supported.
-    if ($this->getViewPolicy() === PhabricatorPolicies::POLICY_PUBLIC) {
-      $allow_http = true;
-    } else {
-      $allow_http = PhabricatorEnv::getEnvConfig('diffusion.allow-http-auth');
-    }
-
-    $base_uri = PhabricatorEnv::getURI('/');
-    $base_uri = new PhutilURI($base_uri);
-    $has_https = ($base_uri->getProtocol() == 'https');
-    $has_https = ($has_https && $allow_http);
-
-    $has_http = !PhabricatorEnv::getEnvConfig('security.require-https');
-    $has_http = ($has_http && $allow_http);
-
-
-    $phd_user = PhabricatorEnv::getEnvConfig('phd.user');
-    $has_ssh = phutil_nonempty_string($phd_user);
-
-    $protocol_map = array(
-      PhabricatorRepositoryURI::BUILTIN_PROTOCOL_SSH => $has_ssh,
-      PhabricatorRepositoryURI::BUILTIN_PROTOCOL_HTTPS => $has_https,
-      PhabricatorRepositoryURI::BUILTIN_PROTOCOL_HTTP => $has_http,
-    );
-
-    $uris = array();
-    foreach ($protocol_map as $protocol => $proto_supported) {
-      foreach ($identifier_map as $identifier => $id_supported) {
-        // This is just a dummy value because it can't be empty; we'll force
-        // it to a proper value when using it in the UI.
-        $builtin_uri = "{$protocol}://{$identifier}";
-        $uris[] = PhabricatorRepositoryURI::initializeNewURI()
-          ->setRepositoryPHID($this->getPHID())
-          ->attachRepository($this)
-          ->setBuiltinProtocol($protocol)
-          ->setBuiltinIdentifier($identifier)
-          ->setURI($builtin_uri)
-          ->setIsDisabled((int)(!$proto_supported || !$id_supported));
-      }
-    }
-
-    return $uris;
-  }
 
 
   public function getClusterRepositoryURIFromBinding(
@@ -2561,14 +2342,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       $this->delete();
 
       PhabricatorRepositoryURIIndex::updateRepositoryURIs($phid, array());
-
-      $lfs_refs = id(new PhabricatorRepositoryGitLFSRefQuery())
-        ->setViewer($engine->getViewer())
-        ->withRepositoryPHIDs(array($phid))
-        ->execute();
-      foreach ($lfs_refs as $ref) {
-        $engine->destroyObject($ref);
-      }
 
     $this->saveTransaction();
   }

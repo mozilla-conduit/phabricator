@@ -119,9 +119,7 @@ final class DiffusionRepositoryURIViewController
     $remove_uri = $repository->getPathURI("uri/credential/{$id}/remove/");
     $has_credential = (bool)$uri->getCredentialPHID();
 
-    if ($uri->isBuiltin()) {
-      $can_credential = false;
-    } else if (!$uri->newCommandEngine()->isCredentialSupported()) {
+    if (!$uri->newCommandEngine()->isCredentialSupported()) {
       $can_credential = false;
     } else {
       $can_credential = true;
@@ -160,7 +158,7 @@ final class DiffusionRepositoryURIViewController
       $disable_icon = 'fa-ban';
     }
 
-    $can_disable = ($can_edit && !$uri->isBuiltin());
+    $can_disable = $can_edit;
 
     $disable_uri = $repository->getPathURI("uri/disable/{$id}/");
 
@@ -187,14 +185,8 @@ final class DiffusionRepositoryURIViewController
     $command_engine = $uri->newCommandEngine();
     $is_optional = $command_engine->isCredentialOptional();
     $is_supported = $command_engine->isCredentialSupported();
-    $is_builtin = $uri->isBuiltin();
 
-    if ($is_builtin) {
-      $credential_icon = 'fa-circle-o';
-      $credential_color = 'grey';
-      $credential_label = pht('Builtin');
-      $credential_note = pht('Builtin URIs do not use credentials.');
-    } else if (!$is_supported) {
+    if (!$is_supported) {
       $credential_icon = 'fa-circle-o';
       $credential_color = 'grey';
       $credential_label = pht('Not Supported');

@@ -69,12 +69,6 @@ final class PhabricatorRepositoryEditor
       $object->setHosted(true);
       $object->save();
 
-      // Create this repository's builtin URIs.
-      $builtin_uris = $object->newBuiltinURIs();
-      foreach ($builtin_uris as $uri) {
-        $uri->save();
-      }
-
       id(new DiffusionRepositoryClusterEngine())
         ->setViewer($this->getActor())
         ->setRepository($object)

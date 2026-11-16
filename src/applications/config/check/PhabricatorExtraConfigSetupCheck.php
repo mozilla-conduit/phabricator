@@ -572,6 +572,10 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
       'log.ssh.path' => $hosting_reason,
       'log.ssh.format' => $hosting_reason,
       'log.ssh-error.path' => $hosting_reason,
+      'diffusion.allow-http-auth' => $hosting_reason,
+      'diffusion.allow-git-lfs' => $hosting_reason,
+      'diffusion.ssh-host' => $hosting_reason,
+      'diffusion.ssh-port' => $hosting_reason,
 
       'asana.workspace-id' => $asana_reason,
       'asana.project-ids' => $asana_reason,

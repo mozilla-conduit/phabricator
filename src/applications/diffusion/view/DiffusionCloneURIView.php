@@ -55,21 +55,8 @@ final class DiffusionCloneURIView extends AphrontView {
         'readonly' => 'true',
       ));
 
-    $uri = $this->getRepositoryURI();
-    switch ($uri->getEffectiveIOType()) {
-      case PhabricatorRepositoryURI::IO_READ:
-        $io_icon = 'fa-eye';
-        $io_tip = pht('Read-Only');
-        break;
-      case PhabricatorRepositoryURI::IO_READWRITE:
-        $io_icon = 'fa-download';
-        $io_tip = pht('Read / Write');
-        break;
-      default:
-        $io_icon = 'fa-cloud';
-        $io_tip = pht('External');
-        break;
-    }
+    $io_icon = 'fa-cloud';
+    $io_tip = pht('External');
 
     $io = id(new PHUIButtonView())
       ->setTag('a')
@@ -84,34 +71,9 @@ final class DiffusionCloneURIView extends AphrontView {
           'selectID' => $uri_id,
         ));
 
-    switch ($uri->getEffectiveIOType()) {
-      case PhabricatorRepositoryURI::IO_READ:
-      case PhabricatorRepositoryURI::IO_READWRITE:
-        switch ($uri->getBuiltinProtocol()) {
-          case PhabricatorRepositoryURI::BUILTIN_PROTOCOL_SSH:
-            $auth_uri = id(new PhabricatorSSHKeysSettingsPanel())
-              ->setViewer($viewer)
-              ->setUser($viewer)
-              ->getPanelURI();
-            $auth_tip = pht('Manage SSH Keys');
-            $auth_disabled = false;
-            break;
-          default:
-            $auth_uri = id(new DiffusionSetPasswordSettingsPanel())
-              ->setViewer($viewer)
-              ->setUser($viewer)
-              ->getPanelURI();
-            $auth_tip = pht('Manage Password');
-            $auth_disabled = false;
-            break;
-        }
-        break;
-      default:
-        $auth_disabled = true;
-        $auth_tip = pht('External');
-        $auth_uri = '#';
-        break;
-    }
+    $auth_disabled = true;
+    $auth_tip = pht('External');
+    $auth_uri = '#';
 
     $credentials = id(new PHUIButtonView())
       ->setTag('a')

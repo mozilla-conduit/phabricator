@@ -363,40 +363,6 @@ final class DiffusionRepositoryBasicsManagementPanel
         break;
     }
 
-    if ($repository->isHosted()) {
-      $proto_https = PhabricatorRepositoryURI::BUILTIN_PROTOCOL_HTTPS;
-      $proto_http = PhabricatorRepositoryURI::BUILTIN_PROTOCOL_HTTP;
-      $can_http = $repository->canServeProtocol($proto_http, false) ||
-                  $repository->canServeProtocol($proto_https, false);
-
-      if ($can_http) {
-        switch ($repository->getVersionControlSystem()) {
-          case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
-            $binaries[] = 'git-http-backend';
-            break;
-          case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
-            $binaries[] = 'hg';
-            break;
-        }
-      }
-
-
-      $proto_ssh = PhabricatorRepositoryURI::BUILTIN_PROTOCOL_SSH;
-      $can_ssh = $repository->canServeProtocol($proto_ssh, false);
-
-      if ($can_ssh) {
-        switch ($repository->getVersionControlSystem()) {
-          case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
-            $binaries[] = 'git-receive-pack';
-            $binaries[] = 'git-upload-pack';
-            break;
-          case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
-            $binaries[] = 'hg';
-            break;
-        }
-      }
-    }
-
     $binaries = array_unique($binaries);
     if (!$is_cluster) {
       // We're only checking for binaries if we aren't running with a cluster
