@@ -33,6 +33,18 @@ final class PhutilPygmentsSyntaxHighlighterTestCase extends PhutilTestCase {
       pht('PHP after the open tag should be lexed as PHP.'));
   }
 
+  public function testPythonMatchStatement() {
+    $source = "match command:\n    case [x]:\n        pass\n";
+    $html = $this->highlight('py', $source);
+
+    $this->assertTrue(
+      strpos($html, '<span class="k">match</span>') !== false,
+      pht('Python `match` should be highlighted as a keyword.'));
+    $this->assertTrue(
+      strpos($html, '<span class="k">case</span>') !== false,
+      pht('Python `case` should be highlighted as a keyword.'));
+  }
+
   private function highlight($language, $source) {
     if (!Filesystem::binaryExists('pygmentize')) {
       $this->assertSkipped(pht('Pygments is not installed.'));
