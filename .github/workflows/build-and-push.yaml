@@ -44,20 +44,17 @@ jobs:
           fi
           echo "is_head=$is_head" >> "$GITHUB_OUTPUT"
 
-  # GAR images: release-** tags go to prod, development goes to nonprod.
+  # GAR images: release-** tags and development commits both go to the prod
+  # GAR repo. deploy-actions tags release images with the tag name and branch
+  # images with the short SHA, so they can't overwrite each other.
   # Other branches (master) don't get a GAR image.
   # deploy-actions checks out github.ref (the branch), not github.sha, so a
   # stale run would build the newer tip. Skip it and let the newer run build.
-  #
-  # TODO: development -> nonprod is disabled until moz-fx-phabricator-nonprod
-  # has the artifact-writer service account and phabricator-nonprod GAR repo
-  # (Terraform). To re-enable, swap the active condition below for:
-  #   (github.ref_type == 'tag' || github.ref_name == 'development')
   build-and-push:
     needs: check-head
     if: >-
       needs.check-head.outputs.is_head == 'true' &&
-      github.ref_type == 'tag'
+      (github.ref_type == 'tag' || github.ref_name == 'development')
     secrets: inherit
     permissions:
       contents: read
@@ -66,8 +63,8 @@ jobs:
     uses: mozilla/deploy-actions/.github/workflows/build-and-push.yml@main
     with:
       image_name: phabricator
-      gar_name: phabricator-${{ github.ref_type == 'tag' && 'prod' || 'nonprod' }}
-      project_id: moz-fx-phabricator-${{ github.ref_type == 'tag' && 'prod' || 'nonprod' }}
+      gar_name: phabricator-prod
+      project_id: moz-fx-phabricator-prod
 
   push-dockerhub:
     needs: [check-head, build-and-push]
