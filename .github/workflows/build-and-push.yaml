@@ -48,11 +48,16 @@ jobs:
   # Other branches (master) don't get a GAR image.
   # deploy-actions checks out github.ref (the branch), not github.sha, so a
   # stale run would build the newer tip. Skip it and let the newer run build.
+  #
+  # TODO: development -> nonprod is disabled until moz-fx-phabricator-nonprod
+  # has the artifact-writer service account and phabricator-nonprod GAR repo
+  # (Terraform). To re-enable, swap the active condition below for:
+  #   (github.ref_type == 'tag' || github.ref_name == 'development')
   build-and-push:
     needs: check-head
     if: >-
       needs.check-head.outputs.is_head == 'true' &&
-      (github.ref_type == 'tag' || github.ref_name == 'development')
+      github.ref_type == 'tag'
     secrets: inherit
     permissions:
       contents: read
