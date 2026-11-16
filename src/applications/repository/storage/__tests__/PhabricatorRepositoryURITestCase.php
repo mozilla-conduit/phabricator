@@ -56,20 +56,10 @@ final class PhabricatorRepositoryURITestCase
 
     $user = $this->generateNewTestUser();
 
-    $http_secret = id(new PassphraseSecret())->setSecretData('quack')->save();
-
-    $http_credential = PassphraseCredential::initializeNewCredential($user)
-      ->setCredentialType(PassphrasePasswordCredentialType::CREDENTIAL_TYPE)
-      ->setProvidesType(PassphrasePasswordCredentialType::PROVIDES_TYPE)
-      ->setUsername('duck')
-      ->setSecretID($http_secret->getID())
-      ->save();
-
     $repo = PhabricatorRepository::initializeNewRepository($user)
       ->setVersionControlSystem($git)
       ->setName(pht('Test Repo'))
       ->setCallsign('TESTREPO')
-      ->setCredentialPHID($http_credential->getPHID())
       ->save();
 
     // Test HTTP URIs.
@@ -79,14 +69,14 @@ final class PhabricatorRepositoryURITestCase
 
     $this->assertEqual('http://example.com/', $repo->getRemoteURI());
     $this->assertEqual('http://example.com/', $repo->getPublicCloneURI());
-    $this->assertEqual('http://duck:quack@example.com/',
+    $this->assertEqual('http://example.com/',
       $repo->getRemoteURIEnvelope()->openEnvelope());
 
     $repo->setVersionControlSystem($hg);
 
     $this->assertEqual('http://example.com/', $repo->getRemoteURI());
     $this->assertEqual('http://example.com/', $repo->getPublicCloneURI());
-    $this->assertEqual('http://duck:quack@example.com/',
+    $this->assertEqual('http://example.com/',
       $repo->getRemoteURIEnvelope()->openEnvelope());
 
     // Test SSH URIs.

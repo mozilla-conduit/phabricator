@@ -182,7 +182,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.nuance' => array(
         'dead' => true,
       ),
-      'db.passphrase' => array(),
+      'db.passphrase' => array(
+        'dead' => true,
+      ),
       'db.dashboard' => array(),
       'db.system' => array(),
       'db.fund' => array(

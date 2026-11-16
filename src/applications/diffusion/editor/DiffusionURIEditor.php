@@ -21,7 +21,6 @@ final class DiffusionURIEditor
     $types[] = PhabricatorRepositoryURITransaction::TYPE_URI;
     $types[] = PhabricatorRepositoryURITransaction::TYPE_IO;
     $types[] = PhabricatorRepositoryURITransaction::TYPE_DISPLAY;
-    $types[] = PhabricatorRepositoryURITransaction::TYPE_CREDENTIAL;
     $types[] = PhabricatorRepositoryURITransaction::TYPE_DISABLE;
 
     return $types;
@@ -40,8 +39,6 @@ final class DiffusionURIEditor
         return $object->getDisplayType();
       case PhabricatorRepositoryURITransaction::TYPE_REPOSITORY:
         return $object->getRepositoryPHID();
-      case PhabricatorRepositoryURITransaction::TYPE_CREDENTIAL:
-        return $object->getCredentialPHID();
       case PhabricatorRepositoryURITransaction::TYPE_DISABLE:
         return (int)$object->getIsDisabled();
     }
@@ -58,7 +55,6 @@ final class DiffusionURIEditor
       case PhabricatorRepositoryURITransaction::TYPE_IO:
       case PhabricatorRepositoryURITransaction::TYPE_DISPLAY:
       case PhabricatorRepositoryURITransaction::TYPE_REPOSITORY:
-      case PhabricatorRepositoryURITransaction::TYPE_CREDENTIAL:
         return $xaction->getNewValue();
       case PhabricatorRepositoryURITransaction::TYPE_DISABLE:
         return (int)$xaction->getNewValue();
@@ -73,11 +69,7 @@ final class DiffusionURIEditor
 
     switch ($xaction->getTransactionType()) {
       case PhabricatorRepositoryURITransaction::TYPE_URI:
-        if (!$this->getIsNewObject()) {
-          $old_uri = $object->getEffectiveURI();
-        } else {
-          $old_uri = null;
-
+        if ($this->getIsNewObject()) {
           // When creating a URI via the API, we may not have processed the
           // repository transaction yet. Attach the repository here to make
           // sure we have it for the calls below.
@@ -87,35 +79,6 @@ final class DiffusionURIEditor
         }
 
         $object->setURI($xaction->getNewValue());
-
-        // If we've changed the domain or protocol of the URI, remove the
-        // current credential. This improves behavior in several cases:
-
-        // If a user switches between protocols with different credential
-        // types, like HTTP and SSH, the old credential won't be valid anyway.
-        // It's cleaner to remove it than leave a bad credential in place.
-
-        // If a user switches hosts, the old credential is probably not
-        // correct (and potentially confusing/misleading). Removing it forces
-        // users to double check that they have the correct credentials.
-
-        // If an attacker can't see a symmetric credential like a username and
-        // password, they could still potentially capture it by changing the
-        // host for a URI that uses it to `evil.com`, a server they control,
-        // then observing the requests. Removing the credential prevents this
-        // kind of escalation.
-
-        // Since port and path changes are less likely to fall among these
-        // cases, they don't trigger a credential wipe.
-
-        $new_uri = $object->getEffectiveURI();
-        if ($old_uri) {
-          $new_proto = ($old_uri->getProtocol() != $new_uri->getProtocol());
-          $new_domain = ($old_uri->getDomain() != $new_uri->getDomain());
-          if ($new_proto || $new_domain) {
-            $object->setCredentialPHID(null);
-          }
-        }
         break;
       case PhabricatorRepositoryURITransaction::TYPE_IO:
         $object->setIOType($xaction->getNewValue());
@@ -126,9 +89,6 @@ final class DiffusionURIEditor
       case PhabricatorRepositoryURITransaction::TYPE_REPOSITORY:
         $object->setRepositoryPHID($xaction->getNewValue());
         $object->attachRepository($this->repository);
-        break;
-      case PhabricatorRepositoryURITransaction::TYPE_CREDENTIAL:
-        $object->setCredentialPHID($xaction->getNewValue());
         break;
       case PhabricatorRepositoryURITransaction::TYPE_DISABLE:
         $object->setIsDisabled($xaction->getNewValue());
@@ -145,7 +105,6 @@ final class DiffusionURIEditor
       case PhabricatorRepositoryURITransaction::TYPE_IO:
       case PhabricatorRepositoryURITransaction::TYPE_DISPLAY:
       case PhabricatorRepositoryURITransaction::TYPE_REPOSITORY:
-      case PhabricatorRepositoryURITransaction::TYPE_CREDENTIAL:
       case PhabricatorRepositoryURITransaction::TYPE_DISABLE:
         return;
     }
@@ -225,37 +184,6 @@ final class DiffusionURIEditor
 
           $this->repository = $repository;
           $this->repositoryPHID = $repository_phid;
-        }
-        break;
-      case PhabricatorRepositoryURITransaction::TYPE_CREDENTIAL:
-        $viewer = $this->getActor();
-        foreach ($xactions as $xaction) {
-          $credential_phid = $xaction->getNewValue();
-
-          if ($credential_phid == $object->getCredentialPHID()) {
-            continue;
-          }
-
-          // Anyone who can edit a URI can remove the credential.
-          if ($credential_phid === null) {
-            continue;
-          }
-
-          $credential = id(new PassphraseCredentialQuery())
-            ->setViewer($viewer)
-            ->withPHIDs(array($credential_phid))
-            ->executeOne();
-          if (!$credential) {
-            $errors[] = new PhabricatorApplicationTransactionValidationError(
-              $type,
-              pht('Invalid'),
-              pht(
-                'You can only associate a credential ("%s") with a repository '.
-                'URI if it exists and you have permission to see it.',
-                $credential_phid),
-              $xaction);
-            continue;
-          }
         }
         break;
       case PhabricatorRepositoryURITransaction::TYPE_URI:
@@ -406,12 +334,10 @@ final class DiffusionURIEditor
 
     if ($observe_uri) {
       $repository
-        ->setDetail('remote-uri', (string)$observe_uri->getEffectiveURI())
-        ->setCredentialPHID($observe_uri->getCredentialPHID());
+        ->setDetail('remote-uri', (string)$observe_uri->getEffectiveURI());
     } else {
       $repository
-        ->setDetail('remote-uri', null)
-        ->setCredentialPHID(null);
+        ->setDetail('remote-uri', null);
     }
 
     $repository->save();

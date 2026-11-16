@@ -156,18 +156,6 @@ final class DiffusionURIEditEngine
         ->setConduitTypeDescription(pht('New display behavior.'))
         ->setValue($object->getDisplayType())
         ->setOptions($object->getAvailableDisplayTypeOptions()),
-      id(new PhabricatorHandlesEditField())
-        ->setKey('credential')
-        ->setAliases(array('credentialPHID'))
-        ->setLabel(pht('Credential'))
-        ->setIsFormField(false)
-        ->setTransactionType(
-          PhabricatorRepositoryURITransaction::TYPE_CREDENTIAL)
-        ->setDescription(
-          pht('The credential to use when interacting with this URI.'))
-        ->setConduitDescription(pht('Change the credential for this URI.'))
-        ->setConduitTypeDescription(pht('New credential PHID, or null.'))
-        ->setSingleValue($object->getCredentialPHID()),
       id(new PhabricatorBoolEditField())
         ->setKey('disable')
         ->setLabel(pht('Disabled'))

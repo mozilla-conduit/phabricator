@@ -477,7 +477,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   private function newRemoteCommandEngine(array $argv) {
     return DiffusionCommandEngine::newCommandEngine($this)
       ->setArgv($argv)
-      ->setCredentialPHID($this->getCredentialPHID())
       ->setURI($this->getRemoteURIObject());
   }
 
@@ -1055,27 +1054,13 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
 
   /**
-   * Get the remote URI for this repository, including credentials if they're
-   * used by this repository.
+   * Get the remote URI for this repository.
    *
-   * @return PhutilOpaqueEnvelope URI, possibly including credentials.
+   * @return PhutilOpaqueEnvelope URI.
    * @task uri
    */
   public function getRemoteURIEnvelope() {
     $uri = $this->getRemoteURIObject();
-
-    $remote_protocol = $this->getRemoteProtocol();
-    if ($remote_protocol == 'http' || $remote_protocol == 'https') {
-      $credential_phid = $this->getCredentialPHID();
-      if ($credential_phid) {
-        $key = PassphrasePasswordKey::loadFromPHID(
-          $credential_phid,
-          PhabricatorUser::getOmnipotentUser());
-
-        $uri->setUser($key->getUsernameEnvelope()->openEnvelope());
-        $uri->setPass($key->getPasswordEnvelope()->openEnvelope());
-      }
-    }
 
     return new PhutilOpaqueEnvelope((string)$uri);
   }

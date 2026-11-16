@@ -142,20 +142,6 @@ final class PhabricatorRepositoryURI
   public function getURIEnvelope() {
     $uri = $this->getEffectiveURI();
 
-    $command_engine = $this->newCommandEngine();
-
-    $is_http = $command_engine->isAnyHTTPProtocol();
-    $credential_phid = $this->getCredentialPHID();
-
-    if ($is_http && $credential_phid) {
-      $key = PassphrasePasswordKey::loadFromPHID(
-        $credential_phid,
-        PhabricatorUser::getOmnipotentUser());
-
-      $uri->setUser($key->getUsernameEnvelope()->openEnvelope());
-      $uri->setPass($key->getPasswordEnvelope()->openEnvelope());
-    }
-
     return new PhutilOpaqueEnvelope((string)$uri);
   }
 
@@ -308,7 +294,6 @@ final class PhabricatorRepositoryURI
     $repository = $this->getRepository();
 
     return DiffusionCommandEngine::newCommandEngine($repository)
-      ->setCredentialPHID($this->getCredentialPHID())
       ->setURI($this->getEffectiveURI());
   }
 
