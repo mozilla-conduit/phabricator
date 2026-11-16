@@ -64,11 +64,6 @@ final class PhabricatorRepositoryEditor
     }
 
     if ($this->getIsNewObject()) {
-      // The default state of repositories is to be hosted, if they are
-      // enabled without configuring any "Observe" URIs.
-      $object->setHosted(true);
-      $object->save();
-
       id(new DiffusionRepositoryClusterEngine())
         ->setViewer($this->getActor())
         ->setRepository($object)

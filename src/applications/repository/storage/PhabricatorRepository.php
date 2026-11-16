@@ -77,12 +77,12 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
     $view_policy = $app->getPolicy(DiffusionDefaultViewCapability::CAPABILITY);
     $edit_policy = $app->getPolicy(DiffusionDefaultEditCapability::CAPABILITY);
-    $push_policy = $app->getPolicy(DiffusionDefaultPushCapability::CAPABILITY);
-
+    // Repositories are no longer hosted, so nothing reads the push policy.
+    // The column remains, so fill it with the most restrictive policy.
     $repository = id(new PhabricatorRepository())
       ->setViewPolicy($view_policy)
       ->setEditPolicy($edit_policy)
-      ->setPushPolicy($push_policy)
+      ->setPushPolicy(PhabricatorPolicies::POLICY_NOONE)
       ->setSpacePHID($actor->getDefaultSpacePHID());
 
     // Put the repository in "Importing" mode until we finish
@@ -175,7 +175,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       'remoteURI'   => (string)$this->getRemoteURI(),
       'description' => $this->getDetail('description'),
       'isActive'    => $this->isTracked(),
-      'isHosted'    => $this->isHosted(),
+      'isHosted'    => false,
       'isImporting' => $this->isImporting(),
       'encoding'    => $this->getDefaultTextEncoding(),
       'staging' => array(
@@ -1129,63 +1129,12 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
    * Get the "best" clone/checkout URI for this repository, on any protocol.
    */
   public function getCloneURIObject() {
-    if (!$this->isHosted()) {
-      return $this->getRemoteURIObject();
-    }
-
-    return null;
-  }
-
-
-  /**
-   * Determine if we should connect to the remote using SSH flags and
-   * credentials.
-   *
-   * @return bool True to use the SSH protocol.
-   * @task uri
-   */
-  private function shouldUseSSH() {
-    if ($this->isHosted()) {
-      return false;
-    }
-
-    $protocol = $this->getRemoteProtocol();
-    if ($this->isSSHProtocol($protocol)) {
-      return true;
-    }
-
-    return false;
-  }
-
-
-  /**
-   * Determine if we should connect to the remote using HTTP flags and
-   * credentials.
-   *
-   * @return bool True to use the HTTP protocol.
-   * @task uri
-   */
-  private function shouldUseHTTP() {
-    if ($this->isHosted()) {
-      return false;
-    }
-
-    $protocol = $this->getRemoteProtocol();
-    return ($protocol == 'http' || $protocol == 'https');
+    return $this->getRemoteURIObject();
   }
 
 
 
-  /**
-   * Determine if a protocol is SSH or SSH-like.
-   *
-   * @param string A protocol string, like "http" or "ssh".
-   * @return bool True if the protocol is SSH-like.
-   * @task uri
-   */
-  private function isSSHProtocol($protocol) {
-    return ($protocol == 'ssh');
-  }
+
 
   public function delete() {
     $this->openTransaction();
@@ -1246,14 +1195,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     return ($vcs == PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL);
   }
 
-  public function isHosted() {
-    return (bool)$this->getDetail('hosting-enabled', false);
-  }
-
-  public function setHosted($enabled) {
-    return $this->setDetail('hosting-enabled', $enabled);
-  }
-
   public function hasLocalWorkingCopy() {
     try {
       self::assertLocalExists();
@@ -1304,11 +1245,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   }
 
   public function canDestroyWorkingCopy() {
-    if ($this->isHosted()) {
-      // Never destroy hosted working copies.
-      return false;
-    }
-
     $default_path = PhabricatorEnv::getEnvConfig(
       'repository.default-local-path');
     return Filesystem::isDescendant($this->getLocalPath(), $default_path);
@@ -1324,32 +1260,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     }
 
     return false;
-  }
-
-  public function canAllowDangerousChanges() {
-    if (!$this->isHosted()) {
-      return false;
-    }
-
-    // In Git and Mercurial, ref deletions and rewrites are dangerous.
-
-    return true;
-  }
-
-  public function shouldAllowDangerousChanges() {
-    return (bool)$this->getDetail('allow-dangerous-changes');
-  }
-
-  public function canAllowEnormousChanges() {
-    if (!$this->isHosted()) {
-      return false;
-    }
-
-    return true;
-  }
-
-  public function shouldAllowEnormousChanges() {
-    return (bool)$this->getDetail('allow-enormous-changes');
   }
 
   public function writeStatusMessage(
@@ -1576,22 +1486,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     }
 
     return $this->getDefaultCopyTimeLimit();
-  }
-
-  public function getFilesizeLimit() {
-    return $this->getDetail('limit.filesize');
-  }
-
-  public function setFilesizeLimit($limit) {
-    return $this->setDetail('limit.filesize', $limit);
-  }
-
-  public function getTouchLimit() {
-    return $this->getDetail('limit.touch');
-  }
-
-  public function setTouchLimit($limit) {
-    return $this->setDetail('limit.touch', $limit);
   }
 
   /**
@@ -2249,7 +2143,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     return array(
       PhabricatorPolicyCapability::CAN_VIEW,
       PhabricatorPolicyCapability::CAN_EDIT,
-      DiffusionPushCapability::CAPABILITY,
     );
   }
 
@@ -2259,8 +2152,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
         return $this->getViewPolicy();
       case PhabricatorPolicyCapability::CAN_EDIT:
         return $this->getEditPolicy();
-      case DiffusionPushCapability::CAPABILITY:
-        return $this->getPushPolicy();
     }
   }
 

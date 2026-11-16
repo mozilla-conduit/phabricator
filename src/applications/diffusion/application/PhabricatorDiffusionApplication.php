@@ -82,8 +82,6 @@ final class PhabricatorDiffusionApplication extends PhabricatorApplication {
         ),
         'edit/' => array(
           'activate/' => 'DiffusionRepositoryEditActivateController',
-          'dangerous/' => 'DiffusionRepositoryEditDangerousController',
-          'enormous/' => 'DiffusionRepositoryEditEnormousController',
           'delete/' => 'DiffusionRepositoryEditDeleteController',
           'update/' => 'DiffusionRepositoryEditUpdateController',
           'publish/' => 'DiffusionRepositoryEditPublishingController',
@@ -166,9 +164,6 @@ final class PhabricatorDiffusionApplication extends PhabricatorApplication {
         'default' => PhabricatorPolicies::POLICY_ADMIN,
         'template' => PhabricatorRepositoryRepositoryPHIDType::TYPECONST,
         'capability' => PhabricatorPolicyCapability::CAN_EDIT,
-      ),
-      DiffusionDefaultPushCapability::CAPABILITY => array(
-        'template' => PhabricatorRepositoryRepositoryPHIDType::TYPECONST,
       ),
       DiffusionCreateRepositoriesCapability::CAPABILITY => array(
         'default' => PhabricatorPolicies::POLICY_ADMIN,

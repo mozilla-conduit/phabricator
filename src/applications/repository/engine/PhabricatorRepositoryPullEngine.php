@@ -106,17 +106,15 @@ final class PhabricatorRepositoryPullEngine
         ->setRepository($repository)
         ->synchronizeWorkingCopyBeforeRead();
 
-      if (!$repository->isHosted()) {
-        $this->logPull(
-          pht(
-            'Updating the working copy for repository "%s".',
-            $repository->getDisplayName()));
+      $this->logPull(
+        pht(
+          'Updating the working copy for repository "%s".',
+          $repository->getDisplayName()));
 
-        if ($is_git) {
-          $this->executeGitUpdate();
-        } else if ($is_hg) {
-          $this->executeMercurialUpdate();
-        }
+      if ($is_git) {
+        $this->executeGitUpdate();
+      } else if ($is_hg) {
+        $this->executeMercurialUpdate();
       }
 
       if ($is_git) {
@@ -571,49 +569,43 @@ final class PhabricatorRepositoryPullEngine
 
     $path = rtrim($repository->getLocalPath(), '/');
 
-    if ($repository->isHosted()) {
+    $remote = $repository->getRemoteURIEnvelope();
+
+    // NOTE: Mercurial prior to 3.2.4 has an severe command injection
+    // vulnerability. See: <http://bit.ly/19B58E9>
+
+    // On vulnerable versions of Mercurial, we refuse to clone remotes which
+    // contain characters which may be interpreted by the shell.
+    $hg_binary = PhutilBinaryAnalyzer::getForBinary('hg');
+    $is_vulnerable = $hg_binary->isMercurialVulnerableToInjection();
+    if ($is_vulnerable) {
+      $cleartext = $remote->openEnvelope();
+      // The use of "%R" here is an attempt to limit collateral damage
+      // for normal URIs because it isn't clear how long this vulnerability
+      // has been around for.
+
+      $escaped = csprintf('%R', $cleartext);
+      if ((string)$escaped !== (string)$cleartext) {
+        throw new Exception(
+          pht(
+            'You have an old version of Mercurial (%s) which has a severe '.
+            'command injection security vulnerability. The remote URI for '.
+            'this repository (%s) is potentially unsafe. Upgrade Mercurial '.
+            'to at least 3.2.4 to clone it.',
+            $hg_binary->getBinaryVersion(),
+            $repository->getMonogram()));
+      }
+    }
+
+    try {
       $repository->execxRemoteCommand(
-        'init -- %s',
+        'clone --noupdate -- %P %s',
+        $remote,
         $path);
-    } else {
-      $remote = $repository->getRemoteURIEnvelope();
-
-      // NOTE: Mercurial prior to 3.2.4 has an severe command injection
-      // vulnerability. See: <http://bit.ly/19B58E9>
-
-      // On vulnerable versions of Mercurial, we refuse to clone remotes which
-      // contain characters which may be interpreted by the shell.
-      $hg_binary = PhutilBinaryAnalyzer::getForBinary('hg');
-      $is_vulnerable = $hg_binary->isMercurialVulnerableToInjection();
-      if ($is_vulnerable) {
-        $cleartext = $remote->openEnvelope();
-        // The use of "%R" here is an attempt to limit collateral damage
-        // for normal URIs because it isn't clear how long this vulnerability
-        // has been around for.
-
-        $escaped = csprintf('%R', $cleartext);
-        if ((string)$escaped !== (string)$cleartext) {
-          throw new Exception(
-            pht(
-              'You have an old version of Mercurial (%s) which has a severe '.
-              'command injection security vulnerability. The remote URI for '.
-              'this repository (%s) is potentially unsafe. Upgrade Mercurial '.
-              'to at least 3.2.4 to clone it.',
-              $hg_binary->getBinaryVersion(),
-              $repository->getMonogram()));
-        }
-      }
-
-      try {
-        $repository->execxRemoteCommand(
-          'clone --noupdate -- %P %s',
-          $remote,
-          $path);
-      } catch (Exception $ex) {
-        $message = $ex->getMessage();
-        $message = $this->censorMercurialErrorMessage($message);
-        throw new Exception($message);
-      }
+    } catch (Exception $ex) {
+      $message = $ex->getMessage();
+      $message = $this->censorMercurialErrorMessage($message);
+      throw new Exception($message);
     }
   }
 

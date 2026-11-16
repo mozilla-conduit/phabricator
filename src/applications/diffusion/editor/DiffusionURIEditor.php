@@ -404,16 +404,12 @@ final class DiffusionURIEditor
       break;
     }
 
-    $was_hosted = $repository->isHosted();
-
     if ($observe_uri) {
       $repository
-        ->setHosted(false)
         ->setDetail('remote-uri', (string)$observe_uri->getEffectiveURI())
         ->setCredentialPHID($observe_uri->getCredentialPHID());
     } else {
       $repository
-        ->setHosted(true)
         ->setDetail('remote-uri', null)
         ->setCredentialPHID(null);
     }
@@ -422,17 +418,6 @@ final class DiffusionURIEditor
 
     // Explicitly update the URI index.
     $repository->updateURIIndex();
-
-    $is_hosted = $repository->isHosted();
-
-    // If we've swapped the repository from hosted to observed or vice versa,
-    // reset all the cluster version clocks.
-    if ($was_hosted != $is_hosted) {
-      $cluster_engine = id(new DiffusionRepositoryClusterEngine())
-        ->setViewer($this->getActor())
-        ->setRepository($repository)
-        ->synchronizeWorkingCopyAfterHostingChange();
-    }
 
     $repository->writeStatusMessage(
       PhabricatorRepositoryStatusMessage::TYPE_NEEDS_UPDATE,

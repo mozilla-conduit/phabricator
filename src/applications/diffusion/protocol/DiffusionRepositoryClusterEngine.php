@@ -88,52 +88,6 @@ final class DiffusionRepositoryClusterEngine extends Phobject {
   }
 
 
-  /**
-   * @task sync
-   */
-  public function synchronizeWorkingCopyAfterHostingChange() {
-    if (!$this->shouldEnableSynchronization(false)) {
-      return;
-    }
-
-    $repository = $this->getRepository();
-    $repository_phid = $repository->getPHID();
-
-    $versions = PhabricatorRepositoryWorkingCopyVersion::loadVersions(
-      $repository_phid);
-    $versions = mpull($versions, null, 'getDevicePHID');
-
-    // After converting a hosted repository to observed, or vice versa, we
-    // need to reset version numbers because the clocks for observed and hosted
-    // repositories run on different units.
-
-    // We identify all the cluster leaders and reset their version to 0.
-    // We identify all the cluster followers and demote them.
-
-    // This allows the cluster to start over again at version 0 but keep the
-    // same leaders.
-
-    if ($versions) {
-      $max_version = (int)max(mpull($versions, 'getRepositoryVersion'));
-      foreach ($versions as $version) {
-        $device_phid = $version->getDevicePHID();
-
-        if ($version->getRepositoryVersion() == $max_version) {
-          PhabricatorRepositoryWorkingCopyVersion::updateVersion(
-            $repository_phid,
-            $device_phid,
-            0);
-        } else {
-          PhabricatorRepositoryWorkingCopyVersion::demoteDevice(
-            $repository_phid,
-            $device_phid);
-        }
-      }
-    }
-
-    return $this;
-  }
-
 
   /**
    * @task sync
@@ -204,22 +158,7 @@ final class DiffusionRepositoryClusterEngine extends Phobject {
 
       $max_version = (int)max(mpull($versions, 'getRepositoryVersion'));
       if (($this_version === null) || ($max_version > $this_version)) {
-        if ($repository->isHosted()) {
-          $fetchable = array();
-          foreach ($versions as $version) {
-            if ($version->getRepositoryVersion() == $max_version) {
-              $fetchable[] = $version->getDevicePHID();
-            }
-          }
-
-
-          $this->synchronizeWorkingCopyFromDevices(
-            $fetchable,
-            $this_version,
-            $max_version);
-        } else {
-          $this->synchronizeWorkingCopyFromRemote();
-        }
+        $this->synchronizeWorkingCopyFromRemote();
 
         PhabricatorRepositoryWorkingCopyVersion::updateVersion(
           $repository_phid,
@@ -304,9 +243,6 @@ final class DiffusionRepositoryClusterEngine extends Phobject {
 
     $repository = $this->getRepository();
     $repository_phid = $repository->getPHID();
-    if ($repository->isHosted()) {
-      return;
-    }
 
     $device = AlmanacKeys::getLiveDevice();
     $device_phid = $device->getPHID();
@@ -410,164 +346,6 @@ final class DiffusionRepositoryClusterEngine extends Phobject {
   }
 
 
-  /**
-   * @task internal
-   */
-  private function synchronizeWorkingCopyFromDevices(
-    array $device_phids,
-    $local_version,
-    $remote_version) {
-
-    $repository = $this->getRepository();
-
-    $service = $repository->loadAlmanacService();
-    if (!$service) {
-      throw new Exception(pht('Failed to load repository cluster service.'));
-    }
-
-    $device_map = array_fuse($device_phids);
-    $bindings = $service->getActiveBindings();
-
-    $fetchable = array();
-    foreach ($bindings as $binding) {
-      // We can't fetch from nodes which don't have the newest version.
-      $device_phid = $binding->getDevicePHID();
-      if (empty($device_map[$device_phid])) {
-        continue;
-      }
-
-      // TODO: For now, only fetch over SSH. We could support fetching over
-      // HTTP eventually.
-      if ($binding->getAlmanacPropertyValue('protocol') != 'ssh') {
-        continue;
-      }
-
-      $fetchable[] = $binding;
-    }
-
-    if (!$fetchable) {
-      throw new Exception(
-        pht(
-          'Leader lost: no up-to-date nodes in repository cluster are '.
-          'fetchable.'));
-    }
-
-    // If we can synchronize from multiple sources, choose one at random.
-    shuffle($fetchable);
-
-    $caught = null;
-    foreach ($fetchable as $binding) {
-      try {
-        $this->synchronizeWorkingCopyFromBinding(
-          $binding,
-          $local_version,
-          $remote_version);
-        $caught = null;
-        break;
-      } catch (Exception $ex) {
-        $caught = $ex;
-      }
-    }
-
-    if ($caught) {
-      throw $caught;
-    }
-  }
-
-
-  /**
-   * @task internal
-   */
-  private function synchronizeWorkingCopyFromBinding(
-    AlmanacBinding $binding,
-    $local_version,
-    $remote_version) {
-
-    $repository = $this->getRepository();
-    $device = AlmanacKeys::getLiveDevice();
-
-    $this->logLine(
-      pht(
-        'Synchronizing this device ("%s") from cluster leader ("%s").',
-        $device->getName(),
-        $binding->getDevice()->getName()));
-
-    $fetch_uri = $repository->getClusterRepositoryURIFromBinding($binding);
-    $local_path = $repository->getLocalPath();
-
-    if ($repository->isGit()) {
-      $this->requireWorkingCopy();
-
-      $argv = array(
-        'fetch --prune -- %s %s',
-        $fetch_uri,
-        '+refs/*:refs/*',
-      );
-    } else {
-      throw new Exception(pht('Binding sync only supported for git!'));
-    }
-
-    $future = DiffusionCommandEngine::newCommandEngine($repository)
-      ->setArgv($argv)
-      ->setConnectAsDevice(true)
-      ->setSudoAsDaemon(true)
-      ->setURI($fetch_uri)
-      ->newFuture();
-
-    $future->setCWD($local_path);
-
-    $log = PhabricatorRepositorySyncEvent::initializeNewEvent()
-      ->setRepositoryPHID($repository->getPHID())
-      ->setEpoch(PhabricatorTime::getNow())
-      ->setDevicePHID($device->getPHID())
-      ->setFromDevicePHID($binding->getDevice()->getPHID())
-      ->setDeviceVersion($local_version)
-      ->setFromDeviceVersion($remote_version);
-
-    $sync_start = microtime(true);
-
-    try {
-      $future->resolvex();
-    } catch (Exception $ex) {
-      $log->setSyncWait(phutil_microseconds_since($sync_start));
-
-      if ($ex instanceof CommandException) {
-        if ($future->getWasKilledByTimeout()) {
-          $result_type = PhabricatorRepositorySyncEvent::RESULT_TIMEOUT;
-        } else {
-          $result_type = PhabricatorRepositorySyncEvent::RESULT_ERROR;
-        }
-
-       $log
-         ->setResultCode($ex->getError())
-         ->setResultType($result_type)
-         ->setProperty('stdout', $ex->getStdout())
-         ->setProperty('stderr', $ex->getStderr());
-      } else {
-        $log
-          ->setResultCode(1)
-          ->setResultType(PhabricatorRepositorySyncEvent::RESULT_EXCEPTION)
-          ->setProperty('message', $ex->getMessage());
-      }
-
-      $log->save();
-
-      $this->logLine(
-        pht(
-          'Synchronization of "%s" from leader "%s" failed: %s',
-          $device->getName(),
-          $binding->getDevice()->getName(),
-          $ex->getMessage()));
-
-      throw $ex;
-    }
-
-    $log
-      ->setSyncWait(phutil_microseconds_since($sync_start))
-      ->setResultCode(0)
-      ->setResultType(PhabricatorRepositorySyncEvent::RESULT_SYNC)
-      ->save();
-  }
 
 
   /**

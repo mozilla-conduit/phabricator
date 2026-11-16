@@ -43,8 +43,6 @@ final class DiffusionRepositoryBasicsManagementPanel
     $activate_uri = $repository->getPathURI('edit/activate/');
     $delete_uri = $repository->getPathURI('edit/delete/');
     $encoding_uri = $this->getEditPageURI('encoding');
-    $dangerous_uri = $repository->getPathURI('edit/dangerous/');
-    $enormous_uri = $repository->getPathURI('edit/enormous/');
     $update_uri = $repository->getPathURI('edit/update/');
     $publish_uri = $repository->getPathURI('edit/publish/');
 
@@ -64,28 +62,6 @@ final class DiffusionRepositoryBasicsManagementPanel
       $publish_label = pht('Enable Publishing');
     }
 
-    $should_dangerous = $repository->shouldAllowDangerousChanges();
-    if ($should_dangerous) {
-      $dangerous_icon = 'fa-shield';
-      $dangerous_name = pht('Prevent Dangerous Changes');
-      $can_dangerous = $can_edit;
-    } else {
-      $dangerous_icon = 'fa-exclamation-triangle';
-      $dangerous_name = pht('Allow Dangerous Changes');
-      $can_dangerous = ($can_edit && $repository->canAllowDangerousChanges());
-    }
-
-    $should_enormous = $repository->shouldAllowEnormousChanges();
-    if ($should_enormous) {
-      $enormous_icon = 'fa-shield';
-      $enormous_name = pht('Prevent Enormous Changes');
-      $can_enormous = $can_edit;
-    } else {
-      $enormous_icon = 'fa-exclamation-triangle';
-      $enormous_name = pht('Allow Enormous Changes');
-      $can_enormous = ($can_edit && $repository->canAllowEnormousChanges());
-    }
-
     $action_list->addAction(
       id(new PhabricatorActionView())
         ->setName(pht('Edit Basic Information'))
@@ -101,22 +77,6 @@ final class DiffusionRepositoryBasicsManagementPanel
         ->setHref($encoding_uri)
         ->setDisabled(!$can_edit)
         ->setWorkflow(!$can_edit));
-
-    $action_list->addAction(
-      id(new PhabricatorActionView())
-        ->setName($dangerous_name)
-        ->setHref($dangerous_uri)
-        ->setIcon($dangerous_icon)
-        ->setDisabled(!$can_dangerous)
-        ->setWorkflow(true));
-
-    $action_list->addAction(
-      id(new PhabricatorActionView())
-        ->setName($enormous_name)
-        ->setHref($enormous_uri)
-        ->setIcon($enormous_icon)
-        ->setDisabled(!$can_enormous)
-        ->setWorkflow(true));
 
     $action_list->addAction(
       id(new PhabricatorActionView())
@@ -179,17 +139,11 @@ final class DiffusionRepositoryBasicsManagementPanel
         'options, and URIs. When ready, %s the repository.',
         phutil_tag('strong', array(), pht('Activate')));
 
-      if ($repository->isHosted()) {
-        $messages[] = pht(
-          'If activated now, this repository will become a new hosted '.
-          'repository. To observe an existing repository instead, configure '.
-          'it in the %s panel.',
-          phutil_tag('strong', array(), pht('URIs')));
-      } else {
-        $messages[] = pht(
-          'If activated now, this repository will observe an existing remote '.
-          'repository and begin importing changes.');
-      }
+      $messages[] = pht(
+        'If activated now, this repository will observe an existing remote '.
+        'repository and begin importing changes. Configure the remote in the '.
+        '%s panel.',
+        phutil_tag('strong', array(), pht('URIs')));
 
       $info_view = id(new PHUIInfoView())
         ->setSeverity(PHUIInfoView::SEVERITY_NOTICE)
@@ -236,34 +190,6 @@ final class DiffusionRepositoryBasicsManagementPanel
       $encoding = phutil_tag('em', array(), pht('Use Default (UTF-8)'));
     }
     $view->addProperty(pht('Encoding'), $encoding);
-
-    $can_dangerous = $repository->canAllowDangerousChanges();
-    if (!$can_dangerous) {
-      $dangerous = phutil_tag('em', array(), pht('Not Preventable'));
-    } else {
-      $should_dangerous = $repository->shouldAllowDangerousChanges();
-      if ($should_dangerous) {
-        $dangerous = pht('Allowed');
-      } else {
-        $dangerous = pht('Not Allowed');
-      }
-    }
-
-    $view->addProperty(pht('Dangerous Changes'), $dangerous);
-
-    $can_enormous = $repository->canAllowEnormousChanges();
-    if (!$can_enormous) {
-      $enormous = phutil_tag('em', array(), pht('Not Preventable'));
-    } else {
-      $should_enormous = $repository->shouldAllowEnormousChanges();
-      if ($should_enormous) {
-        $enormous = pht('Allowed');
-      } else {
-        $enormous = pht('Not Allowed');
-      }
-    }
-
-    $view->addProperty(pht('Enormous Changes'), $enormous);
 
     return $view;
   }

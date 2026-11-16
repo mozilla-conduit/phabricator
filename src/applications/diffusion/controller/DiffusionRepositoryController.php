@@ -318,17 +318,6 @@ final class DiffusionRepositoryController extends DiffusionController {
         ->setIcon('fa-cogs')
         ->setHref($edit_uri));
 
-    if ($repository->isHosted()) {
-      $pull_uri = $this->getApplicationURI(
-        'synclog/?repositories='.$repository->getPHID());
-
-      $action_view->addAction(
-        id(new PhabricatorActionView())
-          ->setName(pht('View Sync Logs'))
-          ->setIcon('fa-exchange')
-          ->setHref($pull_uri));
-    }
-
     return $action_view;
   }
 

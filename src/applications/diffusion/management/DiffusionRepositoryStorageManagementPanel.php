@@ -18,8 +18,6 @@ final class DiffusionRepositoryStorageManagementPanel
 
     if ($repository->getAlmanacServicePHID()) {
       return 'fa-sitemap';
-    } else if ($repository->isHosted()) {
-      return 'fa-database';
     } else {
       return 'fa-download';
     }

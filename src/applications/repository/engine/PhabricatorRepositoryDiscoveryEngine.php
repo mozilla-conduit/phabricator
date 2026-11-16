@@ -614,9 +614,6 @@ final class PhabricatorRepositoryDiscoveryEngine
 
 
   private function getObservedVersion(PhabricatorRepository $repository) {
-    if ($repository->isHosted()) {
-      return null;
-    }
 
     if ($repository->isGit()) {
       return $this->getGitObservedVersion($repository);
