@@ -46,11 +46,6 @@ final class PhutilDefaultSyntaxHighlighterEngine
 
     $have_pygments = !empty($this->config['pygments.enabled']);
 
-    if ($language == 'console') {
-      return id(new PhutilConsoleSyntaxHighlighter())
-        ->getHighlightFuture($source);
-    }
-
     if ($language == 'diviner' || $language == 'remarkup') {
       return id(new PhutilDivinerSyntaxHighlighter())
         ->getHighlightFuture($source);
