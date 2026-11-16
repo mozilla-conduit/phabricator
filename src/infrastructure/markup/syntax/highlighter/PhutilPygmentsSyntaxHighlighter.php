@@ -22,19 +22,22 @@ final class PhutilPygmentsSyntaxHighlighter extends Phobject {
     if ($language) {
       $language = $this->getPygmentsLexerNameFromLanguageName($language);
 
+      // Pygments lexes PHP as HTML until it sees an open tag, so lex
+      // fragments without a real open tag (like `<?php`) as PHP from the start.
+      $options = array();
+      if ($language == 'php' && !preg_match('/<\?(php|=)/i', $source)) {
+        $options[] = '-O';
+        $options[] = 'startinline=True';
+      }
+
       // See T13224. Under Ubuntu, avoid leaving an intermedite "dash" shell
       // process so we hit "pygmentize" directly if we have to SIGKILL this
       // because it explodes.
 
       $future = new ExecFuture(
-        'exec pygmentize -O encoding=utf-8 -O stripnl=False -f html -l %s',
+        'exec pygmentize -O encoding=utf-8 -O stripnl=False %Ls -f html -l %s',
+        $options,
         $language);
-
-      $scrub = false;
-      if ($language == 'php' && strpos($source, '<?') === false) {
-        $source = "<?php\n".$source;
-        $scrub = true;
-      }
 
       // See T13224. In some cases, "pygmentize" has explosive runtime on small
       // inputs. Put a hard cap on how long it is allowed to run for to limit
@@ -43,10 +46,7 @@ final class PhutilPygmentsSyntaxHighlighter extends Phobject {
 
       $future->write($source);
 
-      return new PhutilDefaultSyntaxHighlighterEnginePygmentsFuture(
-        $future,
-        $source,
-        $scrub);
+      return new PhutilDefaultSyntaxHighlighterEnginePygmentsFuture($future);
     }
 
     return id(new PhutilDefaultSyntaxHighlighter())
