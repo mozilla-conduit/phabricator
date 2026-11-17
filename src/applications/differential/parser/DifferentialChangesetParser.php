@@ -178,7 +178,7 @@ final class DifferentialChangesetParser extends Phobject {
     return $renderer;
   }
 
-  const CACHE_VERSION = 14;
+  const CACHE_VERSION = 15;
   const CACHE_MAX_SIZE = 8e6;
 
   const ATTR_GENERATED  = 'attr:generated';

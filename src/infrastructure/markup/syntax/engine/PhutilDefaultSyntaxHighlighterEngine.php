@@ -46,16 +46,6 @@ final class PhutilDefaultSyntaxHighlighterEngine
 
     $have_pygments = !empty($this->config['pygments.enabled']);
 
-    if ($language == 'php' && PhutilXHPASTBinary::isAvailable()) {
-      return id(new PhutilXHPASTSyntaxHighlighter())
-        ->getHighlightFuture($source);
-    }
-
-    if ($language == 'console') {
-      return id(new PhutilConsoleSyntaxHighlighter())
-        ->getHighlightFuture($source);
-    }
-
     if ($language == 'diviner' || $language == 'remarkup') {
       return id(new PhutilDivinerSyntaxHighlighter())
         ->getHighlightFuture($source);
@@ -63,33 +53,6 @@ final class PhutilDefaultSyntaxHighlighterEngine
 
     if ($language == 'rainbow') {
       return id(new PhutilRainbowSyntaxHighlighter())
-        ->getHighlightFuture($source);
-    }
-
-    if ($language == 'php') {
-      return id(new PhutilLexerSyntaxHighlighter())
-        ->setConfig('lexer', new PhutilPHPFragmentLexer())
-        ->setConfig('language', 'php')
-        ->getHighlightFuture($source);
-    }
-
-    if ($language == 'py' || $language == 'python') {
-      return id(new PhutilLexerSyntaxHighlighter())
-        ->setConfig('lexer', new PhutilPythonFragmentLexer())
-        ->setConfig('language', 'py')
-        ->getHighlightFuture($source);
-    }
-
-    if ($language == 'java') {
-      return id(new PhutilLexerSyntaxHighlighter())
-        ->setConfig('lexer', new PhutilJavaFragmentLexer())
-        ->setConfig('language', 'java')
-        ->getHighlightFuture($source);
-    }
-
-    if ($language == 'json') {
-      return id(new PhutilLexerSyntaxHighlighter())
-        ->setConfig('lexer', new PhutilJSONFragmentLexer())
         ->getHighlightFuture($source);
     }
 

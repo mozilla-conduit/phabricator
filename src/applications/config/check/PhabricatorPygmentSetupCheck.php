@@ -60,21 +60,21 @@ final class PhabricatorPygmentSetupCheck extends PhabricatorSetupCheck {
       }
     } else {
       $summary = pht(
-        'Pygments should be installed and enabled '.
-        'to provide advanced syntax highlighting.');
+        'Pygments is disabled, so source code is shown without syntax '.
+        'highlighting.');
 
       $message = pht(
-        'This software can highlight a few languages by default, '.
-        'but installing and enabling Pygments (a third-party highlighting '.
-        "tool) will add syntax highlighting for many more languages. \n\n".
+        'This software uses Pygments (a third-party highlighting tool) to '.
+        'syntax highlight source code. While %s is disabled, source code is '.
+        'shown as plain text.'."\n\n".
         'For instructions on installing and enabling Pygments, see the '.
-        '%s configuration option.'."\n\n".
-        'If you do not want to install Pygments, you can ignore this issue.',
+        '%s configuration option.',
+        phutil_tag('tt', array(), 'pygments.enabled'),
         phutil_tag('tt', array(), 'pygments.enabled'));
 
       $this
         ->newIssue('pygments.noenabled')
-        ->setName(pht('Install Pygments to Improve Syntax Highlighting'))
+        ->setName(pht('Pygments Is Disabled'))
         ->setSummary($summary)
         ->setMessage($message)
         ->addRelatedPhabricatorConfig('pygments.enabled');
