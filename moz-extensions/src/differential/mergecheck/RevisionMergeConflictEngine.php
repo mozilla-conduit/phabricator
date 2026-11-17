@@ -1012,27 +1012,28 @@ final class RevisionMergeConflictEngine extends Phobject {
     // see why the merge started somewhere else.
     if ($this->baseFromFirstPublicParent) {
       $recorded = head($this->getStackDiffs())->getSourceControlBaseRevision();
-      $recorded_name = phutil_nonempty_string($recorded)
-        ? $this->formatCommitName($recorded)
-        : pht('(none)');
+      $reason = phutil_nonempty_string($recorded)
+        ? pht(
+          'its recorded base %s is not in the repository',
+          $this->formatCommitName($recorded))
+        : pht('it has no recorded base');
 
       if (!$parent_count) {
         return pht(
           'merged against target branch tip %s, starting from %s, the first '.
-          'public ancestor of the stack, since its recorded base %s is not in '.
-          'the repository',
+          'public ancestor of the stack, since %s',
           $target_name,
           $base_name,
-          $recorded_name);
+          $reason);
       }
 
       return pht(
         'merged against target branch tip %s, starting from %s, the first '.
-        'public ancestor of the stack, since its recorded base %s is not in '.
-        'the repository, with %s parent revision(s) applied first',
+        'public ancestor of the stack, since %s, with %s parent revision(s) '.
+        'applied first',
         $target_name,
         $base_name,
-        $recorded_name,
+        $reason,
         new PhutilNumber($parent_count));
     }
 

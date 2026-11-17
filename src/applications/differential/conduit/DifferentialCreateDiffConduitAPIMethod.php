@@ -8,7 +8,11 @@ final class DifferentialCreateDiffConduitAPIMethod
   }
 
   public function getMethodDescription() {
-    return pht('Create a new Differential diff.');
+    return pht(
+      "Create a new Differential diff.\n\n".
+      '`properties` sets diff properties when the diff is created, like '.
+      '`differential.setdiffproperty` does. Unlike that method, values are '.
+      'stored as given, so pass the value itself, not a JSON-encoded string.');
   }
 
   protected function defineParamTypes() {
@@ -58,7 +62,9 @@ final class DifferentialCreateDiffConduitAPIMethod
       'ERR-NO-CONTENT' => pht('Diff may not be empty.'),
       'ERR-USAGE-NO-SOURCE-PATH' => pht('You must specify a source path.'),
       'ERR-INVALID-PROPERTIES' => pht(
-        'Properties must be a map of property names to values.'),
+        'Properties must be a map of non-empty property names, up to %s '.
+        'bytes, to values.',
+        new PhutilNumber(self::getMaximumPropertyNameLength())),
     );
   }
 
@@ -74,6 +80,14 @@ final class DifferentialCreateDiffConduitAPIMethod
     if (!is_array($properties) ||
         ($properties && phutil_is_natural_list($properties))) {
       throw new ConduitException('ERR-INVALID-PROPERTIES');
+    }
+
+    $max_name_length = self::getMaximumPropertyNameLength();
+    foreach ($properties as $name => $data) {
+      $name = (string)$name;
+      if (!strlen($name) || strlen($name) > $max_name_length) {
+        throw new ConduitException('ERR-INVALID-PROPERTIES');
+      }
     }
 
     $changes = array();
@@ -179,7 +193,7 @@ final class DifferentialCreateDiffConduitAPIMethod
     foreach ($properties as $name => $data) {
       id(new DifferentialDiffProperty())
         ->setDiffID($diff->getID())
-        ->setName($name)
+        ->setName((string)$name)
         ->setData($data)
         ->save();
     }
@@ -192,6 +206,11 @@ final class DifferentialCreateDiffConduitAPIMethod
       'phid' => $diff->getPHID(),
       'uri' => $uri,
     );
+  }
+
+  private static function getMaximumPropertyNameLength() {
+    return id(new DifferentialDiffProperty())
+      ->getColumnMaximumByteLength('name');
   }
 
   private function normalizeSourcePath($source_path) {
