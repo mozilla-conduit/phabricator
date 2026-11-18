@@ -44,15 +44,16 @@ jobs:
           fi
           echo "is_head=$is_head" >> "$GITHUB_OUTPUT"
 
-  # GAR images: release-** tags go to prod, development goes to nonprod.
-  # Other branches (master) don't get a GAR image.
+  # GAR images are built once per branch commit and tagged with the short SHA
+  # by deploy-actions. retag-gar then adds every other tag, so GAR tag rules
+  # live in one place. Release tags never rebuild.
   # deploy-actions checks out github.ref (the branch), not github.sha, so a
   # stale run would build the newer tip. Skip it and let the newer run build.
   build-and-push:
     needs: check-head
     if: >-
       needs.check-head.outputs.is_head == 'true' &&
-      (github.ref_type == 'tag' || github.ref_name == 'development')
+      (github.ref_name == 'master' || github.ref_name == 'development')
     secrets: inherit
     permissions:
       contents: read
@@ -60,14 +61,103 @@ jobs:
       packages: write
     uses: mozilla/deploy-actions/.github/workflows/build-and-push.yml@main
     with:
+      # Keep in sync with IMAGE and service_account in retag-gar.
       image_name: phabricator
-      gar_name: phabricator-${{ github.ref_type == 'tag' && 'prod' || 'nonprod' }}
-      project_id: moz-fx-phabricator-${{ github.ref_type == 'tag' && 'prod' || 'nonprod' }}
+      gar_name: phabricator-prod
+      project_id: moz-fx-phabricator-prod
+
+  # Adds a tag to an image that already exists in GAR, without rebuilding:
+  #   master:      <sha> -> :latest
+  #   development: <sha> -> :development
+  #   release-*:   <sha> -> :release-* (the image master built for the tag's
+  #                commit, so production gets the exact image that was tested)
+  # Branch runs need a successful build-and-push, which also means the run
+  # wasn't stale. Tag runs never build, so build-and-push is skipped for them.
+  retag-gar:
+    needs: build-and-push
+    if: >-
+      !failure() && !cancelled() &&
+      (github.ref_type == 'tag' || needs.build-and-push.result == 'success')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      IMAGE: us-docker.pkg.dev/moz-fx-phabricator-prod/phabricator-prod/phabricator
+    steps:
+      - name: Check tagged commit is on master
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          # "identical" or "behind" means the tagged commit is on master.
+          status=$(gh api "repos/$GITHUB_REPOSITORY/compare/master...$GITHUB_SHA" --jq .status)
+          if [[ "$status" != "identical" && "$status" != "behind" ]]; then
+            echo "::error::$REF_NAME ($GITHUB_SHA) is not a commit on master" >&2
+            exit 1
+          fi
+      - name: Pick target tag
+        id: target
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          case "$REF_TYPE/$REF_NAME" in
+            tag/*) target="$REF_NAME" ;;
+            branch/master) target="latest" ;;
+            branch/development) target="development" ;;
+            *)
+              echo "::error::No GAR tag rule for branch '$REF_NAME'" >&2
+              exit 1
+              ;;
+          esac
+          echo "tag=$target" >> "$GITHUB_OUTPUT"
+      # Same auth as deploy-actions' docker-push. That action can't be reused
+      # here because it pushes local images rather than retagging remote ones.
+      - name: Authenticate to GCP
+        id: gcp_auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: "projects/${{ vars.GCPV2_WORKLOAD_IDENTITY_POOL_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-actions"
+          service_account: artifact-writer@moz-fx-phabricator-prod.iam.gserviceaccount.com
+          token_format: access_token
+          create_credentials_file: false
+      - name: Log in to GAR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: us-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.gcp_auth.outputs.access_token }}
+      - name: Add tag to existing image
+        env:
+          TARGET: ${{ steps.target.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # Same short-SHA tag deploy-actions gives branch images.
+          source="$IMAGE:${GITHUB_SHA:0:10}"
+          # A release tag can be pushed while master's build is still running,
+          # so wait up to 20 minutes for the source image to appear.
+          max_attempts=40
+          attempt=0
+          until docker buildx imagetools inspect "$source" > /dev/null 2>&1; do
+            if (( ++attempt >= max_attempts )); then
+              echo "::error::$source not found. Was it built (stale runs skip the build)?" >&2
+              exit 1
+            fi
+            echo "Waiting for $source ($attempt/$max_attempts)"
+            sleep 30
+          done
+          # Copies the manifest under a new tag; image layers are not rebuilt.
+          docker buildx imagetools create --tag "$IMAGE:$TARGET" "$source"
+          echo "Tagged $source as $IMAGE:$TARGET"
 
   push-dockerhub:
     needs: [check-head, build-and-push]
-    # Run when the GAR job succeeded or was skipped (master, stale run), but not
-    # if any needed job failed.
+    # Run when the GAR job succeeded or was skipped (release tag, stale run),
+    # but not if any needed job failed.
     if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
@@ -78,7 +168,7 @@ jobs:
         with:
           persist-credentials: false
       # Full-SHA tags match the old CircleCI pushes; version.json matches the
-      # GAR image built by deploy-actions.
+      # GAR branch images built by deploy-actions.
       - name: Generate tags and version.json
         id: meta
         env:
