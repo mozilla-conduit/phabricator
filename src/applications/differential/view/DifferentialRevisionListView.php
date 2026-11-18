@@ -11,6 +11,7 @@ final class DifferentialRevisionListView extends AphrontView {
   private $noBox;
   private $background = null;
   private $unlandedDependencies = array();
+  private $mergeConflicts = array();
 
   public function setUnlandedDependencies(array $unlanded_dependencies) {
     $this->unlandedDependencies = $unlanded_dependencies;
@@ -19,6 +20,11 @@ final class DifferentialRevisionListView extends AphrontView {
 
   public function getUnlandedDependencies() {
     return $this->unlandedDependencies;
+  }
+
+  public function setMergeConflicts(array $merge_conflicts) {
+    $this->mergeConflicts = $merge_conflicts;
+    return $this;
   }
 
   public function setNoDataString($no_data_string) {
@@ -145,6 +151,15 @@ final class DifferentialRevisionListView extends AphrontView {
             id(new PHUIIconView())->setIcon('fa-chain-broken', 'red'),
             ' ',
             pht('Open Dependencies'),
+          ));
+      }
+
+      if (idx($this->mergeConflicts, $phid)) {
+        $item->addAttribute(
+          array(
+            id(new PHUIIconView())->setIcon('fa-code-fork', 'red'),
+            ' ',
+            pht('Merge Conflict'),
           ));
       }
 

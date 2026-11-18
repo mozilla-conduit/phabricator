@@ -205,6 +205,9 @@ final class DifferentialRevisionSearchEngine
     );
   }
 
+  /**
+   * @phutil-external-symbol class DifferentialMergeConflictStatusField
+   */
   protected function renderResultList(
     array $revisions,
     PhabricatorSavedQuery $query,
@@ -219,6 +222,9 @@ final class DifferentialRevisionSearchEngine
     $bucket = $this->getResultBucket($query);
 
     $unlanded = $this->loadUnlandedDependencies($revisions);
+    $conflicts =
+      DifferentialMergeConflictStatusField::loadConflictedRevisionPHIDs(
+        $revisions);
 
     $views = array();
     if ($bucket) {
@@ -251,7 +257,9 @@ final class DifferentialRevisionSearchEngine
     }
 
     foreach ($views as $view) {
-      $view->setUnlandedDependencies($unlanded);
+      $view
+        ->setUnlandedDependencies($unlanded)
+        ->setMergeConflicts($conflicts);
     }
 
     if (count($views) == 1) {

@@ -338,6 +338,51 @@ final class DifferentialMergeConflictStatusFieldTestCase
         'so its verdict should be reported as fresh.'));
   }
 
+  public function testConflictForActiveDiff() {
+    $conflict = array(
+      DifferentialMergeConflictStatusField::KEY_STATUS =>
+        DifferentialMergeConflictStatusField::STATUS_CONFLICT,
+      DifferentialMergeConflictStatusField::KEY_DIFF_PHID => 'PHID-DIFF-active',
+    );
+
+    $this->assertTrue(
+      DifferentialMergeConflictStatusField::isConflictForActiveDiff(
+        $conflict,
+        'PHID-DIFF-active'),
+      pht('A conflict for the active diff is a conflict.'));
+
+    $this->assertFalse(
+      DifferentialMergeConflictStatusField::isConflictForActiveDiff(
+        $conflict,
+        'PHID-DIFF-newer'),
+      pht('A conflict for an earlier diff is stale, not a conflict.'));
+
+    foreach (array(
+      DifferentialMergeConflictStatusField::STATUS_CLEAN,
+      DifferentialMergeConflictStatusField::STATUS_UNKNOWN,
+    ) as $status) {
+      $value = $conflict;
+      $value[DifferentialMergeConflictStatusField::KEY_STATUS] = $status;
+      $this->assertFalse(
+        DifferentialMergeConflictStatusField::isConflictForActiveDiff(
+          $value,
+          'PHID-DIFF-active'),
+        pht('Status "%s" is not a conflict.', $status));
+    }
+
+    $this->assertFalse(
+      DifferentialMergeConflictStatusField::isConflictForActiveDiff(
+        null,
+        'PHID-DIFF-active'),
+      pht('A missing payload is not a conflict.'));
+
+    $this->assertFalse(
+      DifferentialMergeConflictStatusField::isConflictForActiveDiff(
+        array(),
+        'PHID-DIFF-active'),
+      pht('An empty payload is not a conflict.'));
+  }
+
   public function testCheckedStackStaleness() {
     $checked = array('PHID-DIFF-parent', 'PHID-DIFF-active');
 
