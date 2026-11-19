@@ -3,19 +3,6 @@
 final class PhabricatorWorkingCopyDiscoveryTestCase
   extends PhabricatorWorkingCopyTestCase {
 
-  public function testSubversionCommitDiscovery() {
-    $this->requireBinaryForTest('svn');
-
-    $refs = $this->discoverRefs('ST');
-    $this->assertEqual(
-      array(
-        1368319433,
-        1368319448,
-      ),
-      mpull($refs, 'getEpoch'),
-      pht('Commit Epochs'));
-  }
-
   public function testMercurialCommitDiscovery() {
     $this->requireBinaryForTest('hg');
 

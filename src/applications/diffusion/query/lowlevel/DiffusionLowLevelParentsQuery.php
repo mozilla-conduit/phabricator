@@ -23,9 +23,6 @@ final class DiffusionLowLevelParentsQuery
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $result = $this->loadMercurialParents();
         break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $result = $this->loadSubversionParents();
-        break;
       default:
         throw new Exception(pht('Unsupported repository type "%s"!', $type));
     }
@@ -69,31 +66,6 @@ final class DiffusionLowLevelParentsQuery
     }
 
     return $hashes;
-  }
-
-  private function loadSubversionParents() {
-    $repository = $this->getRepository();
-    $identifier = $this->identifier;
-
-    $refs = id(new DiffusionCachedResolveRefsQuery())
-      ->setRepository($repository)
-      ->withRefs(array($identifier))
-      ->execute();
-    if (!$refs) {
-      throw new Exception(
-        pht(
-          'No commit "%s" in this repository.',
-          $identifier));
-    }
-
-    $n = (int)$identifier;
-    if ($n > 1) {
-      $ids = array($n - 1);
-    } else {
-      $ids = array();
-    }
-
-    return $ids;
   }
 
 }

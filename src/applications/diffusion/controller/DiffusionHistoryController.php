@@ -109,10 +109,8 @@ final class DiffusionHistoryController extends DiffusionController {
       ->setHeader($header_text)
       ->setHeaderIcon('fa-clock-o');
 
-    if (!$repository->isSVN()) {
-      $branch_tag = $this->renderBranchTag($drequest);
-      $header->addTag($branch_tag);
-    }
+    $branch_tag = $this->renderBranchTag($drequest);
+    $header->addTag($branch_tag);
 
     if ($drequest->getSymbolicCommit()) {
       $symbolic_tag = $this->renderSymbolicCommit($drequest);

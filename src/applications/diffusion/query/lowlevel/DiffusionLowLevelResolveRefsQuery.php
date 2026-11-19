@@ -43,9 +43,6 @@ final class DiffusionLowLevelResolveRefsQuery
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $result = $this->resolveMercurialRefs();
         break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $result = $this->resolveSubversionRefs();
-        break;
       default:
         throw new Exception(pht('Unsupported repository type!'));
     }
@@ -375,15 +372,6 @@ final class DiffusionLowLevelResolveRefsQuery
     }
 
     return $results;
-  }
-
-  private function resolveSubversionRefs() {
-    // We don't have any VCS logic for Subversion, so just use the cached
-    // query.
-    return id(new DiffusionCachedResolveRefsQuery())
-      ->setRepository($this->getRepository())
-      ->withRefs($this->refs)
-      ->execute();
   }
 
 }

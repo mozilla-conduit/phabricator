@@ -37,6 +37,10 @@ final class PhabricatorRepositoryURIQuery
   protected function buildWhereClauseParts(AphrontDatabaseConnection $conn) {
     $where = parent::buildWhereClauseParts($conn);
 
+    // Builtin URIs were served by this software, which no longer hosts
+    // repositories, so ignore any rows left over from that.
+    $where[] = qsprintf($conn, 'builtinProtocol IS NULL');
+
     if ($this->ids !== null) {
       $where[] = qsprintf(
         $conn,

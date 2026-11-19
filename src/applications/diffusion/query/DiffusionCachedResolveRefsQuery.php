@@ -38,9 +38,6 @@ final class DiffusionCachedResolveRefsQuery
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $result = $this->resolveGitAndMercurialRefs();
         break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $result = $this->resolveSubversionRefs();
-        break;
       default:
         throw new Exception(pht('Unsupported repository type!'));
     }
@@ -130,58 +127,5 @@ final class DiffusionCachedResolveRefsQuery
     return $results;
   }
 
-
-  /**
-   * Resolve refs in Subversion repositories.
-   *
-   * We can resolve all numeric identifiers and the keyword `HEAD`.
-   */
-  private function resolveSubversionRefs() {
-    $repository = $this->getRepository();
-
-    $max_commit = id(new PhabricatorRepositoryCommit())
-      ->loadOneWhere(
-        'repositoryID = %d ORDER BY epoch DESC, id DESC LIMIT 1',
-        $repository->getID());
-    if (!$max_commit) {
-      // This repository is empty or hasn't parsed yet, so none of the refs are
-      // going to resolve.
-      return array();
-    }
-
-    $max_commit_id = (int)$max_commit->getCommitIdentifier();
-
-    $results = array();
-    foreach ($this->refs as $ref) {
-      if ($ref == 'HEAD') {
-        // Resolve "HEAD" to mean "the most recent commit".
-        $results[$ref][] = array(
-          'type' => 'commit',
-          'identifier' => $max_commit_id,
-        );
-        continue;
-      }
-
-      if (!preg_match('/^\d+$/', $ref)) {
-        // This ref is non-numeric, so it doesn't resolve to anything.
-        continue;
-      }
-
-      // Resolve other commits if we can deduce their existence.
-
-      // TODO: When we import only part of a repository, we won't necessarily
-      // have all of the smaller commits. Should we fail to resolve them here
-      // for repositories with a subpath? It might let us simplify other things
-      // elsewhere.
-      if ((int)$ref <= $max_commit_id) {
-        $results[$ref][] = array(
-          'type' => 'commit',
-          'identifier' => (int)$ref,
-        );
-      }
-    }
-
-    return $results;
-  }
 
 }

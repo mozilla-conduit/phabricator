@@ -26,10 +26,6 @@ final class PhabricatorRepositoryQuery
   const STATUS_ALL = 'status-all';
   private $status = self::STATUS_ALL;
 
-  const HOSTED_PHABRICATOR = 'hosted-phab';
-  const HOSTED_REMOTE = 'hosted-remote';
-  const HOSTED_ALL = 'hosted-all';
-  private $hosted = self::HOSTED_ALL;
 
   private $needMostRecentCommits;
   private $needCommitCounts;
@@ -97,11 +93,6 @@ final class PhabricatorRepositoryQuery
 
   public function withStatus($status) {
     $this->status = $status;
-    return $this;
-  }
-
-  public function withHosted($hosted) {
-    $this->hosted = $hosted;
     return $this;
   }
 
@@ -255,25 +246,6 @@ final class PhabricatorRepositoryQuery
           break;
         default:
           throw new Exception("Unknown status '{$status}'!");
-      }
-
-      // TODO: This should also be denormalized.
-      $hosted = $this->hosted;
-      switch ($hosted) {
-        case self::HOSTED_PHABRICATOR:
-          if (!$repo->isHosted()) {
-            unset($repositories[$key]);
-          }
-          break;
-        case self::HOSTED_REMOTE:
-          if ($repo->isHosted()) {
-            unset($repositories[$key]);
-          }
-          break;
-        case self::HOSTED_ALL:
-          break;
-        default:
-          throw new Exception(pht("Unknown hosted failed '%s'!", $hosted));
       }
     }
 

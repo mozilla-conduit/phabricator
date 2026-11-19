@@ -94,9 +94,6 @@ abstract class PhabricatorRepositoryEngine extends Phobject {
       case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
         $class = 'PhabricatorRepositoryGitCommitMessageParserWorker';
         break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $class = 'PhabricatorRepositorySvnCommitMessageParserWorker';
-        break;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $class = 'PhabricatorRepositoryMercurialCommitMessageParserWorker';
         break;

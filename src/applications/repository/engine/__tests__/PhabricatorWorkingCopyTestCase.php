@@ -22,7 +22,6 @@ abstract class PhabricatorWorkingCopyTestCase extends PhabricatorTestCase {
     $data_dir = dirname(__FILE__).'/data/';
 
     $types = array(
-      'svn'   => PhabricatorRepositoryType::REPOSITORY_TYPE_SVN,
       'hg'    => PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL,
       'git'   => PhabricatorRepositoryType::REPOSITORY_TYPE_GIT,
     );

@@ -77,9 +77,6 @@ final class PhabricatorBinariesSetupCheck extends PhabricatorSetupCheck {
         case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
           $binary = 'git';
           break;
-        case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-          $binary = 'svn';
-          break;
         case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
           $binary = 'hg';
           break;
@@ -105,18 +102,6 @@ final class PhabricatorBinariesSetupCheck extends PhabricatorSetupCheck {
       switch ($vcs['versionControlSystem']) {
         case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
           $bad_versions = array();
-          break;
-        case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-          $bad_versions = array(
-            // We need 1.5 for "--depth", see T7228.
-            '< 1.5' => pht(
-              'The minimum supported version of Subversion is 1.5, which '.
-              'was released in 2008.'),
-            '= 1.7.1' => pht(
-              'This version of Subversion has a bug where `%s` does not work '.
-              'for files added in rN (Subversion issue #2873), fixed in 1.7.2.',
-              'svn diff -c N'),
-          );
           break;
         case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
           $bad_versions = array(

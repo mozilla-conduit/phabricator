@@ -4,7 +4,6 @@ abstract class DiffusionCommandEngine extends Phobject {
 
   private $repository;
   private $protocol;
-  private $credentialPHID;
   private $argv;
   private $passthru;
   private $connectAsDevice;
@@ -70,15 +69,6 @@ abstract class DiffusionCommandEngine extends Phobject {
 
   public function getDisplayProtocol() {
     return $this->getProtocol().'://';
-  }
-
-  public function setCredentialPHID($credential_phid) {
-    $this->credentialPHID = $credential_phid;
-    return $this;
-  }
-
-  public function getCredentialPHID() {
-    return $this->credentialPHID;
   }
 
   public function setArgv(array $argv) {
@@ -184,7 +174,6 @@ abstract class DiffusionCommandEngine extends Phobject {
     $env['PHABRICATOR_ENV'] = PhabricatorEnv::getSelectedEnvironmentName();
 
     $as_device = $this->getConnectAsDevice();
-    $credential_phid = $this->getCredentialPHID();
 
     if ($as_device) {
       $device = AlmanacKeys::getLiveDevice();
@@ -197,26 +186,10 @@ abstract class DiffusionCommandEngine extends Phobject {
             $repository->getDisplayName(),
             php_uname('n')));
       }
-
-      if ($credential_phid) {
-        throw new Exception(
-          pht(
-            'Attempting to build a repository command (for repository "%s"), '.
-            'but the CommandEngine is configured to connect as both the '.
-            'current cluster device ("%s") and with a specific credential '.
-            '("%s"). These options are mutually exclusive. Connections must '.
-            'authenticate as one or the other, not both.',
-            $repository->getDisplayName(),
-            $device->getName(),
-            $credential_phid));
-      }
     }
 
 
     if ($this->isAnySSHProtocol()) {
-      if ($credential_phid) {
-        $env['PHABRICATOR_CREDENTIAL'] = $credential_phid;
-      }
       if ($as_device) {
         $env['PHABRICATOR_AS_DEVICE'] = 1;
       }
@@ -229,14 +202,6 @@ abstract class DiffusionCommandEngine extends Phobject {
 
   public function isSSHProtocol() {
     return ($this->getProtocol() == 'ssh');
-  }
-
-  public function isSVNProtocol() {
-    return ($this->getProtocol() == 'svn');
-  }
-
-  public function isSVNSSHProtocol() {
-    return ($this->getProtocol() == 'svn+ssh');
   }
 
   public function isHTTPProtocol() {
@@ -252,55 +217,7 @@ abstract class DiffusionCommandEngine extends Phobject {
   }
 
   public function isAnySSHProtocol() {
-    return ($this->isSSHProtocol() || $this->isSVNSSHProtocol());
-  }
-
-  public function isCredentialSupported() {
-    return ($this->getPassphraseProvidesCredentialType() !== null);
-  }
-
-  public function isCredentialOptional() {
-    if ($this->isAnySSHProtocol()) {
-      return false;
-    }
-
-    return true;
-  }
-
-  public function getPassphraseCredentialLabel() {
-    if ($this->isAnySSHProtocol()) {
-      return pht('SSH Key');
-    }
-
-    if ($this->isAnyHTTPProtocol() || $this->isSVNProtocol()) {
-      return pht('Password');
-    }
-
-    return null;
-  }
-
-  public function getPassphraseDefaultCredentialType() {
-    if ($this->isAnySSHProtocol()) {
-      return PassphraseSSHPrivateKeyTextCredentialType::CREDENTIAL_TYPE;
-    }
-
-    if ($this->isAnyHTTPProtocol() || $this->isSVNProtocol()) {
-      return PassphrasePasswordCredentialType::CREDENTIAL_TYPE;
-    }
-
-    return null;
-  }
-
-  public function getPassphraseProvidesCredentialType() {
-    if ($this->isAnySSHProtocol()) {
-      return PassphraseSSHPrivateKeyCredentialType::PROVIDES_TYPE;
-    }
-
-    if ($this->isAnyHTTPProtocol() || $this->isSVNProtocol()) {
-      return PassphrasePasswordCredentialType::PROVIDES_TYPE;
-    }
-
-    return null;
+    return $this->isSSHProtocol();
   }
 
   protected function getSSHWrapper() {

@@ -8,7 +8,6 @@ final class DiffusionBrowseResultSet extends Phobject {
   const REASON_IS_NONEXISTENT       = 'nonexistent';
   const REASON_BAD_COMMIT           = 'bad-commit';
   const REASON_IS_EMPTY             = 'empty';
-  const REASON_IS_UNTRACKED_PARENT  = 'untracked-parent';
 
   private $paths;
   private $isValidResults;

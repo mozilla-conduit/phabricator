@@ -6,12 +6,11 @@
  * @{class:PhabricatorRepositoryPullLocalDaemon}.
  *
  * This class also covers initial working copy setup through `git clone`,
- * `git init`, `hg clone`, `hg init`, or `svnadmin create`.
+ * `git init`, `hg clone` or `hg init`.
  *
  * @task pull     Pulling Working Copies
  * @task git      Pulling Git Working Copies
  * @task hg       Pulling Mercurial Working Copies
- * @task svn      Pulling Subversion Working Copies
  * @task internal Internals
  */
 final class PhabricatorRepositoryPullEngine
@@ -61,23 +60,10 @@ final class PhabricatorRepositoryPullEngine
 
     $is_hg = false;
     $is_git = false;
-    $is_svn = false;
 
     $vcs = $repository->getVersionControlSystem();
 
     switch ($vcs) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // We never pull a local copy of non-hosted Subversion repositories.
-        if (!$repository->isHosted()) {
-          $this->skipPull(
-            pht(
-              'Repository "%s" is a non-hosted Subversion repository, which '.
-              'does not require a local working copy to be pulled.',
-              $repository->getDisplayName()));
-          return;
-        }
-        $is_svn = true;
-        break;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
         $is_git = true;
         break;
@@ -112,8 +98,6 @@ final class PhabricatorRepositoryPullEngine
           $this->executeGitCreate();
         } else if ($is_hg) {
           $this->executeMercurialCreate();
-        } else {
-          $this->executeSubversionCreate();
         }
       }
 
@@ -122,31 +106,15 @@ final class PhabricatorRepositoryPullEngine
         ->setRepository($repository)
         ->synchronizeWorkingCopyBeforeRead();
 
-      if (!$repository->isHosted()) {
-        $this->logPull(
-          pht(
-            'Updating the working copy for repository "%s".',
-            $repository->getDisplayName()));
+      $this->logPull(
+        pht(
+          'Updating the working copy for repository "%s".',
+          $repository->getDisplayName()));
 
-        if ($is_git) {
-          $this->executeGitUpdate();
-        } else if ($is_hg) {
-          $this->executeMercurialUpdate();
-        }
-      }
-
-      if ($repository->isHosted()) {
-        if ($is_git) {
-          $this->installGitHook();
-        } else if ($is_svn) {
-          $this->installSubversionHook();
-        } else if ($is_hg) {
-          $this->installMercurialHook();
-        }
-
-        foreach ($repository->getHookDirectories() as $directory) {
-          $this->installHookDirectory($directory);
-        }
+      if ($is_git) {
+        $this->executeGitUpdate();
+      } else if ($is_hg) {
+        $this->executeMercurialUpdate();
       }
 
       if ($is_git) {
@@ -198,51 +166,6 @@ final class PhabricatorRepositoryPullEngine
       array(
         'message' => $message,
       ));
-  }
-
-  private function installHook($path, array $hook_argv = array()) {
-    $this->log(pht('Installing commit hook to "%s"...', $path));
-
-    $repository = $this->getRepository();
-    $identifier = $this->getHookContextIdentifier($repository);
-
-    $root = dirname(phutil_get_library_root('phabricator'));
-    $bin = $root.'/bin/commit-hook';
-
-    $full_php_path = Filesystem::resolveBinary('php');
-    $cmd = csprintf(
-      'exec %s -f %s -- %s %Ls "$@"',
-      $full_php_path,
-      $bin,
-      $identifier,
-      $hook_argv);
-
-    $hook = "#!/bin/sh\nexport TERM=dumb\n{$cmd}\n";
-
-    Filesystem::writeFile($path, $hook);
-    Filesystem::changePermissions($path, 0755);
-  }
-
-  private function installHookDirectory($path) {
-    $readme = pht(
-      "To add custom hook scripts to this repository, add them to this ".
-      "directory.\n\nPhabricator will run any executables in this directory ".
-      "after running its own checks, as though they were normal hook ".
-      "scripts.");
-
-    Filesystem::createDirectory($path, 0755);
-    Filesystem::writeFile($path.'/README', $readme);
-  }
-
-  private function getHookContextIdentifier(PhabricatorRepository $repository) {
-    $identifier = $repository->getPHID();
-
-    $instance = PhabricatorEnv::getEnvConfig('cluster.instance');
-    if (phutil_nonempty_string($instance)) {
-      $identifier = "{$identifier}:{$instance}";
-    }
-
-    return $identifier;
   }
 
 
@@ -494,22 +417,6 @@ final class PhabricatorRepositoryPullEngine
     return $fetch_rules;
   }
 
-  /**
-   * @task git
-   */
-  private function installGitHook() {
-    $repository = $this->getRepository();
-    $root = $repository->getLocalPath();
-
-    if ($repository->isWorkingCopyBare()) {
-      $path = '/hooks/pre-receive';
-    } else {
-      $path = '/.git/hooks/pre-receive';
-    }
-
-    $this->installHook($root.$path);
-  }
-
   private function updateGitWorkingCopyConfiguration() {
     $repository = $this->getRepository();
 
@@ -662,49 +569,43 @@ final class PhabricatorRepositoryPullEngine
 
     $path = rtrim($repository->getLocalPath(), '/');
 
-    if ($repository->isHosted()) {
+    $remote = $repository->getRemoteURIEnvelope();
+
+    // NOTE: Mercurial prior to 3.2.4 has an severe command injection
+    // vulnerability. See: <http://bit.ly/19B58E9>
+
+    // On vulnerable versions of Mercurial, we refuse to clone remotes which
+    // contain characters which may be interpreted by the shell.
+    $hg_binary = PhutilBinaryAnalyzer::getForBinary('hg');
+    $is_vulnerable = $hg_binary->isMercurialVulnerableToInjection();
+    if ($is_vulnerable) {
+      $cleartext = $remote->openEnvelope();
+      // The use of "%R" here is an attempt to limit collateral damage
+      // for normal URIs because it isn't clear how long this vulnerability
+      // has been around for.
+
+      $escaped = csprintf('%R', $cleartext);
+      if ((string)$escaped !== (string)$cleartext) {
+        throw new Exception(
+          pht(
+            'You have an old version of Mercurial (%s) which has a severe '.
+            'command injection security vulnerability. The remote URI for '.
+            'this repository (%s) is potentially unsafe. Upgrade Mercurial '.
+            'to at least 3.2.4 to clone it.',
+            $hg_binary->getBinaryVersion(),
+            $repository->getMonogram()));
+      }
+    }
+
+    try {
       $repository->execxRemoteCommand(
-        'init -- %s',
+        'clone --noupdate -- %P %s',
+        $remote,
         $path);
-    } else {
-      $remote = $repository->getRemoteURIEnvelope();
-
-      // NOTE: Mercurial prior to 3.2.4 has an severe command injection
-      // vulnerability. See: <http://bit.ly/19B58E9>
-
-      // On vulnerable versions of Mercurial, we refuse to clone remotes which
-      // contain characters which may be interpreted by the shell.
-      $hg_binary = PhutilBinaryAnalyzer::getForBinary('hg');
-      $is_vulnerable = $hg_binary->isMercurialVulnerableToInjection();
-      if ($is_vulnerable) {
-        $cleartext = $remote->openEnvelope();
-        // The use of "%R" here is an attempt to limit collateral damage
-        // for normal URIs because it isn't clear how long this vulnerability
-        // has been around for.
-
-        $escaped = csprintf('%R', $cleartext);
-        if ((string)$escaped !== (string)$cleartext) {
-          throw new Exception(
-            pht(
-              'You have an old version of Mercurial (%s) which has a severe '.
-              'command injection security vulnerability. The remote URI for '.
-              'this repository (%s) is potentially unsafe. Upgrade Mercurial '.
-              'to at least 3.2.4 to clone it.',
-              $hg_binary->getBinaryVersion(),
-              $repository->getMonogram()));
-        }
-      }
-
-      try {
-        $repository->execxRemoteCommand(
-          'clone --noupdate -- %P %s',
-          $remote,
-          $path);
-      } catch (Exception $ex) {
-        $message = $ex->getMessage();
-        $message = $this->censorMercurialErrorMessage($message);
-        throw new Exception($message);
-      }
+    } catch (Exception $ex) {
+      $message = $ex->getMessage();
+      $message = $this->censorMercurialErrorMessage($message);
+      throw new Exception($message);
     }
   }
 
@@ -773,80 +674,6 @@ final class PhabricatorRepositoryPullEngine
       '/^---%<---.*/sm',
       pht('<Response body omitted from Mercurial error message.>')."\n",
       $message);
-  }
-
-
-  /**
-   * @task hg
-   */
-  private function installMercurialHook() {
-    $repository = $this->getRepository();
-    $path = $repository->getLocalPath().'/.hg/hgrc';
-
-    $identifier = $this->getHookContextIdentifier($repository);
-
-    $root = dirname(phutil_get_library_root('phabricator'));
-    $bin = $root.'/bin/commit-hook';
-
-    $data = array();
-    $data[] = '[hooks]';
-
-    // This hook handles normal pushes.
-    $data[] = csprintf(
-      'pretxnchangegroup.phabricator = TERM=dumb %s %s %s',
-      $bin,
-      $identifier,
-      'pretxnchangegroup');
-
-    // This one handles creating bookmarks.
-    $data[] = csprintf(
-      'prepushkey.phabricator = TERM=dumb %s %s %s',
-      $bin,
-      $identifier,
-      'prepushkey');
-
-    $data[] = null;
-
-    $data = implode("\n", $data);
-
-    $this->log('%s', pht('Installing commit hook config to "%s"...', $path));
-
-    Filesystem::writeFile($path, $data);
-  }
-
-
-/* -(  Pulling Subversion Working Copies  )---------------------------------- */
-
-
-  /**
-   * @task svn
-   */
-  private function executeSubversionCreate() {
-    $repository = $this->getRepository();
-
-    $path = rtrim($repository->getLocalPath(), '/');
-    execx('svnadmin create -- %s', $path);
-  }
-
-
-  /**
-   * @task svn
-   */
-  private function installSubversionHook() {
-    $repository = $this->getRepository();
-    $root = $repository->getLocalPath();
-
-    $path = '/hooks/pre-commit';
-    $this->installHook($root.$path);
-
-    $revprop_path = '/hooks/pre-revprop-change';
-
-    $revprop_argv = array(
-      '--hook-mode',
-      'svn-revprop',
-    );
-
-    $this->installHook($root.$revprop_path, $revprop_argv);
   }
 
 

@@ -225,27 +225,6 @@ final class DiffusionRepositoryEditEngine
       "IMPORTANT: This feature is new, experimental, and not supported. ".
       "Use it at your own risk.");
 
-    $subpath_instructions = pht(
-      'If you want to import only part of a repository, like `trunk/`, '.
-      'you can set a path in **Import Only**. The import process will ignore '.
-      'commits which do not affect this path.');
-
-    $filesize_warning = null;
-    if ($object->isGit()) {
-      $git_binary = PhutilBinaryAnalyzer::getForBinary('git');
-      $git_version = $git_binary->getBinaryVersion();
-      $filesize_version = '1.8.4';
-      if (version_compare($git_version, $filesize_version, '<')) {
-        $filesize_warning = pht(
-          '(WARNING) {icon exclamation-triangle} The version of "git" ("%s") '.
-          'installed on this server does not support '.
-          '"--batch-check=<format>", a feature required to enforce filesize '.
-          'limits. Upgrade to "git" %s or newer to use this feature.',
-          $git_version,
-          $filesize_version);
-      }
-    }
-
     $track_instructions = pht(
       'WARNING: The "Track Only" feature is deprecated. Use "Fetch Refs" '.
       'and "Permanent Refs" instead. This feature will be removed in a '.
@@ -314,34 +293,6 @@ final class DiffusionRepositoryEditEngine
         ->setConduitDescription(pht('Change the default text encoding.'))
         ->setConduitTypeDescription(pht('New text encoding.'))
         ->setValue($object->getDetail('encoding')),
-      id(new PhabricatorBoolEditField())
-        ->setKey('allowDangerousChanges')
-        ->setLabel(pht('Allow Dangerous Changes'))
-        ->setIsCopyable(true)
-        ->setIsFormField(false)
-        ->setOptions(
-          pht('Prevent Dangerous Changes'),
-          pht('Allow Dangerous Changes'))
-        ->setTransactionType(
-          PhabricatorRepositoryDangerousTransaction::TRANSACTIONTYPE)
-        ->setDescription(pht('Permit dangerous changes to be made.'))
-        ->setConduitDescription(pht('Allow or prevent dangerous changes.'))
-        ->setConduitTypeDescription(pht('New protection setting.'))
-        ->setValue($object->shouldAllowDangerousChanges()),
-      id(new PhabricatorBoolEditField())
-        ->setKey('allowEnormousChanges')
-        ->setLabel(pht('Allow Enormous Changes'))
-        ->setIsCopyable(true)
-        ->setIsFormField(false)
-        ->setOptions(
-          pht('Prevent Enormous Changes'),
-          pht('Allow Enormous Changes'))
-        ->setTransactionType(
-          PhabricatorRepositoryEnormousTransaction::TRANSACTIONTYPE)
-        ->setDescription(pht('Permit enormous changes to be made.'))
-        ->setConduitDescription(pht('Allow or prevent enormous changes.'))
-        ->setConduitTypeDescription(pht('New protection setting.'))
-        ->setValue($object->shouldAllowEnormousChanges()),
       id(new PhabricatorSelectEditField())
         ->setKey('status')
         ->setLabel(pht('Status'))
@@ -398,17 +349,6 @@ final class DiffusionRepositoryEditEngine
         ->setConduitTypeDescription(pht('New tracked branches.'))
         ->setValue($track_value),
       id(new PhabricatorTextEditField())
-        ->setKey('importOnly')
-        ->setLabel(pht('Import Only'))
-        ->setTransactionType(
-          PhabricatorRepositorySVNSubpathTransaction::TRANSACTIONTYPE)
-        ->setIsCopyable(true)
-        ->setDescription(pht('Subpath to selectively import.'))
-        ->setConduitDescription(pht('Set the subpath to import.'))
-        ->setConduitTypeDescription(pht('New subpath to import.'))
-        ->setValue($object->getDetail('svn-subpath'))
-        ->setControlInstructions($subpath_instructions),
-      id(new PhabricatorTextEditField())
         ->setKey('stagingAreaURI')
         ->setLabel(pht('Staging Area URI'))
         ->setTransactionType(
@@ -456,31 +396,6 @@ final class DiffusionRepositoryEditEngine
         ->setConduitDescription(pht('Change publishing options.'))
         ->setConduitTypeDescription(pht('New notification setting.'))
         ->setValue(!$object->isPublishingDisabled()),
-      id(new PhabricatorPolicyEditField())
-        ->setKey('policy.push')
-        ->setLabel(pht('Push Policy'))
-        ->setAliases(array('push'))
-        ->setIsCopyable(true)
-        ->setCapability(DiffusionPushCapability::CAPABILITY)
-        ->setPolicies($policies)
-        ->setTransactionType(
-          PhabricatorRepositoryPushPolicyTransaction::TRANSACTIONTYPE)
-        ->setDescription(
-          pht('Controls who can push changes to the repository.'))
-        ->setConduitDescription(
-          pht('Change the push policy of the repository.'))
-        ->setConduitTypeDescription(pht('New policy PHID or constant.'))
-        ->setValue($object->getPolicy(DiffusionPushCapability::CAPABILITY)),
-      id(new PhabricatorTextEditField())
-        ->setKey('filesizeLimit')
-        ->setLabel(pht('Filesize Limit'))
-        ->setTransactionType(
-          PhabricatorRepositoryFilesizeLimitTransaction::TRANSACTIONTYPE)
-        ->setDescription(pht('Maximum permitted file size.'))
-        ->setConduitDescription(pht('Change the filesize limit.'))
-        ->setConduitTypeDescription(pht('New repository filesize limit.'))
-        ->setControlInstructions($filesize_warning)
-        ->setValue($object->getFilesizeLimit()),
       id(new PhabricatorTextEditField())
         ->setKey('copyTimeLimit')
         ->setLabel(pht('Clone/Fetch Timeout'))
@@ -491,15 +406,6 @@ final class DiffusionRepositoryEditEngine
         ->setConduitDescription(pht('Change the copy time limit.'))
         ->setConduitTypeDescription(pht('New repository copy time limit.'))
         ->setValue($object->getCopyTimeLimit()),
-      id(new PhabricatorTextEditField())
-        ->setKey('touchLimit')
-        ->setLabel(pht('Touched Paths Limit'))
-        ->setTransactionType(
-          PhabricatorRepositoryTouchLimitTransaction::TRANSACTIONTYPE)
-        ->setDescription(pht('Maximum permitted paths touched per commit.'))
-        ->setConduitDescription(pht('Change the touch limit.'))
-        ->setConduitTypeDescription(pht('New repository touch limit.'))
-        ->setValue($object->getTouchLimit()),
     );
   }
 

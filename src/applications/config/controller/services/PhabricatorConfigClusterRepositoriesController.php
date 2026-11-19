@@ -79,7 +79,8 @@ final class PhabricatorConfigClusterRepositoriesController
       $all_versions,
       $all_active_devices);
 
-    $push_times = $this->loadLeaderPushTimes($leader_versions);
+    // Push events were only written when this software hosted repositories.
+    $push_times = array();
 
     $repository_groups = mgroup($all_repositories, 'getAlmanacServicePHID');
     $repository_versions = mgroup($all_versions, 'getRepositoryPHID');
@@ -317,32 +318,6 @@ final class PhabricatorConfigClusterRepositoriesController
 
       $leader = (int)max(mpull($versions, 'getRepositoryVersion'));
       $result[$repository_phid] = $leader;
-    }
-
-    return $result;
-  }
-
-  private function loadLeaderPushTimes(array $leader_versions) {
-    $viewer = $this->getViewer();
-
-    if (!$leader_versions) {
-      return array();
-    }
-
-    $events = id(new PhabricatorRepositoryPushEventQuery())
-      ->setViewer($viewer)
-      ->withIDs($leader_versions)
-      ->execute();
-    $events = mpull($events, null, 'getID');
-
-    $result = array();
-    foreach ($leader_versions as $key => $version) {
-      $event = idx($events, $version);
-      if (!$event) {
-        continue;
-      }
-
-      $result[$key] = $event->getEpoch();
     }
 
     return $result;

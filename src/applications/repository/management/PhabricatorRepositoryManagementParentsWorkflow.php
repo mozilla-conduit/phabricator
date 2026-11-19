@@ -28,18 +28,7 @@ final class PhabricatorRepositoryManagementParentsWorkflow
         ->execute();
     }
 
-    $console = PhutilConsole::getConsole();
     foreach ($repos as $repo) {
-      $monogram = $repo->getMonogram();
-      if ($repo->isSVN()) {
-        $console->writeOut(
-          "%s\n",
-          pht(
-            'Skipping "%s": Subversion repositories do not require this '.
-            'cache to be built.',
-            $monogram));
-        continue;
-      }
       $this->rebuildRepository($repo);
     }
 

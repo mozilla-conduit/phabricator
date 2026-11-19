@@ -3,7 +3,6 @@
 final class PhabricatorRepositoryType extends Phobject {
 
   const REPOSITORY_TYPE_GIT         = 'git';
-  const REPOSITORY_TYPE_SVN         = 'svn';
   const REPOSITORY_TYPE_MERCURIAL   = 'hg';
 
   public static function getAllRepositoryTypes() {
@@ -36,13 +35,6 @@ final class PhabricatorRepositoryType extends Phobject {
         'image' => 'repo/repo-hg.png',
         'create.header' => pht('Create Mercurial Repository'),
         'create.subheader' => pht('Create a new Mercurial repository.'),
-      ),
-      self::REPOSITORY_TYPE_SVN => array(
-        'name' => pht('Subversion'),
-        'icon' => 'fa-database',
-        'image' => 'repo/repo-svn.png',
-        'create.header' => pht('Create Subversion Repository'),
-        'create.subheader' => pht('Create a new Subversion repository.'),
       ),
     );
   }

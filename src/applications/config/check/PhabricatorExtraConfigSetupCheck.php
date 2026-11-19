@@ -325,6 +325,8 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
 
     $maniphest_reason = pht('Maniphest has been removed.');
 
+    $hosting_reason = pht('Repository hosting has been removed.');
+
     $asana_reason = pht(
       'The Asana integration has been removed.');
 
@@ -567,6 +569,13 @@ final class PhabricatorExtraConfigSetupCheck extends PhabricatorSetupCheck {
       'maniphest.points' => $maniphest_reason,
       'maniphest.subtypes' => $maniphest_reason,
       'maniphest.priorities' => $maniphest_reason,
+      'log.ssh.path' => $hosting_reason,
+      'log.ssh.format' => $hosting_reason,
+      'log.ssh-error.path' => $hosting_reason,
+      'diffusion.allow-http-auth' => $hosting_reason,
+      'diffusion.allow-git-lfs' => $hosting_reason,
+      'diffusion.ssh-host' => $hosting_reason,
+      'diffusion.ssh-port' => $hosting_reason,
 
       'asana.workspace-id' => $asana_reason,
       'asana.project-ids' => $asana_reason,

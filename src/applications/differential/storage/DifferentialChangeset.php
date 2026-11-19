@@ -264,16 +264,6 @@ final class DifferentialChangeset
     $path = $this->getFilename();
     $path = rtrim($base, '/').'/'.ltrim($path, '/');
 
-    $svn = PhabricatorRepositoryType::REPOSITORY_TYPE_SVN;
-    if ($repository && $repository->getVersionControlSystem() == $svn) {
-      $prefix = $repository->getDetail('remote-uri');
-      $prefix = id(new PhutilURI($prefix))->getPath();
-      if (!strncmp($path, $prefix, strlen($prefix))) {
-        $path = substr($path, strlen($prefix));
-      }
-      $path = '/'.ltrim($path, '/');
-    }
-
     return $path;
   }
 

@@ -31,10 +31,6 @@ final class PhabricatorRepositorySearchEngine
         ->setLabel(pht('Status'))
         ->setKey('status')
         ->setOptions($this->getStatusOptions()),
-      id(new PhabricatorSearchSelectField())
-        ->setLabel(pht('Hosted'))
-        ->setKey('hosted')
-        ->setOptions($this->getHostedOptions()),
       id(new PhabricatorSearchCheckboxesField())
         ->setLabel(pht('Types'))
         ->setKey('types')
@@ -71,13 +67,6 @@ final class PhabricatorRepositorySearchEngine
       $status = idx($this->getStatusValues(), $map['status']);
       if ($status) {
         $query->withStatus($status);
-      }
-    }
-
-    if ($map['hosted']) {
-      $hosted = idx($this->getHostedValues(), $map['hosted']);
-      if ($hosted) {
-        $query->withHosted($hosted);
       }
     }
 
@@ -137,22 +126,6 @@ final class PhabricatorRepositorySearchEngine
       '' => PhabricatorRepositoryQuery::STATUS_ALL,
       'open' => PhabricatorRepositoryQuery::STATUS_OPEN,
       'closed' => PhabricatorRepositoryQuery::STATUS_CLOSED,
-    );
-  }
-
-  private function getHostedOptions() {
-    return array(
-      '' => pht('Hosted and Remote Repositories'),
-      'phabricator' => pht('Hosted Repositories'),
-      'remote' => pht('Remote Repositories'),
-    );
-  }
-
-  private function getHostedValues() {
-    return array(
-      '' => PhabricatorRepositoryQuery::HOSTED_ALL,
-      'phabricator' => PhabricatorRepositoryQuery::HOSTED_PHABRICATOR,
-      'remote' => PhabricatorRepositoryQuery::HOSTED_REMOTE,
     );
   }
 

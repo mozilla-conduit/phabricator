@@ -110,7 +110,15 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
           'project_triggerusage',
         ),
       ),
-      'db.repository' => array(),
+      'db.repository' => array(
+        'retired' => array(
+          'repository_filesystem',
+          'repository_gitlfsref',
+          'repository_pullevent',
+          'repository_pushevent',
+          'repository_pushlog',
+        ),
+      ),
       'db.search' => array(),
       'db.slowvote' => array(
         'dead' => true,
@@ -174,7 +182,9 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.nuance' => array(
         'dead' => true,
       ),
-      'db.passphrase' => array(),
+      'db.passphrase' => array(
+        'dead' => true,
+      ),
       'db.dashboard' => array(),
       'db.system' => array(),
       'db.fund' => array(
