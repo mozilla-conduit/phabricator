@@ -135,6 +135,12 @@ final class ReviewHelperDraftHoldEditTestCase
     $this->assertPublished(
       $revision,
       pht('Requesting review should publish the revision.'));
+    $this->assertEqual(
+      ReviewHelperReleaseHoldTransaction::REASON_AUTHOR_UPDATED,
+      $this->loadReleaseReason($revision),
+      pht(
+        'An update sent with "Request Review" after the findings should be '.
+        'recorded as the author responding, not skipping them.'));
     $this->assertFalse(
       in_array(
         ReviewHelperReleaseHoldTransaction::TRANSACTIONTYPE,

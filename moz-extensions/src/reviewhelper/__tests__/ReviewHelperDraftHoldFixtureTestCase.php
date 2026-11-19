@@ -88,6 +88,37 @@ abstract class ReviewHelperDraftHoldFixtureTestCase
   }
 
   /**
+   * Creates a user in the `secure-revision` project, which may act on other
+   * users' drafts the way phab-bot and sheriffs do.
+   */
+  protected function newSecureRevisionMember(): PhabricatorUser {
+    $user = $this->generateNewTestUser();
+
+    $xactions = array(
+      id(new PhabricatorProjectTransaction())
+        ->setTransactionType(PhabricatorProjectNameTransaction::TRANSACTIONTYPE)
+        ->setNewValue('secure-revision'),
+      id(new PhabricatorProjectTransaction())
+        ->setTransactionType(PhabricatorTransactions::TYPE_EDGE)
+        ->setMetadataValue(
+          'edge:type',
+          PhabricatorProjectProjectHasMemberEdgeType::EDGECONST)
+        ->setNewValue(
+          array('=' => array($user->getPHID() => $user->getPHID()))),
+    );
+
+    id(new PhabricatorProjectTransactionEditor())
+      ->setActor($user)
+      ->setContentSource($this->newContentSource())
+      ->setContinueOnNoEffect(true)
+      ->applyTransactions(
+        PhabricatorProject::initializeNewProject($user),
+        $xactions);
+
+    return $user;
+  }
+
+  /**
    * Creates a draft revision as `moz-phab submit` would, before phab-bot has
    * seen it.
    */
