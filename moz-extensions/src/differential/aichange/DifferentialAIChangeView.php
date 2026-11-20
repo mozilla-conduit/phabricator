@@ -118,16 +118,34 @@ final class DifferentialAIChangeView extends AphrontView {
       $parts[] = $summary;
     }
     if (strlen($confidence ?? '')) {
-      $parts[] = phutil_tag(
-        'span',
-        array('class' => 'ai-change-confidence'),
-        pht('Confidence: %s', $confidence));
+      $parts[] = $this->renderConfidence($confidence);
     }
 
     return phutil_tag(
       'p',
       array('class' => 'ai-change-summary'),
       phutil_implode_html(' ', $parts));
+  }
+
+  /**
+   * Render the requester's confidence as a tag, coloured by how sure it is.
+   */
+  private function renderConfidence($confidence) {
+    $colors = array(
+      'high' => PHUITagView::COLOR_GREEN,
+      'medium' => PHUITagView::COLOR_ORANGE,
+      'low' => PHUITagView::COLOR_RED,
+    );
+    $color = idx(
+      $colors,
+      phutil_utf8_strtolower($confidence),
+      PHUITagView::COLOR_GREY);
+
+    return id(new PHUITagView())
+      ->setType(PHUITagView::TYPE_SHADE)
+      ->setColor($color)
+      ->addClass('ai-change-confidence')
+      ->setName(pht('Confidence: %s', $confidence));
   }
 
   private function renderDetails(DifferentialAIChange $ai_change) {

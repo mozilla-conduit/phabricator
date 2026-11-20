@@ -7,7 +7,8 @@
 }
 
 .ai-change-confidence {
-  color: {$greytext};
+  margin-left: 4px;
+  white-space: nowrap;
 }
 
 .ai-change-details > summary {

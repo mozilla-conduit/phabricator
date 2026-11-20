@@ -499,6 +499,10 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       strpos($pending, 'Kept the beta API.') !== false,
       pht('A pending box should show the summary.'));
     $this->assertTrue(
+      strpos($pending, 'phui-tag-green') !== false &&
+      strpos($pending, 'Confidence: high') !== false,
+      pht('A pending box should show the confidence as a coloured tag.'));
+    $this->assertTrue(
       strpos($pending, '<details') !== false &&
       strpos($pending, '<strong>updateOverflow</strong>') !== false,
       pht('A pending box should render the details as collapsed remarkup.'));
