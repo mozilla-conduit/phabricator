@@ -517,14 +517,18 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
     $this->assertTrue(
       strpos($pending, '<strong>updateOverflow</strong>') !== false,
       pht('A pending box should render the details as remarkup.'));
+    $more_at = strpos($pending, '<details class="ai-change-more">');
     $details_at = strpos($pending, 'About this revision');
-    $summary_at = strpos($pending, 'AI summary');
     $this->assertTrue(
-      $details_at !== false && $summary_at !== false &&
-      $details_at < $summary_at,
+      $more_at !== false && $details_at !== false && $more_at < $details_at,
       pht(
-        'A pending box should label the details and the AI summary, with '.
-        'the revision-specific details first.'));
+        'A pending box should fold the revision\'s details away under '.
+        '"Show details".'));
+    $this->assertTrue(
+      strpos($pending, 'AI summary') === false,
+      pht(
+        'A short AI summary should show in full by default, without being '.
+        'repeated under the details.'));
     $this->assertTrue(
       strpos(
         $pending,
@@ -540,6 +544,31 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
     $this->assertTrue(
       strpos($this->renderBox($author, $revision), 'no longer required') !== false,
       pht('A lapsed box should say the approval is no longer required.'));
+  }
+
+  public function testBoxShortensALongSummary() {
+    $author = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $long_summary = str_repeat('Kept the beta API in every caller. ', 20).'END';
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+      'summary' => $long_summary,
+      'confidence' => 'medium',
+    ));
+
+    $box = $this->renderBox($author, $revision);
+    $more_at = strpos($box, '<details class="ai-change-more">');
+    $this->assertTrue(
+      $more_at !== false,
+      pht('A long summary should leave the full text under "Show details".'));
+    $this->assertTrue(
+      strpos(substr($box, 0, $more_at), 'END') === false,
+      pht('The summary shown by default should be cut short.'));
+    $this->assertTrue(
+      strpos(substr($box, $more_at), 'AI summary') !== false &&
+      strpos(substr($box, $more_at), 'END') !== false,
+      pht('The full summary should be under "Show details".'));
   }
 
   public function testBoxOnClosedRevisionDoesNotAskForApproval() {
