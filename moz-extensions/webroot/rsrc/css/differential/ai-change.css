@@ -7,14 +7,17 @@
 }
 
 .ai-change-confidence {
-  color: {$greytext};
+  margin-left: 4px;
+  white-space: nowrap;
 }
 
-.ai-change-details > summary {
-  cursor: pointer;
-  color: {$anchor};
+.ai-change-section {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid {$thinblueborder};
 }
 
-.ai-change-details[open] > summary {
-  margin-bottom: 6px;
+.ai-change-section-title {
+  font-weight: bold;
+  margin-bottom: 4px;
 }

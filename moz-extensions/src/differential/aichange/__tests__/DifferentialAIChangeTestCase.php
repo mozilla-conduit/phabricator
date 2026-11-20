@@ -384,16 +384,28 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
         $this->reloadRevision($author, $revision->getPHID()),
         $author);
 
+    $action = $field->getCommentAction();
+    $this->assertTrue(
+      $action instanceof PhabricatorEditEngineCheckboxesCommentAction,
+      pht('The comment action should be a checkbox, not a one-option menu.'));
     $this->assertEqual(
       array((int)$change_diff->getID()),
-      array_keys($field->getCommentAction()->getOptions()),
+      array_keys($action->getOptions()),
       pht('The comment action should offer only the pending diff.'));
+    $this->assertEqual(
+      array(),
+      $action->getValue(),
+      pht('The checkbox should start unticked.'));
     $this->assertEqual(
       (int)$change_diff->getID(),
       $field
-        ->readValueFromComment((string)$change_diff->getID())
+        ->readValueFromComment(array((string)$change_diff->getID()))
         ->getValueForTransaction(),
-      pht('The submitted option should become the diff ID.'));
+      pht('A ticked checkbox should become the diff ID.'));
+    $this->assertEqual(
+      null,
+      $field->readValueFromComment(array())->getValueForTransaction(),
+      pht('An unticked checkbox should not become a diff ID.'));
   }
 
   public function testNewRequestClearsApproval() {
@@ -499,9 +511,20 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       strpos($pending, 'Kept the beta API.') !== false,
       pht('A pending box should show the summary.'));
     $this->assertTrue(
-      strpos($pending, '<details') !== false &&
+      strpos($pending, 'phui-tag-green') !== false &&
+      strpos($pending, 'Confidence: high') !== false,
+      pht('A pending box should show the confidence as a coloured tag.'));
+    $this->assertTrue(
       strpos($pending, '<strong>updateOverflow</strong>') !== false,
-      pht('A pending box should render the details as collapsed remarkup.'));
+      pht('A pending box should render the details as remarkup.'));
+    $details_at = strpos($pending, 'About this revision');
+    $summary_at = strpos($pending, 'AI summary');
+    $this->assertTrue(
+      $details_at !== false && $summary_at !== false &&
+      $details_at < $summary_at,
+      pht(
+        'A pending box should label the details and the AI summary, with '.
+        'the revision-specific details first.'));
     $this->assertTrue(
       strpos(
         $pending,

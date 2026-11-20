@@ -6,8 +6,9 @@
 /**
  * The box above a revision's details showing its AI change state.
  *
- * It shows a brief summary and a link to compare the change, with the requester's
- * longer explanation collapsed so it doesn't crowd the page.
+ * Below Phabricator's own instructions, it shows the requester's notes on this
+ * revision, then the AI's summary of the whole change, each in its own section
+ * so reviewers can tell the AI-written text apart.
  */
 final class DifferentialAIChangeView extends AphrontView {
 
@@ -95,8 +96,10 @@ final class DifferentialAIChangeView extends AphrontView {
         break;
     }
 
-    $box->appendChild($this->renderSummary($ai_change));
+    // The details are specific to this revision, while the summary may cover a
+    // whole stack, so the details come first.
     $box->appendChild($this->renderDetails($ai_change));
+    $box->appendChild($this->renderSummary($ai_change));
 
     $compare_button = $this->renderCompareButton($ai_change);
     if ($compare_button) {
@@ -118,16 +121,36 @@ final class DifferentialAIChangeView extends AphrontView {
       $parts[] = $summary;
     }
     if (strlen($confidence ?? '')) {
-      $parts[] = phutil_tag(
-        'span',
-        array('class' => 'ai-change-confidence'),
-        pht('Confidence: %s', $confidence));
+      $parts[] = $this->renderConfidence($confidence);
     }
 
-    return phutil_tag(
-      'p',
-      array('class' => 'ai-change-summary'),
-      phutil_implode_html(' ', $parts));
+    return $this->renderSection(
+      pht('AI summary'),
+      phutil_tag(
+        'p',
+        array('class' => 'ai-change-summary'),
+        phutil_implode_html(' ', $parts)));
+  }
+
+  /**
+   * Render the requester's confidence as a tag, coloured by how sure it is.
+   */
+  private function renderConfidence($confidence) {
+    $colors = array(
+      'high' => PHUITagView::COLOR_GREEN,
+      'medium' => PHUITagView::COLOR_ORANGE,
+      'low' => PHUITagView::COLOR_RED,
+    );
+    $color = idx(
+      $colors,
+      phutil_utf8_strtolower($confidence),
+      PHUITagView::COLOR_GREY);
+
+    return id(new PHUITagView())
+      ->setType(PHUITagView::TYPE_SHADE)
+      ->setColor($color)
+      ->addClass('ai-change-confidence')
+      ->setName(pht('Confidence: %s', $confidence));
   }
 
   private function renderDetails(DifferentialAIChange $ai_change) {
@@ -136,12 +159,24 @@ final class DifferentialAIChangeView extends AphrontView {
       return null;
     }
 
+    return $this->renderSection(
+      pht('About this revision'),
+      phutil_tag(
+        'div',
+        array('class' => 'ai-change-details'),
+        new PHUIRemarkupView($this->getViewer(), $details)));
+  }
+
+  /**
+   * Render one titled section of the box, set apart from the text above it.
+   */
+  private function renderSection($title, $content) {
     return phutil_tag(
-      'details',
-      array('class' => 'ai-change-details'),
+      'div',
+      array('class' => 'ai-change-section'),
       array(
-        phutil_tag('summary', array(), pht('Details')),
-        new PHUIRemarkupView($this->getViewer(), $details),
+        phutil_tag('div', array('class' => 'ai-change-section-title'), $title),
+        $content,
       ));
   }
 
