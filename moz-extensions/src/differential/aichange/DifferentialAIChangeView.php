@@ -6,11 +6,15 @@
 /**
  * The box above a revision's details showing its AI change state.
  *
- * Below Phabricator's own instructions, it shows the requester's notes on this
- * revision, then the AI's summary of the whole change, each in its own section
- * so reviewers can tell the AI-written text apart.
+ * Below Phabricator's own instructions, it shows a short AI summary and its
+ * confidence. The requester's notes on this revision and the full AI summary are
+ * folded away under "Show details", each in its own labelled section so
+ * reviewers can tell the AI-written text apart.
  */
 final class DifferentialAIChangeView extends AphrontView {
+
+  // How much of the AI summary shows before the details are expanded.
+  const SHORT_SUMMARY_GLYPHS = 200;
 
   private $revision;
 
@@ -96,10 +100,8 @@ final class DifferentialAIChangeView extends AphrontView {
         break;
     }
 
-    // The details are specific to this revision, while the summary may cover a
-    // whole stack, so the details come first.
-    $box->appendChild($this->renderDetails($ai_change));
-    $box->appendChild($this->renderSummary($ai_change));
+    $box->appendChild($this->renderShortSummary($ai_change));
+    $box->appendChild($this->renderMore($ai_change));
 
     $compare_button = $this->renderCompareButton($ai_change);
     if ($compare_button) {
@@ -109,27 +111,70 @@ final class DifferentialAIChangeView extends AphrontView {
     return $box;
   }
 
-  private function renderSummary(DifferentialAIChange $ai_change) {
-    $summary = $ai_change->getSummary();
-    $confidence = $ai_change->getConfidence();
-    if (!strlen($summary ?? '') && !strlen($confidence ?? '')) {
+  /**
+   * Render the confidence and the start of the AI summary, shown by default.
+   */
+  private function renderShortSummary(DifferentialAIChange $ai_change) {
+    $summary = $ai_change->getSummary() ?? '';
+    $confidence = $ai_change->getConfidence() ?? '';
+    if (!strlen($summary) && !strlen($confidence)) {
       return null;
     }
 
     $parts = array();
-    if (strlen($summary ?? '')) {
-      $parts[] = $summary;
-    }
-    if (strlen($confidence ?? '')) {
+    if (strlen($confidence)) {
       $parts[] = $this->renderConfidence($confidence);
+    }
+    if (strlen($summary)) {
+      $parts[] = $this->shortenSummary($summary);
+    }
+
+    return phutil_tag(
+      'p',
+      array('class' => 'ai-change-summary'),
+      phutil_implode_html(' ', $parts));
+  }
+
+  private function shortenSummary($summary) {
+    return id(new PhutilUTF8StringTruncator())
+      ->setMaximumGlyphs(self::SHORT_SUMMARY_GLYPHS)
+      ->truncateString($summary);
+  }
+
+  /**
+   * Render the revision's details and the full AI summary, folded away.
+   *
+   * The details are specific to this revision, while the summary may cover a
+   * whole stack, so the details come first. The full summary is only repeated
+   * when the short one had to be cut.
+   */
+  private function renderMore(DifferentialAIChange $ai_change) {
+    $sections = array_filter(array(
+      $this->renderDetails($ai_change),
+      $this->renderFullSummary($ai_change),
+    ));
+    if (!$sections) {
+      return null;
+    }
+
+    return phutil_tag(
+      'details',
+      array('class' => 'ai-change-more'),
+      array(
+        phutil_tag('summary', array(), pht('Show details')),
+        $sections,
+      ));
+  }
+
+  private function renderFullSummary(DifferentialAIChange $ai_change) {
+    $summary = $ai_change->getSummary() ?? '';
+    if ($this->shortenSummary($summary) === $summary) {
+      return null;
     }
 
     return $this->renderSection(
       pht('AI summary'),
-      phutil_tag(
-        'p',
-        array('class' => 'ai-change-summary'),
-        phutil_implode_html(' ', $parts)));
+      phutil_tag('p', array('class' => 'ai-change-summary'), $summary));
   }
 
   /**
