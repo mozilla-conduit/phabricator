@@ -6,8 +6,8 @@
 /**
  * The "Approve AI Change" field, whose value is the ID of the diff approved.
  *
- * The comment form offers the pending diff as the only option, so a stale page
- * can't approve a newer AI change than the one the reviewer saw.
+ * The comment form offers one checkbox, keyed by the pending diff, so a stale
+ * page can't approve a newer AI change than the one the reviewer saw.
  */
 final class DifferentialAIChangeApproveEditField
   extends PhabricatorEditField {
@@ -51,7 +51,15 @@ final class DifferentialAIChangeApproveEditField
   }
 
   protected function getValueFromComment($value) {
-    // The comment form submits the selected option as a string.
+    // The comment form submits the ticked checkboxes' keys as a list of
+    // strings, so a ticked box becomes the diff ID and an unticked one `null`.
+    if (is_array($value)) {
+      $value = head($value);
+      if ($value === false) {
+        return null;
+      }
+    }
+
     if (is_string($value) && ctype_digit($value)) {
       return (int)$value;
     }
@@ -59,10 +67,15 @@ final class DifferentialAIChangeApproveEditField
     return $value;
   }
 
+  protected function getValueForCommentAction($value) {
+    // Start unticked, so approving takes a deliberate click.
+    return array();
+  }
+
   protected function newCommentAction() {
     $diff_id = $this->getDiffID();
 
-    return id(new PhabricatorEditEngineSelectCommentAction())
+    return id(new PhabricatorEditEngineCheckboxesCommentAction())
       ->setOptions(array(
         $diff_id => pht('I checked the AI change in Diff %d', $diff_id),
       ))

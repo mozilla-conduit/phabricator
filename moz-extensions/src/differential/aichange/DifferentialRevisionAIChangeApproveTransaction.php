@@ -99,6 +99,15 @@ final class DifferentialRevisionAIChangeApproveTransaction
       ->getChangeDiffID();
     foreach ($xactions as $xaction) {
       $value = $xaction->getNewValue();
+      if ($value === null) {
+        $errors[] = $this->newInvalidError(
+          pht(
+            'Tick "I checked the AI change in Diff %s" to approve it.',
+            $diff_id),
+          $xaction);
+        continue;
+      }
+
       if (!is_int($value) || $value !== (int)$diff_id) {
         $errors[] = $this->newInvalidError(
           pht(
