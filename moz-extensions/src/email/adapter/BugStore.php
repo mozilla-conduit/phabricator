@@ -35,9 +35,10 @@ class BugStore {
       ->setPath('/rest/bug/' . $id)
       ->appendQueryParam('include_fields', 'summary');
 
+    $apiKey = PhabricatorEnv::getEnvConfig('bugzilla.automation_api_key');
     $future = (new HTTPSFuture((string)$bugApiURI))
       ->setMethod('GET')
-      ->addHeader('X-Bugzilla-API-Key', PhabricatorEnv::getEnvConfig('bugzilla.automation_api_key'))
+      ->addHeader('X-Bugzilla-API-Key', $apiKey)
       ->addHeader('Accept', 'application/json')
       ->addHeader('User-Agent', 'Phabricator')
       ->setTimeout(PhabricatorEnv::getEnvConfig('bugzilla.timeout'));
