@@ -81,6 +81,24 @@ final class ReviewHelperRequestReviewHeraldActionTestCase
         'when a rule matches it.'));
   }
 
+  public function testRevisionHeldForAIReviewIsNotRequestedAgain() {
+    $env = $this->configureReviewHelper();
+    $this->newRequestReviewRule(array($this->getRepository()));
+    $author = $this->generateNewTestUser();
+    $revision = $this->newDraftRevision($author);
+    ReviewHelperDraftHold::startHold($revision);
+    $revision->save();
+
+    $this->publish($author, $this->reloadRevision($revision));
+
+    $this->assertEqual(
+      array(),
+      $this->loadQueuedTaskClasses($revision),
+      pht(
+        'Publishing a revision held for AI review should not request a '.
+        'second review, since the hold already requested one.'));
+  }
+
   public function testPersonalRulesCannotUseTheAction() {
     $action = new ReviewHelperRequestReviewHeraldAction();
 
