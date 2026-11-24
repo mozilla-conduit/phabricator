@@ -9,6 +9,7 @@ final class DifferentialRevisionQuery
   extends PhabricatorCursorPagedPolicyAwareQuery {
 
   private $authors = array();
+  private $excludedAuthors = array();
   private $draftAuthors = array();
   private $ccs = array();
   private $reviewers = array();
@@ -65,6 +66,18 @@ final class DifferentialRevisionQuery
    */
   public function withAuthors(array $author_phids) {
     $this->authors = $author_phids;
+    return $this;
+  }
+
+  /**
+   * Filter out revisions authored by any of the given PHIDs.
+   *
+   * @param array List of PHIDs of authors to exclude
+   * @return this
+   * @task config
+   */
+  public function withExcludedAuthors(array $author_phids) {
+    $this->excludedAuthors = $author_phids;
     return $this;
   }
 
@@ -675,6 +688,13 @@ final class DifferentialRevisionQuery
         $conn,
         'r.authorPHID IN (%Ls)',
         $this->authors);
+    }
+
+    if ($this->excludedAuthors) {
+      $where[] = qsprintf(
+        $conn,
+        'r.authorPHID NOT IN (%Ls)',
+        $this->excludedAuthors);
     }
 
     if ($this->revIDs) {

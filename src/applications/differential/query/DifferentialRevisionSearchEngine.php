@@ -33,6 +33,10 @@ final class DifferentialRevisionSearchEngine
       $query->withAuthors($map['authorPHIDs']);
     }
 
+    if ($map['excludedAuthorPHIDs']) {
+      $query->withExcludedAuthors($map['excludedAuthorPHIDs']);
+    }
+
     if ($map['reviewerPHIDs']) {
       $query->withReviewers($map['reviewerPHIDs']);
     }
@@ -79,6 +83,12 @@ final class DifferentialRevisionSearchEngine
         ->setAliases(array('author', 'authors', 'authorPHID'))
         ->setDescription(
           pht('Find revisions with specific authors.')),
+      id(new PhabricatorUsersSearchField())
+        ->setLabel(pht('Exclude Authors'))
+        ->setKey('excludedAuthorPHIDs')
+        ->setAliases(array('excludedAuthor', 'excludedAuthors'))
+        ->setDescription(
+          pht('Find revisions that are not by specific authors.')),
       id(new PhabricatorSearchDatasourceField())
         ->setLabel(pht('Reviewers'))
         ->setKey('reviewerPHIDs')
