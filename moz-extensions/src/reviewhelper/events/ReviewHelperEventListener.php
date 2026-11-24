@@ -53,15 +53,9 @@ final class ReviewHelperEventListener extends PhabricatorEventListener {
 
     $request_uri = '/reviewhelper/request/' . $object->getID() . '/';
 
-    $tag = id(new PHUITagView())
-      ->setType(PHUITagView::TYPE_SHADE)
-      ->setColor(PHUITagView::COLOR_GREEN)
-      ->setSlimShady(true)
-      ->setName(pht('New'));
-
     $action = id(new PhabricatorActionView())
       ->setHref($request_uri)
-      ->setName(array(pht('Request AI Review'), ' ', $tag))
+      ->setName(pht('Request AI Review'))
       ->setIcon('fa-magic')
       ->setDisabled(!$is_open)
       ->setWorkflow(true);
