@@ -33,13 +33,20 @@ class BugStore {
 
     $bugApiURI = (new PhutilURI(PhabricatorEnv::getEnvConfig('bugzilla.url')))
       ->setPath('/rest/bug/' . $id)
-      ->appendQueryParam('include_fields', 'summary')
-      ->appendQueryParam('api_key', PhabricatorEnv::getEnvConfig('bugzilla.automation_api_key'));
+      ->appendQueryParam('include_fields', 'summary');
 
-    try {
-      $rawBugResponse = file_get_contents((string)$bugApiURI);
-    } catch (RuntimeException $e) {
-      // If the request fails (or 404s), Phabricator catches the error and throws a RuntimeException
+    $apiKey = PhabricatorEnv::getEnvConfig('bugzilla.automation_api_key');
+    $future = (new HTTPSFuture((string)$bugApiURI))
+      ->setMethod('GET')
+      ->addHeader('X-Bugzilla-API-Key', $apiKey)
+      ->addHeader('Accept', 'application/json')
+      ->addHeader('User-Agent', 'Phabricator')
+      ->setTimeout(PhabricatorEnv::getEnvConfig('bugzilla.timeout'));
+
+    // resolve() reports HTTP errors, timeouts and transport failures through
+    // the status object rather than throwing, so check the code explicitly.
+    list($status, $rawBugResponse) = $future->resolve();
+    if ((int)$status->getStatusCode() !== 200) {
       return null;
     }
 
