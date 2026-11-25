@@ -575,9 +575,44 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('An approved box should say who approved it.'));
 
     $this->updateRevision($author, $revision);
+    $lapsed = $this->renderBox($author, $revision);
     $this->assertTrue(
-      strpos($this->renderBox($author, $revision), 'no longer required') !== false,
+      strpos($lapsed, 'no longer required') !== false,
       pht('A lapsed box should say the approval is no longer required.'));
+    $this->assertTrue(
+      strpos($lapsed, 'approved the change in diff '.$change_diff->getID()) !== false,
+      pht('A lapsed box should still say who approved the change.'));
+    $this->assertTrue(
+      strpos($lapsed, 'Kept the beta API.') !== false &&
+      strpos(
+        $lapsed,
+        'vs='.$conflict_diff->getID().'&amp;id='.$change_diff->getID()) !== false,
+      pht('A lapsed box should keep the details and the comparison link.'));
+  }
+
+  public function testBoxOnLandedRevisionShowsTheApproval() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+    $this->approve($approver, $revision);
+
+    // Landing attaches the commit's diff and publishes the revision.
+    $this->updateRevision($author, $revision);
+    $this->reloadRevision($author, $revision->getPHID())
+      ->setModernRevisionStatus(DifferentialRevisionStatus::PUBLISHED)
+      ->save();
+
+    $landed = $this->renderBox($author, $revision);
+    $this->assertTrue(
+      strpos($landed, 'approved the change in diff '.$change_diff->getID()) !== false,
+      pht('A landed box should say who approved the change.'));
+    $this->assertTrue(
+      strpos($landed, 'no longer required') === false,
+      pht('A landed box should not say the approval is no longer required.'));
   }
 
   public function testBoxOnClosedRevisionDoesNotAskForApproval() {

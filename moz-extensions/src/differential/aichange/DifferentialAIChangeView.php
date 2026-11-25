@@ -33,68 +33,62 @@ final class DifferentialAIChangeView extends AphrontView {
     $box = id(new PHUIInfoView())
       ->addClass('ai-change');
 
-    switch ($status) {
-      case DifferentialAIChange::STATUS_LAPSED:
-        return $box
-          ->setSeverity(PHUIInfoView::SEVERITY_NOTICE)
-          ->setTitle(pht('AI change: approval no longer required'))
-          ->appendChild(
-            pht(
-              'This revision was updated after the AI change, so normal '.
-              'review covers it.'));
-      case DifferentialAIChange::STATUS_APPROVED:
+    $kind_name = ucfirst(
+      DifferentialAIChange::getKindName($ai_change->getKind()));
+    $approval = $this->renderApproval($ai_change);
+
+    if ($this->revision->isClosed()) {
+      // Landing attaches a new diff, so a closed revision's change looks
+      // lapsed. Say whether it was approved instead.
+      if ($approval) {
         $box
           ->setSeverity(PHUIInfoView::SEVERITY_SUCCESS)
-          ->setTitle(
-            pht(
-              '%s approved',
-              ucfirst(
-                DifferentialAIChange::getKindName($ai_change->getKind()))))
-          ->appendChild(
-            phutil_tag(
-              'p',
-              array(),
-              pht(
-                '%s approved the change in diff %s.',
-                $this->getViewer()->renderHandle(
-                  $ai_change->getApproverPHID()),
-                $ai_change->getChangeDiffID())));
-        break;
-      default:
-        if ($this->revision->isClosed()) {
-          // Nothing can land a closed revision, so don't ask for an approval.
-          $box
-            ->setSeverity(PHUIInfoView::SEVERITY_NOTICE)
-            ->setTitle(
-              pht(
-                '%s not approved',
-                ucfirst(
-                  DifferentialAIChange::getKindName($ai_change->getKind()))))
-            ->appendChild(
-              phutil_tag(
-                'p',
-                array(),
-                pht(
-                  'This revision was closed before anyone approved the AI '.
-                  'change.')));
-          break;
-        }
-
+          ->setTitle(pht('%s approved', $kind_name))
+          ->appendChild($approval);
+      } else {
         $box
-          ->setSeverity(PHUIInfoView::SEVERITY_WARNING)
-          ->setTitle(
-            pht(
-              'This revision has an %s to approve',
-              DifferentialAIChange::getKindName($ai_change->getKind())))
+          ->setSeverity(PHUIInfoView::SEVERITY_NOTICE)
+          ->setTitle(pht('%s not approved', $kind_name))
           ->appendChild(
             phutil_tag(
               'p',
               array(),
               pht(
-                'Check the change, then use "Approve AI Change" in '.
-                'the actions below. Lando won\'t land this revision until '.
-                'someone approves it.')));
-        break;
+                'This revision was closed before anyone approved the AI '.
+                'change.')));
+      }
+    } else if ($status === DifferentialAIChange::STATUS_LAPSED) {
+      $box
+        ->setSeverity(PHUIInfoView::SEVERITY_NOTICE)
+        ->setTitle(pht('AI change: approval no longer required'))
+        ->appendChild(
+          phutil_tag(
+            'p',
+            array(),
+            pht(
+              'This revision was updated after the AI change, so normal '.
+              'review covers it.')))
+        ->appendChild($approval);
+    } else if ($status === DifferentialAIChange::STATUS_APPROVED) {
+      $box
+        ->setSeverity(PHUIInfoView::SEVERITY_SUCCESS)
+        ->setTitle(pht('%s approved', $kind_name))
+        ->appendChild($approval);
+    } else {
+      $box
+        ->setSeverity(PHUIInfoView::SEVERITY_WARNING)
+        ->setTitle(
+          pht(
+            'This revision has an %s to approve',
+            DifferentialAIChange::getKindName($ai_change->getKind())))
+        ->appendChild(
+          phutil_tag(
+            'p',
+            array(),
+            pht(
+              'Check the change, then use "Approve AI Change" in '.
+              'the actions below. Lando won\'t land this revision until '.
+              'someone approves it.')));
     }
 
     $box->appendChild($this->renderConfidenceLine($ai_change));
@@ -106,6 +100,24 @@ final class DifferentialAIChangeView extends AphrontView {
     }
 
     return $box;
+  }
+
+  /**
+   * Render who approved the AI change, or `null` if nobody has.
+   */
+  private function renderApproval(DifferentialAIChange $ai_change) {
+    $approver_phid = $ai_change->getApproverPHID();
+    if (!$approver_phid) {
+      return null;
+    }
+
+    return phutil_tag(
+      'p',
+      array(),
+      pht(
+        '%s approved the change in diff %s.',
+        $this->getViewer()->renderHandle($approver_phid),
+        $ai_change->getChangeDiffID()));
   }
 
   /**
