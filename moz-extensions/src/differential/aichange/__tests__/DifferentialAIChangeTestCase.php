@@ -155,10 +155,6 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('Rejected requests should leave the revision unchanged.'));
   }
 
-  /**
-   * Create a revision whose first diff is a merge conflict and whose second,
-   * active diff is the change.
-   */
   public function testRejectRequestSentWithAnUpdate() {
     $author = $this->generateNewTestUser();
     list($revision) = $this->newResolvedRevision($author);
@@ -192,6 +188,10 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('A rejected request should leave no AI change behind.'));
   }
 
+  /**
+   * Create a revision whose first diff is a merge conflict and whose second,
+   * active diff is the change.
+   */
   private function newResolvedRevision(PhabricatorUser $author) {
     $conflict_diff = $this->newDiff($author, "<<<<<<< HEAD\nbeta\n");
 
