@@ -142,7 +142,7 @@ final class DifferentialAIChangeView extends AphrontView {
 
     return phutil_tag(
       'p',
-      array('class' => 'ai-change-summary'),
+      array('class' => 'ai-change-confidence-line'),
       $this->renderConfidence($confidence));
   }
 
