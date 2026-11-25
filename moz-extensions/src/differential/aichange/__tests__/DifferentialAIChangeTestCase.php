@@ -78,6 +78,24 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('String diff IDs should be stored as integers.'));
   }
 
+  public function testRequestAcceptsTextAtTheLengthLimit() {
+    $author = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+      'summary' => str_repeat('a', 1024),
+      'confidence' => str_repeat('a', 64),
+      'details' => str_repeat('a', 32768),
+    ));
+
+    $this->assertEqual(
+      32768,
+      strlen($this->loadAIChange($revision)->getDetails()),
+      pht('Text at the length limit should be stored in full.'));
+  }
+
   public function testRequestLapsesOnNewDiff() {
     $author = $this->generateNewTestUser();
     list($revision, $conflict_diff, $change_diff) =
@@ -133,6 +151,18 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       'summary is not a string' => array(
         'changeDiffID' => $change_diff_id,
         'summary' => array('Kept the beta API.'),
+      ),
+      'summary is too long' => array(
+        'changeDiffID' => $change_diff_id,
+        'summary' => str_repeat('a', 1025),
+      ),
+      'confidence is too long' => array(
+        'changeDiffID' => $change_diff_id,
+        'confidence' => str_repeat('a', 65),
+      ),
+      'details are too long' => array(
+        'changeDiffID' => $change_diff_id,
+        'details' => str_repeat('a', 32769),
       ),
     );
 

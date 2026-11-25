@@ -100,15 +100,28 @@ final class DifferentialRevisionAIChangeRequestTransaction
         implode(', ', $kinds));
     }
 
-    $text_keys = array(
-      DifferentialAIChange::KEY_SUMMARY,
-      DifferentialAIChange::KEY_CONFIDENCE,
-      DifferentialAIChange::KEY_DETAILS,
+    // Revision properties load with every revision query, so keep the text
+    // the request stores there small.
+    $text_limits = array(
+      DifferentialAIChange::KEY_SUMMARY => 1024,
+      DifferentialAIChange::KEY_CONFIDENCE => 64,
+      DifferentialAIChange::KEY_DETAILS => 32768,
     );
-    foreach ($text_keys as $text_key) {
+    foreach ($text_limits as $text_key => $max_bytes) {
       $text = idx($value, $text_key);
-      if ($text !== null && !is_string($text)) {
+      if ($text === null) {
+        continue;
+      }
+
+      if (!is_string($text)) {
         return pht('"%s" must be a string.', $text_key);
+      }
+
+      if (strlen($text) > $max_bytes) {
+        return pht(
+          '"%s" must be at most %s bytes long.',
+          $text_key,
+          new PhutilNumber($max_bytes));
       }
     }
 
