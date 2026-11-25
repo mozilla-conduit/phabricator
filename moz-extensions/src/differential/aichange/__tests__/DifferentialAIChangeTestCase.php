@@ -560,8 +560,9 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
     $this->assertTrue(
       $summary_at !== false && $more_at < $summary_at,
       pht('The AI summary should only show under "Show details".'));
+    $tag_at = strpos($pending, 'phui-tag-green');
     $this->assertTrue(
-      strpos($pending, 'phui-tag-green') < $more_at,
+      $tag_at !== false && $tag_at < $more_at,
       pht('The confidence should show without expanding the details.'));
     $this->assertTrue(
       strpos(
