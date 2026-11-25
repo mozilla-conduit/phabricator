@@ -517,6 +517,187 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('Search should report "lapsed" after a newer diff.'));
   }
 
+  public function testBoxShowsStatus() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+
+    $this->assertEqual(
+      '',
+      $this->renderBox($author, $revision),
+      pht('A revision without a request should not show the box.'));
+
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+      'baseDiffID' => (int)$conflict_diff->getID(),
+      'summary' => 'Kept the beta API.',
+      'confidence' => 'high',
+      'details' => 'Moved the overflow handling into **updateOverflow**.',
+    ));
+    $pending = $this->renderBox($author, $revision);
+    $this->assertTrue(
+      strpos($pending, 'Approve AI Change') !== false,
+      pht('A pending box should point to the approval action.'));
+    $this->assertTrue(
+      strpos($pending, 'Kept the beta API.') !== false,
+      pht('A pending box should show the summary.'));
+    $this->assertTrue(
+      strpos($pending, 'phui-tag-green') !== false &&
+      strpos($pending, 'Confidence: high') !== false,
+      pht('A pending box should show the confidence as a coloured tag.'));
+    $this->assertTrue(
+      strpos($pending, '<strong>updateOverflow</strong>') !== false,
+      pht('A pending box should render the details as remarkup.'));
+    $more_at = strpos($pending, '<details class="ai-change-more">');
+    $details_at = strpos($pending, 'About this revision');
+    $this->assertTrue(
+      $more_at !== false && $details_at !== false && $more_at < $details_at,
+      pht(
+        'A pending box should fold the revision\'s details away under '.
+        '"Show details".'));
+    $summary_at = strpos($pending, 'Kept the beta API.');
+    $this->assertTrue(
+      $summary_at !== false && $more_at < $summary_at,
+      pht('The AI summary should only show under "Show details".'));
+    $tag_at = strpos($pending, 'phui-tag-green');
+    $this->assertTrue(
+      $tag_at !== false && $tag_at < $more_at,
+      pht('The confidence should show without expanding the details.'));
+    $this->assertTrue(
+      strpos(
+        $pending,
+        'vs='.$conflict_diff->getID().'&amp;id='.$change_diff->getID()) !== false,
+      pht('A pending box should link to the diff comparison.'));
+
+    $this->approve($approver, $revision);
+    $this->assertTrue(
+      strpos($this->renderBox($author, $revision), 'approved the change') !== false,
+      pht('An approved box should say who approved it.'));
+
+    $this->updateRevision($author, $revision);
+    $lapsed = $this->renderBox($author, $revision);
+    $this->assertTrue(
+      strpos($lapsed, 'no longer required') !== false,
+      pht('A lapsed box should say the approval is no longer required.'));
+    $this->assertTrue(
+      strpos($lapsed, 'approved the change in diff '.$change_diff->getID()) !== false,
+      pht('A lapsed box should still say who approved the change.'));
+    $this->assertTrue(
+      strpos($lapsed, 'Kept the beta API.') !== false &&
+      strpos(
+        $lapsed,
+        'vs='.$conflict_diff->getID().'&amp;id='.$change_diff->getID()) !== false,
+      pht('A lapsed box should keep the details and the comparison link.'));
+  }
+
+  public function testBoxOnlyPointsApproversToTheAction() {
+    $author = $this->generateNewTestUser();
+    $bot = $this->generateNewTestUser()
+      ->setIsSystemAgent(1)
+      ->save();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $this->assertTrue(
+      strpos($this->renderBox($author, $revision), 'Approve AI Change') !== false,
+      pht('A viewer who can approve should be pointed to the action.'));
+
+    // A logged-out viewer can't load the revision in tests, so render the
+    // author's copy for each viewer.
+    $loaded = $this->reloadRevision($author, $revision->getPHID());
+    foreach (array($bot, new PhabricatorUser()) as $viewer) {
+      $box = phutil_string_cast(hsprintf(
+        '%s',
+        id(new DifferentialAIChangeView())
+          ->setViewer($viewer)
+          ->setRevision($loaded)));
+      $this->assertTrue(
+        strpos($box, 'Approve AI Change') === false,
+        pht('A viewer who can\'t approve should not be pointed to the action.'));
+      $this->assertTrue(
+        strpos($box, 'until someone approves the AI change') !== false,
+        pht('A viewer who can\'t approve should see why the revision waits.'));
+    }
+  }
+
+  public function testBoxOnLandedRevisionShowsTheApproval() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+    $this->approve($approver, $revision);
+
+    // Landing attaches the commit's diff and publishes the revision.
+    $this->updateRevision($author, $revision);
+    $this->reloadRevision($author, $revision->getPHID())
+      ->setModernRevisionStatus(DifferentialRevisionStatus::PUBLISHED)
+      ->save();
+
+    $landed = $this->renderBox($author, $revision);
+    $this->assertTrue(
+      strpos($landed, 'approved the change in diff '.$change_diff->getID()) !== false,
+      pht('A landed box should say who approved the change.'));
+    $this->assertTrue(
+      strpos($landed, 'no longer required') === false,
+      pht('A landed box should not say the approval is no longer required.'));
+  }
+
+  public function testBoxOnClosedRevisionDoesNotAskForApproval() {
+    $author = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $this->editRevision($author, $revision, array(
+      array('type' => 'abandon', 'value' => true),
+    ));
+
+    $closed = $this->renderBox($author, $revision);
+    $this->assertTrue(
+      strpos($closed, 'Approve AI Change') === false,
+      pht('A closed revision\'s box should not ask for an approval.'));
+    $this->assertTrue(
+      strpos($closed, 'closed before anyone approved') !== false,
+      pht('A closed revision\'s box should say the change was not approved.'));
+  }
+
+  public function testBoxNamesTheKind() {
+    $author = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+
+    $this->requestApproval($author, $revision, array(
+      'kind' => DifferentialAIChange::KIND_REQUESTED_EDIT,
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $this->assertTrue(
+      strpos(
+        $this->renderBox($author, $revision),
+        'This revision has an AI edit to approve') !== false,
+      pht('The box title should name the kind of AI change.'));
+  }
+
+  private function renderBox(
+    PhabricatorUser $viewer,
+    DifferentialRevision $revision) {
+
+    $view = id(new DifferentialAIChangeView())
+      ->setViewer($viewer)
+      ->setRevision($this->reloadRevision($viewer, $revision->getPHID()));
+
+    return phutil_string_cast(hsprintf('%s', $view));
+  }
+
   private function searchAIChange(
     PhabricatorUser $viewer,
     DifferentialRevision $revision) {
