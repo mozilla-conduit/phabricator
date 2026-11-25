@@ -304,6 +304,34 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('A lapsed change should not be approvable.'));
   }
 
+  public function testClosedRevisionsCannotBeApproved() {
+    $author = $this->generateNewTestUser();
+    $approver = $this->generateNewTestUser();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+    $this->editRevision($author, $revision, array(
+      array('type' => 'abandon', 'value' => true),
+    ));
+
+    $this->assertFalse(
+      id(new DifferentialRevisionAIChangeApproveTransaction())
+        ->isActionAvailable(
+          $this->reloadRevision($approver, $revision->getPHID()),
+          $approver),
+      pht('"Approve AI Change" should not be offered on a closed revision.'));
+    $this->assertApproveFails(
+      $approver,
+      $revision,
+      pht('A closed revision\'s AI change should not be approvable.'));
+    $this->assertEqual(
+      DifferentialAIChange::STATUS_PENDING,
+      $this->loadAIChange($revision)->getStatus(),
+      pht('A rejected approval should leave the change pending.'));
+  }
+
   public function testRejectStaleApproval() {
     $author = $this->generateNewTestUser();
     $approver = $this->generateNewTestUser();

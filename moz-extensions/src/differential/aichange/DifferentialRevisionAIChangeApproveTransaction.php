@@ -134,6 +134,14 @@ final class DifferentialRevisionAIChangeApproveTransaction
         pht('Bots can not approve an AI change.'));
     }
 
+    // Nothing can land a closed revision, so there's nothing to approve.
+    if ($object->isClosed()) {
+      throw new Exception(
+        pht(
+          'This revision is closed, so its AI change can no longer be '.
+          'approved.'));
+    }
+
     $status = DifferentialAIChange::newFromRevision($object)->getStatus();
     switch ($status) {
       case DifferentialAIChange::STATUS_PENDING:
