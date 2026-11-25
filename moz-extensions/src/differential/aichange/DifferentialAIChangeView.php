@@ -81,14 +81,7 @@ final class DifferentialAIChangeView extends AphrontView {
           pht(
             'This revision has an %s to approve',
             DifferentialAIChange::getKindName($ai_change->getKind())))
-        ->appendChild(
-          phutil_tag(
-            'p',
-            array(),
-            pht(
-              'Check the change, then use "Approve AI Change" in '.
-              'the actions below. Lando won\'t land this revision until '.
-              'someone approves it.')));
+        ->appendChild(phutil_tag('p', array(), $this->renderPendingText()));
     }
 
     $box->appendChild($this->renderConfidenceLine($ai_change));
@@ -100,6 +93,24 @@ final class DifferentialAIChangeView extends AphrontView {
     }
 
     return $box;
+  }
+
+  /**
+   * Point viewers who can approve to the action, and tell everyone else why
+   * the revision is waiting.
+   */
+  private function renderPendingText() {
+    $can_approve = id(new DifferentialRevisionAIChangeApproveTransaction())
+      ->isActionAvailable($this->revision, $this->getViewer());
+    if (!$can_approve) {
+      return pht(
+        'Lando won\'t land this revision until someone approves the AI '.
+        'change.');
+    }
+
+    return pht(
+      'Check the change, then use "Approve AI Change" in the actions '.
+      'below. Lando won\'t land this revision until someone approves it.');
   }
 
   /**

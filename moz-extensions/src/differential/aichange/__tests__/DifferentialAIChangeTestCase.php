@@ -590,6 +590,39 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       pht('A lapsed box should keep the details and the comparison link.'));
   }
 
+  public function testBoxOnlyPointsApproversToTheAction() {
+    $author = $this->generateNewTestUser();
+    $bot = $this->generateNewTestUser()
+      ->setIsSystemAgent(1)
+      ->save();
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
+    $this->requestApproval($author, $revision, array(
+      'changeDiffID' => (int)$change_diff->getID(),
+    ));
+
+    $this->assertTrue(
+      strpos($this->renderBox($author, $revision), 'Approve AI Change') !== false,
+      pht('A viewer who can approve should be pointed to the action.'));
+
+    // A logged-out viewer can't load the revision in tests, so render the
+    // author's copy for each viewer.
+    $loaded = $this->reloadRevision($author, $revision->getPHID());
+    foreach (array($bot, new PhabricatorUser()) as $viewer) {
+      $box = phutil_string_cast(hsprintf(
+        '%s',
+        id(new DifferentialAIChangeView())
+          ->setViewer($viewer)
+          ->setRevision($loaded)));
+      $this->assertTrue(
+        strpos($box, 'Approve AI Change') === false,
+        pht('A viewer who can\'t approve should not be pointed to the action.'));
+      $this->assertTrue(
+        strpos($box, 'until someone approves the AI change') !== false,
+        pht('A viewer who can\'t approve should see why the revision waits.'));
+    }
+  }
+
   public function testBoxOnLandedRevisionShowsTheApproval() {
     $author = $this->generateNewTestUser();
     $approver = $this->generateNewTestUser();
