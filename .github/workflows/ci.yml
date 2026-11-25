@@ -10,12 +10,27 @@ jobs:
     name: PHP Syntax Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+
+      # The Dockerfile's base image is the source of truth for the PHP version.
+      # composer.json must pin the same version, as Dependabot resolves
+      # Composer updates against it.
+      - name: Get PHP version
+        id: php-version
+        run: |
+          version=$(sed -n 's/^FROM php:\([0-9]*\.[0-9]*\).*/\1/p' Dockerfile)
+          test -n "$version"
+          composer_version=$(jq -r '.config.platform.php' composer.json)
+          if [ "$version" != "$composer_version" ]; then
+            echo "::error file=composer.json::config.platform.php is $composer_version but the Dockerfile uses PHP $version. Update composer.json and run 'composer update --lock'."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: ${{ steps.php-version.outputs.version }}
 
       - name: Check PHP syntax
         run: |
@@ -30,7 +45,7 @@ jobs:
     name: JSON Validation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Validate JSON files
         run: |
@@ -44,7 +59,7 @@ jobs:
     name: Phabricator Tests
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install just
         run: sudo apt-get update && sudo apt-get install --yes just
@@ -60,7 +75,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # `just lint` lints the changes since `origin/master`.
           fetch-depth: 0

@@ -119,20 +119,6 @@ final class PhabricatorCalendarApplication extends PhabricatorApplication {
     );
   }
 
-  public function getMailCommandObjects() {
-    return array(
-      'event' => array(
-        'name' => pht('Email Commands: Events'),
-        'header' => pht('Interacting with Calendar Events'),
-        'object' => new PhabricatorCalendarEvent(),
-        'summary' => pht(
-          'This page documents the commands you can use to interact with '.
-          'events in Calendar. These commands work when creating new tasks '.
-          'via email and when replying to existing tasks.'),
-      ),
-    );
-  }
-
   protected function getCustomCapabilities() {
     return array(
       PhabricatorCalendarEventDefaultViewCapability::CAPABILITY => array(

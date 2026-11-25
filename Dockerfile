@@ -1,8 +1,4 @@
-FROM php:8.4.27-fpm-alpine3.23 AS base
-
-# Used for some file paths in the image. MUST match the version in the Docker
-# image above.
-ENV PHPSHORT=84
+FROM php:8.4.28-fpm-alpine3.23 AS base
 
 LABEL maintainer="dkl@mozilla.com"
 
@@ -91,7 +87,7 @@ RUN { \
 # one (despite it not being used), to counter CVE-2026-109619.
 RUN sed -i \
   's/^;session.upload_progress.enabled.*/session.upload_progress.enabled = Off/' \
-  /etc/php${PHPSHORT}/php.ini \
+  /etc/php*/php.ini \
   /usr/local/etc/php/php.ini-production \
   /usr/local/etc/php/php.ini-development
 

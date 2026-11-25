@@ -178,7 +178,6 @@ final class PhabricatorSearchApplicationSearchEngine
     return array(
       'all' => pht('All Documents'),
       'open' => pht('Open Documents'),
-      'open-tasks' => pht('Open Tasks'),
     );
   }
 
@@ -191,10 +190,6 @@ final class PhabricatorSearchApplicationSearchEngine
         return $query;
       case 'open':
         return $query->setParameter('statuses', array('open'));
-      case 'open-tasks':
-        return $query
-          ->setParameter('statuses', array('open'))
-          ->setParameter('types', array(ManiphestTaskPHIDType::TYPECONST));
     }
 
     return parent::buildSavedQueryFromBuiltin($query_key);

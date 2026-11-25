@@ -691,23 +691,6 @@ final class PHUITimelineEventView extends AphrontView {
           array(
             'anchor' => $anchor,
           ));
-
-      $content_source = $this->getContentSource();
-      $source_email = PhabricatorEmailContentSource::SOURCECONST;
-      if ($content_source->getSource() == $source_email) {
-        $source_id = $content_source->getContentSourceParameter('id');
-        if ($source_id) {
-          $items[] = id(new PhabricatorActionView())
-            ->setIcon('fa-envelope-o')
-            ->setHref('/transactions/raw/'.$xaction_phid.'/?email')
-            ->setName(pht('View Email Body'))
-            ->addSigil('transaction-raw')
-            ->setMetadata(
-              array(
-                'anchor' => $anchor,
-              ));
-        }
-      }
     }
 
     if ($this->getIsEdited()) {

@@ -256,7 +256,7 @@ final class DifferentialDiffExtractionEngine extends Phobject {
     $change->setMetadata($mime_type_key, $file->getMimeType());
   }
 
-  private function attachBinaryFilesToDiff(DifferentialDiff $diff) {
+  public function attachBinaryFilesToDiff(DifferentialDiff $diff) {
     $file_phids = array();
     foreach ($diff->getChangesets() as $changeset) {
       $new_phid = $changeset->getNewFileObjectPHID();
@@ -280,9 +280,13 @@ final class DifferentialDiffExtractionEngine extends Phobject {
       ->withPHIDs($file_phids)
       ->execute();
 
+    // Files are also created with a 48 hour TTL, after which the garbage
+    // collector deletes them regardless of attachments. Clear the TTL so the
+    // binary content lives as long as the diff does.
     $diff_phid = $diff->getPHID();
     foreach ($files as $file) {
       $file->attachToObject($diff_phid);
+      $file->setTtl(null)->save();
     }
   }
 

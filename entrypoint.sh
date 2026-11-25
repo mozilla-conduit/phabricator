@@ -75,7 +75,6 @@ start() {
 
 
     # Set recommended runtime configuration values to silence setup warnings.
-    ./bin/config set pygments.enabled true
     ./bin/config set phabricator.timezone UTC
 
     # Ensure that we have an updated static resources map

@@ -41,22 +41,6 @@ final class PhabricatorFilesApplication extends PhabricatorApplication {
     );
   }
 
-  public function supportsEmailIntegration() {
-    return true;
-  }
-
-  public function getAppEmailBlurb() {
-    return pht(
-      'Send emails with file attachments to these addresses to upload '.
-      'files. %s',
-      phutil_tag(
-        'a',
-        array(
-          'href' => $this->getInboundEmailSupportLink(),
-        ),
-        pht('Learn More')));
-  }
-
   protected function getCustomCapabilities() {
     return array(
       FilesDefaultViewCapability::CAPABILITY => array(
@@ -130,19 +114,6 @@ final class PhabricatorFilesApplication extends PhabricatorApplication {
         '(?P<phid>[^/]+)/'.
         '(?P<key>[^/]+)/'
         => 'PhabricatorFileTransformController',
-    );
-  }
-
-  public function getMailCommandObjects() {
-    return array(
-      'file' => array(
-        'name' => pht('Email Commands: Files'),
-        'header' => pht('Interacting with Files'),
-        'object' => new PhabricatorFile(),
-        'summary' => pht(
-          'This page documents the commands you can use to interact with '.
-          'files.'),
-      ),
     );
   }
 

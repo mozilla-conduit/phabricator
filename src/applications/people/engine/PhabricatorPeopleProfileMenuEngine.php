@@ -6,7 +6,6 @@ final class PhabricatorPeopleProfileMenuEngine
   const ITEM_PROFILE = 'people.profile';
   const ITEM_MANAGE = 'people.manage';
   const ITEM_PICTURE = 'people.picture';
-  const ITEM_TASKS = 'people.tasks';
   const ITEM_COMMITS = 'people.commits';
   const ITEM_REVISIONS = 'people.revisions';
 
@@ -33,15 +32,6 @@ final class PhabricatorPeopleProfileMenuEngine
     $items[] = $this->newItem()
       ->setBuiltinKey(self::ITEM_PROFILE)
       ->setMenuItemKey(PhabricatorPeopleDetailsProfileMenuItem::MENUITEMKEY);
-
-    $have_maniphest = PhabricatorApplication::isClassInstalledForViewer(
-      'PhabricatorManiphestApplication',
-      $viewer);
-    if ($have_maniphest) {
-      $items[] = $this->newItem()
-        ->setBuiltinKey(self::ITEM_TASKS)
-        ->setMenuItemKey(PhabricatorPeopleTasksProfileMenuItem::MENUITEMKEY);
-    }
 
     $have_differential = PhabricatorApplication::isClassInstalledForViewer(
       'PhabricatorDifferentialApplication',

@@ -371,7 +371,7 @@ final class PhabricatorMainMenuView extends AphrontView {
     $container_classes = array('alert-notifications');
     $aural = array();
 
-    $dropdown_query = id(new AphlictDropdownDataQuery())
+    $dropdown_query = id(new PhabricatorNotificationDropdownDataQuery())
       ->setViewer($viewer);
     $dropdown_data = $dropdown_query->execute();
 
@@ -430,7 +430,7 @@ final class PhabricatorMainMenuView extends AphrontView {
         array($icon_tag, $count_tag));
 
       Javelin::initBehavior(
-        'aphlict-dropdown',
+        'notification-dropdown',
         array(
           'bubbleID'    => $bubble_id,
           'countID'     => $count_id,
@@ -512,7 +512,7 @@ final class PhabricatorMainMenuView extends AphrontView {
           ));
 
         Javelin::initBehavior(
-          'aphlict-dropdown',
+          'notification-dropdown',
           array(
             'bubbleID'    => $setup_id,
             'countID'     => $setup_count_id,
@@ -578,7 +578,7 @@ final class PhabricatorMainMenuView extends AphrontView {
           ));
 
         Javelin::initBehavior(
-          'aphlict-dropdown',
+          'notification-dropdown',
           array(
             'bubbleID' => $bubble_id,
             'countID' => $count_id,

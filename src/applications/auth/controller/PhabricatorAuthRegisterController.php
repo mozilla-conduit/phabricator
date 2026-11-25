@@ -90,24 +90,6 @@ final class PhabricatorAuthRegisterController
       }
     }
 
-    if ($default_email !== null) {
-      // We should bypass policy here because e.g. limiting an application use
-      // to a subset of users should not allow the others to overwrite
-      // configured application emails.
-      $application_email = id(new PhabricatorMetaMTAApplicationEmailQuery())
-        ->setViewer(PhabricatorUser::getOmnipotentUser())
-        ->withAddresses(array($default_email))
-        ->executeOne();
-      if ($application_email) {
-        $errors[] = pht(
-          'The email address associated with this account ("%s") is '.
-          'already in use by an application and can not be used to '.
-          'register a new account. Choose a different, valid address.',
-          phutil_tag('strong', array(), $default_email));
-        $default_email = null;
-      }
-    }
-
     $show_existing = null;
     if ($default_email !== null) {
       // If the account source provided an email, but it's not allowed by

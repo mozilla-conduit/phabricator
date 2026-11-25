@@ -4,11 +4,55 @@ on:
   push:
     branches:
       - master
+      - development
     tags:
       - release-**
 
+# Run builds for the same ref one at a time. This alone doesn't guarantee the
+# newest commit publishes last, so check-head below guards the moving tags.
+concurrency:
+  group: build-and-push-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  # A queued run may start after newer commits have landed on its branch.
+  # is_head tells later jobs whether this run's commit is still the branch tip.
+  # Tags don't move, so they always count as the tip. This is best-effort: a
+  # push landing between this check and a later checkout isn't caught.
+  check-head:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      is_head: ${{ steps.check.outputs.is_head }}
+    steps:
+      - name: Compare run commit with branch tip
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          is_head=true
+          if [[ "$REF_TYPE" != "tag" ]]; then
+            tip=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$REF_NAME" --jq .object.sha)
+            if [[ "$tip" != "$GITHUB_SHA" ]]; then
+              is_head=false
+              echo "::notice::$REF_NAME has moved on to $tip, so this run ($GITHUB_SHA) is stale"
+            fi
+          fi
+          echo "is_head=$is_head" >> "$GITHUB_OUTPUT"
+
+  # GAR images: release-** tags go to prod, development goes to nonprod.
+  # Other branches (master) don't get a GAR image.
+  # deploy-actions checks out github.ref (the branch), not github.sha, so a
+  # stale run would build the newer tip. Skip it and let the newer run build.
   build-and-push:
+    needs: check-head
+    if: >-
+      needs.check-head.outputs.is_head == 'true' &&
+      (github.ref_type == 'tag' || github.ref_name == 'development')
     secrets: inherit
     permissions:
       contents: read
@@ -17,17 +61,20 @@ jobs:
     uses: mozilla/deploy-actions/.github/workflows/build-and-push.yml@main
     with:
       image_name: phabricator
-      gar_name: phabricator-prod
-      project_id: moz-fx-phabricator-prod
+      gar_name: phabricator-${{ github.ref_type == 'tag' && 'prod' || 'nonprod' }}
+      project_id: moz-fx-phabricator-${{ github.ref_type == 'tag' && 'prod' || 'nonprod' }}
 
   push-dockerhub:
-    needs: build-and-push
+    needs: [check-head, build-and-push]
+    # Run when the GAR job succeeded or was skipped (master, stale run), but not
+    # if any needed job failed.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       # Full-SHA tags match the old CircleCI pushes; version.json matches the
@@ -37,13 +84,30 @@ jobs:
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
+          IS_HEAD: ${{ needs.check-head.outputs.is_head }}
           IMAGE: mozillaconduit/phabricator
         run: |
           set -euo pipefail
-          if [[ "$REF_TYPE" == "tag" ]]; then
-            tags="$IMAGE:$REF_NAME"
-          else
-            tags="$IMAGE:$GITHUB_SHA,$IMAGE:latest"
+          moving=""
+          case "$REF_TYPE/$REF_NAME" in
+            tag/*) tags="$IMAGE:$REF_NAME" ;;
+            branch/master) moving="latest" ;;
+            branch/development) moving="development" ;;
+            *)
+              # Fail rather than guess, so a newly added branch can't overwrite :latest.
+              echo "::error::No Docker Hub tag rule for branch '$REF_NAME'" >&2
+              exit 1
+              ;;
+          esac
+          # Only the branch tip may move :latest / :development. A stale run
+          # still publishes its own SHA tag, which never changes.
+          if [[ -n "$moving" ]]; then
+            tags="$IMAGE:$GITHUB_SHA"
+            if [[ "$IS_HEAD" == "true" ]]; then
+              tags="$tags,$IMAGE:$moving"
+            else
+              echo "::notice::Stale run, skipping $IMAGE:$moving"
+            fi
           fi
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           printf '{"commit":"%s","version":"%s","source":"%s","build":"%s"}\n' \
@@ -52,7 +116,7 @@ jobs:
             "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > version.json
       - name: Log in to Docker Hub
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

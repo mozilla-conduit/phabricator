@@ -40,9 +40,6 @@ final class PhabricatorMetaMTAApplication extends PhabricatorApplication {
         '(query/(?P<queryKey>[^/]+)/)?' =>
           'PhabricatorMetaMTAMailListController',
         'detail/(?P<id>[1-9]\d*)/' => 'PhabricatorMetaMTAMailViewController',
-        'sendgrid/' => 'PhabricatorMetaMTASendGridReceiveController',
-        'mailgun/'  => 'PhabricatorMetaMTAMailgunReceiveController',
-        'postmark/'  => 'PhabricatorMetaMTAPostmarkReceiveController',
       ),
     );
   }

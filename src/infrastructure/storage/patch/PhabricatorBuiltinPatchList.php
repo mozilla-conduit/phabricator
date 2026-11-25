@@ -64,13 +64,27 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
         'dead' => true,
       ),
       'db.feed' => array(),
-      'db.file' => array(),
+      'db.file' => array(
+        'retired' => array(
+          'file_imagemacro',
+          'macro_transaction',
+          'macro_transaction_comment',
+        ),
+      ),
       'db.flag' => array(),
       'db.harbormaster' => array(),
       'db.herald' => array(),
-      'db.maniphest' => array(),
+      'db.maniphest' => array(
+        'dead' => true,
+      ),
       'db.meta_data' => array(),
-      'db.metamta' => array(),
+      'db.metamta' => array(
+        'retired' => array(
+          'metamta_applicationemail',
+          'metamta_applicationemailtransaction',
+          'metamta_receivedmail',
+        ),
+      ),
       'db.oauth_server' => array(
         'dead' => true,
       ),
@@ -86,7 +100,16 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.phriction' => array(
         'dead' => true,
       ),
-      'db.project' => array(),
+      'db.project' => array(
+        'retired' => array(
+          'project_column',
+          'project_columnposition',
+          'project_columntransaction',
+          'project_trigger',
+          'project_triggertransaction',
+          'project_triggerusage',
+        ),
+      ),
       'db.repository' => array(),
       'db.search' => array(),
       'db.slowvote' => array(
@@ -135,7 +158,12 @@ final class PhabricatorBuiltinPatchList extends PhabricatorSQLPatchList {
       'db.diviner' => array(
         'dead' => true,
       ),
-      'db.auth' => array(),
+      'db.auth' => array(
+        'retired' => array(
+          'auth_contactnumber',
+          'auth_contactnumbertransaction',
+        ),
+      ),
       'db.doorkeeper' => array(
         'dead' => true,
       ),

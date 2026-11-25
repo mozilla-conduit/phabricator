@@ -4,7 +4,7 @@ abstract class HeraldRuleField
   extends HeraldField {
 
   public function getFieldGroupKey() {
-    return ManiphestTaskHeraldFieldGroup::FIELDGROUPKEY;
+    return HeraldBasicFieldGroup::FIELDGROUPKEY;
   }
 
   public function supportsObject($object) {

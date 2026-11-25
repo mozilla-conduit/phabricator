@@ -34,27 +34,7 @@ final class PhabricatorApplicationTransactionCommentRawController
 
     $title = pht('Raw Comment');
     $body = $xaction->getComment()->getContent();
-    $addendum = null;
-    if ($request->getExists('email')) {
-      $content_source = $xaction->getContentSource();
-      $source_email = PhabricatorEmailContentSource::SOURCECONST;
-      if ($content_source->getSource() == $source_email) {
-        $source_id = $content_source->getContentSourceParameter('id');
-        if ($source_id) {
-          $message = id(new PhabricatorMetaMTAReceivedMail())->loadOneWhere(
-            'id = %d',
-            $source_id);
-          if ($message) {
-            $title = pht('Email Body Text');
-            $body = $message->getRawTextBody();
-            $details_text = pht(
-              'For full details, run `/bin/mail show-inbound --id %d`',
-              $source_id);
-            $addendum = new PHUIRemarkupView($viewer, $details_text);
-          }
-        }
-      }
-    }
+
     $dialog = id(new AphrontDialogView())
       ->setUser($viewer)
       ->addCancelButton($obj_handle->getURI())
@@ -69,9 +49,6 @@ final class PhabricatorApplicationTransactionCommentRawController
           id(new AphrontFormTextAreaControl())
           ->setReadOnly(true)
           ->setValue($body)));
-    if ($addendum) {
-      $dialog->appendParagraph($addendum);
-    }
 
     return id(new AphrontDialogResponse())->setDialog($dialog);
   }

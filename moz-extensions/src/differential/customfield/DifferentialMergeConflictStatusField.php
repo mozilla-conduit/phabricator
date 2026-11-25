@@ -200,6 +200,81 @@ final class DifferentialMergeConflictStatusField
     return $value;
   }
 
+/* -(  Revision Lists  )----------------------------------------------------- */
+
+  /**
+   * Returns a map from PHID to `true` for the given revisions that currently
+   * have a merge conflict.
+   */
+  public static function loadConflictedRevisionPHIDs(array $revisions): array {
+    assert_instances_of($revisions, 'DifferentialRevision');
+
+    $candidates = array();
+    foreach ($revisions as $revision) {
+      if ($revision->isClosed()) {
+        continue;
+      }
+
+      $repository = $revision->getRepository();
+      if (!$repository) {
+        continue;
+      }
+
+      if (!RevisionMergeConflictWorker::isEnabledForRepository($repository)) {
+        continue;
+      }
+
+      $candidates[$revision->getPHID()] = $revision;
+    }
+
+    if (!$candidates) {
+      return array();
+    }
+
+    $rows = id(new DifferentialCustomFieldStorage())->loadAllWhere(
+      'objectPHID IN (%Ls) AND fieldIndex = %s',
+      array_keys($candidates),
+      id(new self())->getFieldIndex());
+
+    $result = array();
+    foreach ($rows as $row) {
+      try {
+        $value = phutil_json_decode($row->getFieldValue());
+      } catch (PhutilJSONParserException $ex) {
+        continue;
+      }
+
+      $revision = $candidates[$row->getObjectPHID()];
+      $active_diff_phid = $revision->getActiveDiffPHID();
+      if (self::isConflictForActiveDiff($value, $active_diff_phid)) {
+        $result[$revision->getPHID()] = true;
+      }
+    }
+
+    return $result;
+  }
+
+  /**
+   * A verdict for an earlier diff shows as "Recomputing" on the revision, so it
+   * does not count as a conflict here either.
+   */
+  public static function isConflictForActiveDiff(
+    $value,
+    ?string $active_diff_phid): bool {
+
+    if (!is_array($value)) {
+      return false;
+    }
+
+    if (idx($value, self::KEY_STATUS) !== self::STATUS_CONFLICT) {
+      return false;
+    }
+
+    return !self::isCheckedDiffStale(
+      idx($value, self::KEY_DIFF_PHID),
+      $active_diff_phid);
+  }
+
 /* -(  Property View  )------------------------------------------------------ */
 
   public function shouldAppearInPropertyView() {
