@@ -157,7 +157,8 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
 
   public function testRejectRequestSentWithAnUpdate() {
     $author = $this->generateNewTestUser();
-    list($revision) = $this->newResolvedRevision($author);
+    list($revision, $conflict_diff, $change_diff) =
+      $this->newResolvedRevision($author);
     $new_diff = $this->newDiff($author, "resolved again\n");
 
     $caught = null;
@@ -171,7 +172,9 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
           'type' => 'ai-change.request',
           'value' => array(
             'kind' => DifferentialAIChange::KIND_MERGE_CONFLICT,
-            'changeDiffID' => (int)$new_diff->getID(),
+            // The currently active diff passes the transaction's own
+            // validation, so only the editor extension can reject it.
+            'changeDiffID' => (int)$change_diff->getID(),
           ),
         ),
       ));
@@ -182,6 +185,13 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
     $this->assertTrue(
       ($caught instanceof PhabricatorApplicationTransactionValidationException),
       pht('A request sent in the same edit as an update should be rejected.'));
+    $this->assertTrue(
+      (strpos(
+        implode("\n", $caught->getErrorMessages()),
+        'same edit as a diff update') !== false),
+      pht(
+        'The request should be rejected by '.
+        '`DifferentialAIChangeEditorExtension`.'));
     $this->assertEqual(
       DifferentialAIChange::STATUS_NONE,
       $this->loadAIChange($revision)->getStatus(),
