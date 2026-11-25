@@ -182,7 +182,7 @@ final class DifferentialAIChangeView extends AphrontView {
   }
 
   /**
-   * Render the requester's confidence as a tag, coloured by how sure it is.
+   * Render the AI's confidence as a tag, coloured by how sure it is.
    */
   private function renderConfidence($confidence) {
     $colors = array(
