@@ -85,14 +85,19 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
 
     $this->requestApproval($author, $revision, array(
       'changeDiffID' => (int)$change_diff->getID(),
-      'summary' => str_repeat('a', 1024),
+      'summary' => str_repeat('a', 32768),
       'confidence' => str_repeat('a', 64),
       'details' => str_repeat('a', 32768),
     ));
 
+    $ai_change = $this->loadAIChange($revision);
     $this->assertEqual(
       32768,
-      strlen($this->loadAIChange($revision)->getDetails()),
+      strlen($ai_change->getSummary()),
+      pht('A summary at the length limit should be stored in full.'));
+    $this->assertEqual(
+      32768,
+      strlen($ai_change->getDetails()),
       pht('Text at the length limit should be stored in full.'));
   }
 
@@ -154,7 +159,7 @@ final class DifferentialAIChangeTestCase extends PhabricatorTestCase {
       ),
       'summary is too long' => array(
         'changeDiffID' => $change_diff_id,
-        'summary' => str_repeat('a', 1025),
+        'summary' => str_repeat('a', 32769),
       ),
       'confidence is too long' => array(
         'changeDiffID' => $change_diff_id,

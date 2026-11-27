@@ -100,10 +100,11 @@ final class DifferentialRevisionAIChangeRequestTransaction
         implode(', ', $kinds));
     }
 
-    // Revision properties load with every revision query, so keep the text
-    // the request stores there small.
+    // Revision properties load with every revision query, so these limits
+    // bound how much a request adds to each load. An AI's summary can be as
+    // long as the requester's details.
     $text_limits = array(
-      DifferentialAIChange::KEY_SUMMARY => 1024,
+      DifferentialAIChange::KEY_SUMMARY => 32768,
       DifferentialAIChange::KEY_CONFIDENCE => 64,
       DifferentialAIChange::KEY_DETAILS => 32768,
     );

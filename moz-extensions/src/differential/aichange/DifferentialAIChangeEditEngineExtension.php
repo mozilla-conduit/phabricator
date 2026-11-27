@@ -51,7 +51,7 @@ final class DifferentialAIChangeEditEngineExtension
             'Map with "kind" ("merge-conflict" or "requested-edit"), '.
             '"changeDiffID" (the active diff), and optional '.
             '"baseDiffID" (the diff to compare with), "summary", '.
-            '"confidence" and "details" (remarkup), at most 1024, 64 and '.
+            '"confidence" and "details" (remarkup), at most 32768, 64 and '.
             '32768 bytes long.')),
     );
   }
