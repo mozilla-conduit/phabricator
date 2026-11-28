@@ -15,6 +15,20 @@ final class DifferentialRevisionAIChangeRequestTransaction
   const TRANSACTIONTYPE = 'mozilla.ai-change.request';
   const EDITKEY = 'ai-change.request';
 
+  /**
+   * Return the maximum length in bytes of each optional text field.
+   *
+   * Revision properties load with every revision query, so these limits bound
+   * how much a request adds to each load.
+   */
+  public static function getTextLimits() {
+    return array(
+      DifferentialAIChange::KEY_SUMMARY => 32768,
+      DifferentialAIChange::KEY_CONFIDENCE => 64,
+      DifferentialAIChange::KEY_DETAILS => 32768,
+    );
+  }
+
   public function generateOldValue($object) {
     return null;
   }
@@ -100,14 +114,7 @@ final class DifferentialRevisionAIChangeRequestTransaction
         implode(', ', $kinds));
     }
 
-    // Revision properties load with every revision query, so keep the text
-    // the request stores there small.
-    $text_limits = array(
-      DifferentialAIChange::KEY_SUMMARY => 1024,
-      DifferentialAIChange::KEY_CONFIDENCE => 64,
-      DifferentialAIChange::KEY_DETAILS => 32768,
-    );
-    foreach ($text_limits as $text_key => $max_bytes) {
+    foreach (self::getTextLimits() as $text_key => $max_bytes) {
       $text = idx($value, $text_key);
       if ($text === null) {
         continue;
