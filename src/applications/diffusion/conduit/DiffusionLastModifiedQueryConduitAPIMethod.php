@@ -43,37 +43,6 @@ final class DiffusionLastModifiedQueryConduitAPIMethod
     return $results;
   }
 
-  protected function getSVNResult(ConduitAPIRequest $request) {
-    $drequest = $this->getDiffusionRequest();
-    $repository = $drequest->getRepository();
-
-    $results = array();
-    foreach ($request->getValue('paths') as $path => $commit) {
-      $history_result = DiffusionQuery::callConduitWithDiffusionRequest(
-        $request->getUser(),
-        $drequest,
-        'diffusion.historyquery',
-        array(
-          'commit' => $commit,
-          'path' => $path,
-          'limit' => 1,
-          'offset' => 0,
-          'needDirectChanges' => true,
-          'needChildChanges' => true,
-        ));
-
-      $history_array = DiffusionPathChange::newFromConduit(
-        $history_result['pathChanges']);
-      if ($history_array) {
-        $results[$path] = head($history_array)
-          ->getCommit()
-          ->getCommitIdentifier();
-      }
-    }
-
-    return $results;
-  }
-
   protected function getMercurialResult(ConduitAPIRequest $request) {
     $drequest = $this->getDiffusionRequest();
     $repository = $drequest->getRepository();

@@ -49,12 +49,6 @@ parameters:
 			path: src/applications/differential/render/DifferentialChangesetRenderer.php
 
 		-
-			message: '#^Call to an undefined method DiffusionRepositoryClusterEngine\:\:getDisplayName\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: src/applications/diffusion/protocol/DiffusionRepositoryClusterEngine.php
-
-		-
 			message: '#^Instantiated class wild not found\.$#'
 			identifier: class.notFound
 			count: 1

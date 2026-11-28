@@ -8,7 +8,7 @@ final class PhabricatorAccessLogConfigOptions
   }
 
   public function getDescription() {
-    return pht('Configure the access logs, which log HTTP/SSH requests.');
+    return pht('Configure the access logs, which log HTTP requests.');
   }
 
   public function getIcon() {
@@ -43,29 +43,12 @@ final class PhabricatorAccessLogConfigOptions
       'M' => pht('The HTTP method.'),
     );
 
-    $ssh_map = $common_map + array(
-      's' => pht('The system user.'),
-      'S' => pht('The system sudo user.'),
-      'k' => pht('ID of the SSH key used to authenticate the request.'),
-
-      // TODO: This is a reasonable thing to support in the HTTP access
-      // log, too.
-      'Q' => pht('A random, unique string which identifies the request.'),
-    );
-
     $http_desc = pht(
       'Format for the HTTP access log. Use `%s` to set the path. '.
       'Available variables are:',
       'log.access.path');
     $http_desc .= "\n\n";
     $http_desc .= $this->renderMapHelp($http_map);
-
-    $ssh_desc = pht(
-      'Format for the SSH access log. Use %s to set the path. '.
-      'Available variables are:',
-      'log.ssh.path');
-    $ssh_desc .= "\n\n";
-    $ssh_desc .= $this->renderMapHelp($ssh_map);
 
     return array(
       $this->newOption('log.access.path', 'string', null)
@@ -93,43 +76,6 @@ final class PhabricatorAccessLogConfigOptions
         ->setLocked(true)
         ->setSummary(pht('Access log format.'))
         ->setDescription($http_desc),
-      $this->newOption('log.ssh.path', 'string', null)
-        ->setLocked(true)
-        ->setSummary(pht('SSH log location.'))
-        ->setDescription(
-          pht(
-            "To enable the SSH log, specify a path. This log can provide ".
-            "more detailed information about SSH access than a normal SSH ".
-            "log (for instance, it can show logged-in users, commands, and ".
-            "other application data).\n\n".
-            "If not set, no log will be written."))
-        ->addExample(
-          null,
-          pht('Disable SSH log.'))
-        ->addExample(
-          '/var/log/devtools/ssh.log',
-          pht('Write SSH log here.')),
-      $this->newOption(
-        'log.ssh.format',
-        'wild',
-        "[%D]\t%p\t%h\t%r\t%s\t%S\t%u\t%C\t%U\t%c\t%T\t%i\t%o")
-        ->setLocked(true)
-        ->setSummary(pht('SSH log format.'))
-        ->setDescription($ssh_desc),
-      $this->newOption('log.ssh-error.path', 'string', null)
-        ->setLocked(true)
-        ->setSummary(pht('SSH error log location.'))
-        ->setDescription(
-          pht(
-            'To enable the SSH error log, specify a path. Errors occurring '.
-            'in contexts where this software is serving SSH requests '.
-            'will be written to this log.'.
-            "\n\n".
-            'If not set, no log will be written.'))
-        ->addExample(null, pht('Disable SSH error log.'))
-        ->addExample(
-          '/var/log/devtools/ssh-error.log',
-          pht('Write SSH error log here.')),
     );
   }
 

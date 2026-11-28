@@ -77,13 +77,9 @@ final class PhabricatorDiffusionApplication extends PhabricatorApplication {
             => 'DiffusionRepositoryURIDisableController',
           $this->getEditRoutePattern('edit/')
             => 'DiffusionRepositoryURIEditController',
-          'credential/(?P<id>[0-9]\d*)/(?P<action>edit|remove)/'
-            => 'DiffusionRepositoryURICredentialController',
         ),
         'edit/' => array(
           'activate/' => 'DiffusionRepositoryEditActivateController',
-          'dangerous/' => 'DiffusionRepositoryEditDangerousController',
-          'enormous/' => 'DiffusionRepositoryEditEnormousController',
           'delete/' => 'DiffusionRepositoryEditDeleteController',
           'update/' => 'DiffusionRepositoryEditUpdateController',
           'publish/' => 'DiffusionRepositoryEditPublishingController',
@@ -91,10 +87,8 @@ final class PhabricatorDiffusionApplication extends PhabricatorApplication {
         'pathtree/(?P<dblob>.*)' => 'DiffusionPathTreeController',
       ),
 
-      // NOTE: This must come after the rules above; it just gives us a
-      // catch-all for serving repositories over HTTP. We must accept requests
-      // without the trailing "/" because SVN commands don't necessarily
-      // include it.
+      // NOTE: This must come after the rules above; it is a catch-all for
+      // other paths under the repository.
       '(?:/.*)?' => 'DiffusionRepositoryDefaultController',
     );
 
@@ -114,15 +108,8 @@ final class PhabricatorDiffusionApplication extends PhabricatorApplication {
           => 'DiffusionRepositoryListController',
         $this->getEditRoutePattern('edit/') =>
           'DiffusionRepositoryEditController',
-        'pushlog/' => array(
-          $this->getQueryRoutePattern() => 'DiffusionPushLogListController',
-          'view/(?P<id>\d+)/' => 'DiffusionPushEventViewController',
-        ),
         'synclog/' => array(
           $this->getQueryRoutePattern() => 'DiffusionSyncLogListController',
-        ),
-        'pulllog/' => array(
-          $this->getQueryRoutePattern() => 'DiffusionPullLogListController',
         ),
         '(?P<repositoryCallsign>[A-Z]+)' => $repository_routes,
         '(?P<repositoryID>[1-9]\d*)' => $repository_routes,
@@ -175,9 +162,6 @@ final class PhabricatorDiffusionApplication extends PhabricatorApplication {
         'default' => PhabricatorPolicies::POLICY_ADMIN,
         'template' => PhabricatorRepositoryRepositoryPHIDType::TYPECONST,
         'capability' => PhabricatorPolicyCapability::CAN_EDIT,
-      ),
-      DiffusionDefaultPushCapability::CAPABILITY => array(
-        'template' => PhabricatorRepositoryRepositoryPHIDType::TYPECONST,
       ),
       DiffusionCreateRepositoriesCapability::CAPABILITY => array(
         'default' => PhabricatorPolicies::POLICY_ADMIN,

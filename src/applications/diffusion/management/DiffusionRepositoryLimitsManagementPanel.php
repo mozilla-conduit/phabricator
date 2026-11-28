@@ -21,13 +21,7 @@ final class DiffusionRepositoryLimitsManagementPanel
   public function getManagementPanelIcon() {
     $repository = $this->getRepository();
 
-    $any_limit = false;
-
-    if ($repository->getFilesizeLimit()) {
-      $any_limit = true;
-    }
-
-    if ($any_limit) {
+    if ($repository->getCopyTimeLimit()) {
       return 'fa-signal';
     } else {
       return 'fa-signal grey';
@@ -36,9 +30,7 @@ final class DiffusionRepositoryLimitsManagementPanel
 
   protected function getEditEngineFieldKeys() {
     return array(
-      'filesizeLimit',
       'copyTimeLimit',
-      'touchLimit',
     );
   }
 
@@ -73,16 +65,6 @@ final class DiffusionRepositoryLimitsManagementPanel
     $view = id(new PHUIPropertyListView())
       ->setViewer($viewer);
 
-    $byte_limit = $repository->getFilesizeLimit();
-    if ($byte_limit) {
-      $filesize_display = pht('%s Bytes', new PhutilNumber($byte_limit));
-    } else {
-      $filesize_display = pht('Unlimited');
-      $filesize_display = phutil_tag('em', array(), $filesize_display);
-    }
-
-    $view->addProperty(pht('Filesize Limit'), $filesize_display);
-
     $copy_limit = $repository->getCopyTimeLimit();
     if ($copy_limit) {
       $copy_display = pht('%s Seconds', new PhutilNumber($copy_limit));
@@ -95,16 +77,6 @@ final class DiffusionRepositoryLimitsManagementPanel
     }
 
     $view->addProperty(pht('Clone/Fetch Timeout'), $copy_display);
-
-    $touch_limit = $repository->getTouchLimit();
-    if ($touch_limit) {
-      $touch_display = pht('%s Paths', new PhutilNumber($touch_limit));
-    } else {
-      $touch_display = pht('Unlimited');
-      $touch_display = phutil_tag('em', array(), $touch_display);
-    }
-
-    $view->addProperty(pht('Touched Paths Limit'), $touch_display);
 
     return $this->newBox(pht('Limits'), $view);
   }

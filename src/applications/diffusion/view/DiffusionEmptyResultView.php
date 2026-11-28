@@ -78,17 +78,6 @@ final class DiffusionEmptyResultView extends DiffusionView {
           $existed_link);
         $severity = PHUIInfoView::SEVERITY_WARNING;
         break;
-      case DiffusionBrowseResultSet::REASON_IS_UNTRACKED_PARENT:
-        $subdir = $drequest->getRepository()->getDetail('svn-subpath');
-        $title = pht('Directory Not Tracked');
-        $body =
-          pht(
-            "This repository is configured to track only one subdirectory ".
-            "of the entire repository ('%s'), but you aren't looking at ".
-            "something in that subdirectory, so no information is available.",
-            $subdir);
-        $severity = PHUIInfoView::SEVERITY_WARNING;
-        break;
       default:
         throw new Exception(pht('Unknown failure reason: %s', $reason));
     }

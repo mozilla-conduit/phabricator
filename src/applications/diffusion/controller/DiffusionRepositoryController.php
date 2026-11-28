@@ -116,11 +116,7 @@ final class DiffusionRepositoryController extends DiffusionController {
         'action' => 'clone',
       ));
 
-    if ($repository->isSVN()) {
-      $clone_text = pht('Checkout');
-    } else {
-      $clone_text = pht('Clone');
-    }
+    $clone_text = pht('Clone');
 
     $actions_button = id(new PHUIButtonView())
       ->setTag('a')
@@ -299,12 +295,10 @@ final class DiffusionRepositoryController extends DiffusionController {
       $header->setStatus('fa-check', 'bluegrey', pht('Active'));
     }
 
-    if (!$repository->isSVN()) {
-      $default = $repository->getDefaultBranch();
-      if ($default != $drequest->getBranch()) {
-        $branch_tag = $this->renderBranchTag($drequest);
-        $header->addTag($branch_tag);
-      }
+    $default = $repository->getDefaultBranch();
+    if ($default != $drequest->getBranch()) {
+      $branch_tag = $this->renderBranchTag($drequest);
+      $header->addTag($branch_tag);
     }
 
     return $header;
@@ -323,35 +317,6 @@ final class DiffusionRepositoryController extends DiffusionController {
         ->setName(pht('Manage Repository'))
         ->setIcon('fa-cogs')
         ->setHref($edit_uri));
-
-    if ($repository->isHosted()) {
-      $push_uri = $this->getApplicationURI(
-        'pushlog/?repositories='.$repository->getPHID());
-
-      $action_view->addAction(
-        id(new PhabricatorActionView())
-          ->setName(pht('View Push Logs'))
-          ->setIcon('fa-upload')
-          ->setHref($push_uri));
-
-      $pull_uri = $this->getApplicationURI(
-        'synclog/?repositories='.$repository->getPHID());
-
-      $action_view->addAction(
-        id(new PhabricatorActionView())
-          ->setName(pht('View Sync Logs'))
-          ->setIcon('fa-exchange')
-          ->setHref($pull_uri));
-    }
-
-    $pull_uri = $this->getApplicationURI(
-      'pulllog/?repositories='.$repository->getPHID());
-
-    $action_view->addAction(
-      id(new PhabricatorActionView())
-        ->setName(pht('View Pull Logs'))
-        ->setIcon('fa-download')
-        ->setHref($pull_uri));
 
     return $action_view;
   }

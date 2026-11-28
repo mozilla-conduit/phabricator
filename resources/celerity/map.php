@@ -340,7 +340,6 @@ return array(
     'rsrc/js/application/herald/PathTypeahead.js' => 'ad486db3',
     'rsrc/js/application/herald/herald-rule-editor.js' => '0922e81d',
     'rsrc/js/application/notification/behavior-notification-dropdown.js' => 'ddda3f1e',
-    'rsrc/js/application/passphrase/passphrase-credential-control.js' => '48fe33d0',
     'rsrc/js/application/policy/behavior-policy-control.js' => '0eaa33a9',
     'rsrc/js/application/policy/behavior-policy-rule-editor.js' => '9347f172',
     'rsrc/js/application/projects/behavior-project-create.js' => '34c53422',
@@ -521,7 +520,6 @@ return array(
     'javelin-behavior-lightbox-attachments' => '14c7ab36',
     'javelin-behavior-linked-container' => '74446546',
     'javelin-behavior-notification-dropdown' => 'ddda3f1e',
-    'javelin-behavior-passphrase-credential-control' => '48fe33d0',
     'javelin-behavior-phabricator-autofocus' => '65bb0011',
     'javelin-behavior-phabricator-clipboard-copy' => 'cf32921f',
     'javelin-behavior-phabricator-gesture' => 'b58d1a2a',
@@ -1084,14 +1082,6 @@ return array(
     ),
     '48a8641f' => array(
       'javelin-install',
-    ),
-    '48fe33d0' => array(
-      'javelin-behavior',
-      'javelin-dom',
-      'javelin-stratcom',
-      'javelin-workflow',
-      'javelin-util',
-      'javelin-uri',
     ),
     '490e2e2e' => array(
       'phui-oi-list-view-css',

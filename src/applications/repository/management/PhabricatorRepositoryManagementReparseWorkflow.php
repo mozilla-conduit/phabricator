@@ -228,14 +228,6 @@ final class PhabricatorRepositoryManagementReparseWorkflow
           $classes[] = 'PhabricatorRepositoryMercurialCommitChangeParserWorker';
         }
         break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        if ($reparse_message) {
-          $classes[] = 'PhabricatorRepositorySvnCommitMessageParserWorker';
-        }
-        if ($reparse_change) {
-          $classes[] = 'PhabricatorRepositorySvnCommitChangeParserWorker';
-        }
-        break;
       }
 
       if ($reparse_publish) {

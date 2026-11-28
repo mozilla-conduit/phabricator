@@ -15,21 +15,6 @@ abstract class DiffusionController extends PhabricatorController {
     return (bool)$this->diffusionRequest;
   }
 
-  public function willBeginExecution() {
-    $request = $this->getRequest();
-
-    // Check if this is a VCS request, e.g. from "git clone", "hg clone", or
-    // "svn checkout". If it is, we jump off into repository serving code to
-    // process the request.
-
-    $serve_controller = new DiffusionServeController();
-    if ($serve_controller->isVCSRequest($request)) {
-      return $this->delegateToController($serve_controller);
-    }
-
-    return parent::willBeginExecution();
-  }
-
   protected function loadDiffusionContextForEdit() {
     return $this->loadContext(
       array(
@@ -447,11 +432,6 @@ abstract class DiffusionController extends PhabricatorController {
   protected function renderSearchForm($path = '/') {
     $drequest = $this->getDiffusionRequest();
     $viewer = $this->getViewer();
-    switch ($drequest->getRepository()->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        return null;
-    }
-
     $search_term = $this->getRequest()->getStr('grep');
     require_celerity_resource('diffusion-icons-css');
     require_celerity_resource('diffusion-css');
@@ -513,31 +493,27 @@ abstract class DiffusionController extends PhabricatorController {
           )))
         ->setSelected($key == 'code'));
 
-    if (!$repository->isSVN()) {
-      $view->addMenuItem(
-        id(new PHUIListItemView())
-          ->setKey('branch')
-          ->setName(pht('Branches'))
-          ->setIcon('fa-code-fork')
-          ->setHref($drequest->generateURI(
-          array(
-            'action' => 'branches',
-          )))
-          ->setSelected($key == 'branch'));
-    }
+    $view->addMenuItem(
+      id(new PHUIListItemView())
+        ->setKey('branch')
+        ->setName(pht('Branches'))
+        ->setIcon('fa-code-fork')
+        ->setHref($drequest->generateURI(
+        array(
+          'action' => 'branches',
+        )))
+        ->setSelected($key == 'branch'));
 
-    if (!$repository->isSVN()) {
-      $view->addMenuItem(
-        id(new PHUIListItemView())
-          ->setKey('tags')
-          ->setName(pht('Tags'))
-          ->setIcon('fa-tags')
-          ->setHref($drequest->generateURI(
-          array(
-            'action' => 'tags',
-          )))
-          ->setSelected($key == 'tags'));
-    }
+    $view->addMenuItem(
+      id(new PHUIListItemView())
+        ->setKey('tags')
+        ->setName(pht('Tags'))
+        ->setIcon('fa-tags')
+        ->setHref($drequest->generateURI(
+        array(
+          'action' => 'tags',
+        )))
+        ->setSelected($key == 'tags'));
 
     $view->addMenuItem(
       id(new PHUIListItemView())

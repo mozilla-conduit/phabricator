@@ -25,24 +25,15 @@ final class HarbormasterHTTPRequestBuildStepImplementation
     $method = $this->formatSettingForDescription('method', 'POST');
     $domain = $this->formatValueForDescription($domain);
 
-    if ($this->getSetting('credential')) {
-      return pht(
-        'Make an authenticated HTTP %s request to %s.',
-        $method,
-        $domain);
-    } else {
-      return pht(
-        'Make an HTTP %s request to %s.',
-        $method,
-        $domain);
-    }
+    return pht(
+      'Make an HTTP %s request to %s.',
+      $method,
+      $domain);
   }
 
   public function execute(
     HarbormasterBuild $build,
     HarbormasterBuildTarget $build_target) {
-
-    $viewer = PhabricatorUser::getOmnipotentUser();
 
     if (PhabricatorEnv::getEnvConfig('phabricator.silent')) {
       $this->logSilencedCall($build, $build_target, pht('HTTP Request'));
@@ -92,16 +83,6 @@ final class HarbormasterHTTPRequestBuildStepImplementation
       $future->setData($body);
     }
 
-    $credential_phid = $this->getSetting('credential');
-    if ($credential_phid) {
-      $key = PassphrasePasswordKey::loadFromPHID(
-        $credential_phid,
-        $viewer);
-      $future->setHTTPBasicAuthCredentials(
-        $key->getUsernameEnvelope()->openEnvelope(),
-        $key->getPasswordEnvelope());
-    }
-
     $this->resolveFutures(
       $build,
       $build_target,
@@ -126,14 +107,6 @@ final class HarbormasterHTTPRequestBuildStepImplementation
         'name' => pht('HTTP Method'),
         'type' => 'select',
         'options' => array_fuse(array('POST', 'GET', 'PUT', 'DELETE')),
-      ),
-      'credential' => array(
-        'name' => pht('Credentials'),
-        'type' => 'credential',
-        'credential.type'
-          => PassphrasePasswordCredentialType::CREDENTIAL_TYPE,
-        'credential.provides'
-          => PassphrasePasswordCredentialType::PROVIDES_TYPE,
       ),
       'content_type' => array(
         'name' => pht('Content-Type header'),

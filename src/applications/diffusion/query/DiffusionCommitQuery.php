@@ -315,21 +315,13 @@ final class DiffusionCommitQuery
         );
         $suffix = $commit->getCommitIdentifier();
 
-        if ($commit->getRepository()->isSVN()) {
+        // This awkward construction is so we can link the commits up in O(N)
+        // time instead of O(N^2).
+        for ($ii = $min_qualified; $ii <= strlen($suffix); $ii++) {
+          $part = substr($suffix, 0, $ii);
           foreach ($prefixes as $prefix) {
-            if (isset($ids[$prefix.$suffix])) {
-              $result[$prefix.$suffix][] = $commit;
-            }
-          }
-        } else {
-          // This awkward construction is so we can link the commits up in O(N)
-          // time instead of O(N^2).
-          for ($ii = $min_qualified; $ii <= strlen($suffix); $ii++) {
-            $part = substr($suffix, 0, $ii);
-            foreach ($prefixes as $prefix) {
-              if (isset($ids[$prefix.$part])) {
-                $result[$prefix.$part][] = $commit;
-              }
+            if (isset($ids[$prefix.$part])) {
+              $result[$prefix.$part][] = $commit;
             }
           }
         }
@@ -556,14 +548,6 @@ final class DiffusionCommitQuery
         throw new PhabricatorEmptyQueryException();
       }
 
-      if ($repository->isSVN()) {
-        throw new PhabricatorSearchConstraintException(
-          pht(
-            'Subversion does not support searching for ancestors of '.
-            'a particular ref. This operation is not meaningful in '.
-            'Subversion.'));
-      }
-
       if ($repository->isHg()) {
         throw new PhabricatorSearchConstraintException(
           pht(
@@ -748,42 +732,28 @@ final class DiffusionCommitQuery
             continue;
           }
 
-          if ($repo->isSVN()) {
-            if (!ctype_digit((string)$ref['identifier'])) {
-              continue;
-            }
+          if (!phutil_nonempty_string($ref['identifier']) ||
+              strlen($ref['identifier']) < $min_qualified) {
+            continue;
+          }
+
+          $identifier = $ref['identifier'];
+          if (strlen($identifier) == 40) {
+            // MySQL seems to do slightly better with this version if the
+            // clause, so issue it if we have a full commit hash.
             $sql[] = qsprintf(
               $conn,
-              '(commit.repositoryID = %d AND commit.commitIdentifier = %s)',
+              '(commit.repositoryID = %d
+                AND commit.commitIdentifier = %s)',
               $repo->getID(),
-              // NOTE: Because the 'commitIdentifier' column is a string, MySQL
-              // ignores the index if we hand it an integer. Hand it a string.
-              // See T3377.
-              (int)$ref['identifier']);
+              $identifier);
           } else {
-            if (!phutil_nonempty_string($ref['identifier']) ||
-                strlen($ref['identifier']) < $min_qualified) {
-              continue;
-            }
-
-            $identifier = $ref['identifier'];
-            if (strlen($identifier) == 40) {
-              // MySQL seems to do slightly better with this version if the
-              // clause, so issue it if we have a full commit hash.
-              $sql[] = qsprintf(
-                $conn,
-                '(commit.repositoryID = %d
-                  AND commit.commitIdentifier = %s)',
-                $repo->getID(),
-                $identifier);
-            } else {
-              $sql[] = qsprintf(
-                $conn,
-                '(commit.repositoryID = %d
-                  AND commit.commitIdentifier LIKE %>)',
-                $repo->getID(),
-                $identifier);
-            }
+            $sql[] = qsprintf(
+              $conn,
+              '(commit.repositoryID = %d
+                AND commit.commitIdentifier LIKE %>)',
+              $repo->getID(),
+              $identifier);
           }
         }
       }

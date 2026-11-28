@@ -163,9 +163,4 @@ final class DiffusionTagsQueryConduitAPIMethod
     return array();
   }
 
-  protected function getSVNResult(ConduitAPIRequest $request) {
-    // Subversion has no meaningful concept of tags.
-    return array();
-  }
-
 }

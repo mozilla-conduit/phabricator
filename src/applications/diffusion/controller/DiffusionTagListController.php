@@ -32,17 +32,10 @@ final class DiffusionTagListController extends DiffusionController {
       $is_commit = false;
     }
 
-    switch ($repository->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $tags = array();
-        break;
-      default:
-        $conduit_result = $this->callConduitWithDiffusionRequest(
-          'diffusion.tagsquery',
-          $params);
-        $tags = DiffusionRepositoryTag::newFromConduit($conduit_result);
-        break;
-    }
+    $conduit_result = $this->callConduitWithDiffusionRequest(
+      'diffusion.tagsquery',
+      $params);
+    $tags = DiffusionRepositoryTag::newFromConduit($conduit_result);
     $tags = $pager->sliceResults($tags);
 
     $content = null;
@@ -51,10 +44,8 @@ final class DiffusionTagListController extends DiffusionController {
       ->setHeader(pht('Tags'))
       ->setHeaderIcon('fa-tags');
 
-    if (!$repository->isSVN()) {
-      $branch_tag = $this->renderBranchTag($drequest);
-      $header->addTag($branch_tag);
-    }
+    $branch_tag = $this->renderBranchTag($drequest);
+    $header->addTag($branch_tag);
 
     if (!$tags) {
       $content = $this->renderStatusMessage(

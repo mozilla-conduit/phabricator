@@ -128,25 +128,15 @@ final class DiffusionRepositoryURIsManagementPanel
     $is_new = $repository->isNewlyInitialized();
 
     $messages = array();
-    if ($repository->isHosted()) {
-      if ($is_new) {
-        $host_message = pht('This repository will be hosted.');
-      } else {
-        $host_message = pht('This repository is observed.');
-      }
-
-      $messages[] = $host_message;
+    if ($is_new) {
+      $observe_message = pht(
+        'This repository will be observed.');
     } else {
-      if ($is_new) {
-        $observe_message = pht(
-          'This repository will be observed.');
-      } else {
-        $observe_message = pht(
-          'This remote repository is being observed.');
-      }
-
-      $messages[] = $observe_message;
+      $observe_message = pht(
+        'This remote repository is being observed.');
     }
+
+    $messages[] = $observe_message;
 
     $info_view = id(new PHUIInfoView())
       ->setSeverity(PHUIInfoView::SEVERITY_NOTICE)

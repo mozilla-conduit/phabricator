@@ -38,7 +38,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
   const TABLE_PATH = 'repository_path';
   const TABLE_PATHCHANGE = 'repository_pathchange';
-  const TABLE_FILESYSTEM = 'repository_filesystem';
   const TABLE_SUMMARY = 'repository_summary';
   const TABLE_LINTMESSAGE = 'repository_lintmessage';
   const TABLE_PARENTS = 'repository_parents';
@@ -78,12 +77,12 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
     $view_policy = $app->getPolicy(DiffusionDefaultViewCapability::CAPABILITY);
     $edit_policy = $app->getPolicy(DiffusionDefaultEditCapability::CAPABILITY);
-    $push_policy = $app->getPolicy(DiffusionDefaultPushCapability::CAPABILITY);
-
+    // Repositories are no longer hosted, so nothing reads the push policy.
+    // The column remains, so fill it with the most restrictive policy.
     $repository = id(new PhabricatorRepository())
       ->setViewPolicy($view_policy)
       ->setEditPolicy($edit_policy)
-      ->setPushPolicy($push_policy)
+      ->setPushPolicy(PhabricatorPolicies::POLICY_NOONE)
       ->setSpacePHID($actor->getDefaultSpacePHID());
 
     // Put the repository in "Importing" mode until we finish
@@ -176,7 +175,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       'remoteURI'   => (string)$this->getRemoteURI(),
       'description' => $this->getDetail('description'),
       'isActive'    => $this->isTracked(),
-      'isHosted'    => $this->isHosted(),
+      'isHosted'    => false,
       'isImporting' => $this->isImporting(),
       'encoding'    => $this->getDefaultTextEncoding(),
       'staging' => array(
@@ -278,47 +277,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
         'action' => 'browse',
         'line'   => $line,
       ));
-  }
-
-  public function getSubversionBaseURI($commit = null) {
-    $subpath = $this->getDetail('svn-subpath');
-
-    if (!phutil_nonempty_string($subpath)) {
-      $subpath = null;
-    }
-
-    return $this->getSubversionPathURI($subpath, $commit);
-  }
-
-  public function getSubversionPathURI($path = null, $commit = null) {
-    $vcs = $this->getVersionControlSystem();
-    if ($vcs != PhabricatorRepositoryType::REPOSITORY_TYPE_SVN) {
-      throw new Exception(pht('Not a subversion repository!'));
-    }
-
-    if ($this->isHosted()) {
-      $uri = 'file://'.$this->getLocalPath();
-    } else {
-      $uri = $this->getDetail('remote-uri');
-    }
-
-    $uri = rtrim($uri, '/');
-
-    if (phutil_nonempty_string($path)) {
-      $path = rawurlencode($path);
-      $path = str_replace('%2F', '/', $path);
-      $uri = $uri.'/'.ltrim($path, '/');
-    }
-
-    if ($path !== null || $commit !== null) {
-      $uri .= '@';
-    }
-
-    if ($commit !== null) {
-      $uri .= $commit;
-    }
-
-    return $uri;
   }
 
   public function attachProjectPHIDs(array $project_phids) {
@@ -519,7 +477,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   private function newRemoteCommandEngine(array $argv) {
     return DiffusionCommandEngine::newCommandEngine($this)
       ->setArgv($argv)
-      ->setCredentialPHID($this->getCredentialPHID())
       ->setURI($this->getRemoteURIObject());
   }
 
@@ -699,8 +656,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       case 'compare':
         break;
       case 'branch':
-        // NOTE: This does not actually require a branch, and won't have one
-        // in Subversion. Possibly this should be more clear.
+        // NOTE: This does not actually require a branch.
         break;
       case 'commit':
       case 'rendering-ref':
@@ -879,7 +835,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
   }
 
   public function getDefaultArcanistBranch() {
-    return coalesce($this->getDefaultBranch(), 'svn');
+    return $this->getDefaultBranch();
   }
 
   private function isBranchInFilter($branch, $filter_key) {
@@ -1098,31 +1054,13 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
 
   /**
-   * Get the remote URI for this repository, including credentials if they're
-   * used by this repository.
+   * Get the remote URI for this repository.
    *
-   * @return PhutilOpaqueEnvelope URI, possibly including credentials.
+   * @return PhutilOpaqueEnvelope URI.
    * @task uri
    */
   public function getRemoteURIEnvelope() {
     $uri = $this->getRemoteURIObject();
-
-    $remote_protocol = $this->getRemoteProtocol();
-    if ($remote_protocol == 'http' || $remote_protocol == 'https') {
-      // For SVN, we use `--username` and `--password` flags separately, so
-      // don't add any credentials here.
-      if (!$this->isSVN()) {
-        $credential_phid = $this->getCredentialPHID();
-        if ($credential_phid) {
-          $key = PassphrasePasswordKey::loadFromPHID(
-            $credential_phid,
-            PhabricatorUser::getOmnipotentUser());
-
-          $uri->setUser($key->getUsernameEnvelope()->openEnvelope());
-          $uri->setPass($key->getPasswordEnvelope()->openEnvelope());
-        }
-      }
-    }
 
     return new PhutilOpaqueEnvelope((string)$uri);
   }
@@ -1176,125 +1114,12 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
    * Get the "best" clone/checkout URI for this repository, on any protocol.
    */
   public function getCloneURIObject() {
-    if (!$this->isHosted()) {
-      if ($this->isSVN()) {
-        // Make sure we pick up the "Import Only" path for Subversion, so
-        // the user clones the repository starting at the correct path, not
-        // from the root.
-        $base_uri = $this->getSubversionBaseURI();
-        $base_uri = new PhutilURI($base_uri);
-        $path = $base_uri->getPath();
-        if (!$path) {
-          $path = '/';
-        }
-
-        // If the trailing "@" is not required to escape the URI, strip it for
-        // readability.
-        if (!preg_match('/@.*@/', $path)) {
-          $path = rtrim($path, '@');
-        }
-
-        $base_uri->setPath($path);
-        return $base_uri;
-      } else {
-        return $this->getRemoteURIObject();
-      }
-    }
-
-    // TODO: This should be cleaned up to deal with all the new URI handling.
-    $another_copy = id(new PhabricatorRepositoryQuery())
-      ->setViewer(PhabricatorUser::getOmnipotentUser())
-      ->withPHIDs(array($this->getPHID()))
-      ->needURIs(true)
-      ->executeOne();
-
-    $clone_uris = $another_copy->getCloneURIs();
-    if (!$clone_uris) {
-      return null;
-    }
-
-    return head($clone_uris)->getEffectiveURI();
-  }
-
-  private function getRawHTTPCloneURIObject() {
-    $uri = PhabricatorEnv::getProductionURI($this->getURI());
-    $uri = new PhutilURI($uri);
-
-    if ($this->isGit()) {
-      $uri->setPath($uri->getPath().$this->getCloneName().'.git');
-    } else if ($this->isHg()) {
-      $uri->setPath($uri->getPath().$this->getCloneName().'/');
-    }
-
-    return $uri;
+    return $this->getRemoteURIObject();
   }
 
 
-  /**
-   * Determine if we should connect to the remote using SSH flags and
-   * credentials.
-   *
-   * @return bool True to use the SSH protocol.
-   * @task uri
-   */
-  private function shouldUseSSH() {
-    if ($this->isHosted()) {
-      return false;
-    }
-
-    $protocol = $this->getRemoteProtocol();
-    if ($this->isSSHProtocol($protocol)) {
-      return true;
-    }
-
-    return false;
-  }
 
 
-  /**
-   * Determine if we should connect to the remote using HTTP flags and
-   * credentials.
-   *
-   * @return bool True to use the HTTP protocol.
-   * @task uri
-   */
-  private function shouldUseHTTP() {
-    if ($this->isHosted()) {
-      return false;
-    }
-
-    $protocol = $this->getRemoteProtocol();
-    return ($protocol == 'http' || $protocol == 'https');
-  }
-
-
-  /**
-   * Determine if we should connect to the remote using SVN flags and
-   * credentials.
-   *
-   * @return bool True to use the SVN protocol.
-   * @task uri
-   */
-  private function shouldUseSVNProtocol() {
-    if ($this->isHosted()) {
-      return false;
-    }
-
-    $protocol = $this->getRemoteProtocol();
-    return ($protocol == 'svn');
-  }
-
-
-  /**
-   * Determine if a protocol is SSH or SSH-like.
-   *
-   * @param string A protocol string, like "http" or "ssh".
-   * @return bool True if the protocol is SSH-like.
-   * @task uri
-   */
-  private function isSSHProtocol($protocol) {
-    return ($protocol == 'ssh' || $protocol == 'svn+ssh');
-  }
 
   public function delete() {
     $this->openTransaction();
@@ -1330,12 +1155,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       queryfx(
         $conn_w,
         'DELETE FROM %T WHERE repositoryID = %d',
-        self::TABLE_FILESYSTEM,
-        $this->getID());
-
-      queryfx(
-        $conn_w,
-        'DELETE FROM %T WHERE repositoryID = %d',
         self::TABLE_PATHCHANGE,
         $this->getID());
 
@@ -1356,63 +1175,9 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     return ($vcs == PhabricatorRepositoryType::REPOSITORY_TYPE_GIT);
   }
 
-  public function isSVN() {
-    $vcs = $this->getVersionControlSystem();
-    return ($vcs == PhabricatorRepositoryType::REPOSITORY_TYPE_SVN);
-  }
-
   public function isHg() {
     $vcs = $this->getVersionControlSystem();
     return ($vcs == PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL);
-  }
-
-  public function isHosted() {
-    return (bool)$this->getDetail('hosting-enabled', false);
-  }
-
-  public function setHosted($enabled) {
-    return $this->setDetail('hosting-enabled', $enabled);
-  }
-
-  public function canServeProtocol(
-    $protocol,
-    $write,
-    $is_intracluster = false) {
-
-    // See T13192. If a repository is inactive, don't serve it to users. We
-    // still synchronize it within the cluster and serve it to other repository
-    // nodes.
-    if (!$is_intracluster) {
-      if (!$this->isTracked()) {
-        return false;
-      }
-    }
-
-    $clone_uris = $this->getCloneURIs();
-    foreach ($clone_uris as $uri) {
-      if ($uri->getBuiltinProtocol() !== $protocol) {
-        continue;
-      }
-
-      $io_type = $uri->getEffectiveIoType();
-      if ($io_type == PhabricatorRepositoryURI::IO_READWRITE) {
-        return true;
-      }
-
-      if (!$write) {
-        if ($io_type == PhabricatorRepositoryURI::IO_READ) {
-          return true;
-        }
-      }
-    }
-
-    if ($write) {
-      if ($this->isReadOnly()) {
-        return false;
-      }
-    }
-
-    return false;
   }
 
   public function hasLocalWorkingCopy() {
@@ -1444,7 +1209,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
    */
   public function isWorkingCopyBare() {
     switch ($this->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         return false;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
@@ -1459,87 +1223,20 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
   public function usesLocalWorkingCopy() {
     switch ($this->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        return $this->isHosted();
       case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         return true;
     }
   }
 
-  public function getHookDirectories() {
-    $directories = array();
-    if (!$this->isHosted()) {
-      return $directories;
-    }
-
-    $root = $this->getLocalPath();
-
-    switch ($this->getVersionControlSystem()) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
-        if ($this->isWorkingCopyBare()) {
-          $directories[] = $root.'/hooks/pre-receive-phabricator.d/';
-        } else {
-          $directories[] = $root.'/.git/hooks/pre-receive-phabricator.d/';
-        }
-        break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $directories[] = $root.'/hooks/pre-commit-phabricator.d/';
-        break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
-        // NOTE: We don't support custom Mercurial hooks for now because they're
-        // messy and we can't easily just drop a `hooks.d/` directory next to
-        // the hooks.
-        break;
-    }
-
-    return $directories;
-  }
-
   public function canDestroyWorkingCopy() {
-    if ($this->isHosted()) {
-      // Never destroy hosted working copies.
-      return false;
-    }
-
     $default_path = PhabricatorEnv::getEnvConfig(
       'repository.default-local-path');
     return Filesystem::isDescendant($this->getLocalPath(), $default_path);
   }
 
   public function canUsePathTree() {
-    return !$this->isSVN();
-  }
-
-  public function canUseGitLFS() {
-    if (!$this->isGit()) {
-      return false;
-    }
-
-    if (!$this->isHosted()) {
-      return false;
-    }
-
-    if (!PhabricatorEnv::getEnvConfig('diffusion.allow-git-lfs')) {
-      return false;
-    }
-
     return true;
-  }
-
-  public function getGitLFSURI($path = null) {
-    if (!$this->canUseGitLFS()) {
-      throw new Exception(
-        pht(
-          'This repository does not support Git LFS, so Git LFS URIs can '.
-          'not be generated for it.'));
-    }
-
-    $uri = $this->getRawHTTPCloneURIObject();
-    $uri = (string)$uri;
-    $uri = $uri.'/'.$path;
-
-    return $uri;
   }
 
   public function canMirror() {
@@ -1548,33 +1245,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     }
 
     return false;
-  }
-
-  public function canAllowDangerousChanges() {
-    if (!$this->isHosted()) {
-      return false;
-    }
-
-    // In Git and Mercurial, ref deletions and rewrites are dangerous.
-    // In Subversion, editing revprops is dangerous.
-
-    return true;
-  }
-
-  public function shouldAllowDangerousChanges() {
-    return (bool)$this->getDetail('allow-dangerous-changes');
-  }
-
-  public function canAllowEnormousChanges() {
-    if (!$this->isHosted()) {
-      return false;
-    }
-
-    return true;
-  }
-
-  public function shouldAllowEnormousChanges() {
-    return (bool)$this->getDetail('allow-enormous-changes');
   }
 
   public function writeStatusMessage(
@@ -1660,8 +1330,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
       case 'http':
       case 'https':
       case 'git':
-      case 'svn':
-      case 'svn+ssh':
         break;
       default:
         // NOTE: We're explicitly rejecting 'file://' because it can be
@@ -1671,13 +1339,11 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
         throw new Exception(
           pht(
             'The URI protocol is unrecognized. It should begin with '.
-            '"%s", "%s", "%s", "%s", "%s", "%s", or be in the form "%s".',
+            '"%s", "%s", "%s", "%s", or be in the form "%s".',
             'ssh://',
             'http://',
             'https://',
             'git://',
-            'svn://',
-            'svn+ssh://',
             'git@domain.com:path'));
     }
 
@@ -1805,22 +1471,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     }
 
     return $this->getDefaultCopyTimeLimit();
-  }
-
-  public function getFilesizeLimit() {
-    return $this->getDetail('limit.filesize');
-  }
-
-  public function setFilesizeLimit($limit) {
-    return $this->setDetail('limit.filesize', $limit);
-  }
-
-  public function getTouchLimit() {
-    return $this->getDetail('limit.touch');
-  }
-
-  public function setTouchLimit($limit) {
-    return $this->setDetail('limit.touch', $limit);
   }
 
   /**
@@ -2072,10 +1722,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
 
   public function supportsRefs() {
-    if ($this->isSVN()) {
-      return false;
-    }
-
     return true;
   }
 
@@ -2365,42 +2011,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
 
   public function attachURIs(array $uris) {
-    $custom_map = array();
-    foreach ($uris as $key => $uri) {
-      $builtin_key = $uri->getRepositoryURIBuiltinKey();
-      if ($builtin_key !== null) {
-        $custom_map[$builtin_key] = $key;
-      }
-    }
-
-    $builtin_uris = $this->newBuiltinURIs();
-    $seen_builtins = array();
-    foreach ($builtin_uris as $builtin_uri) {
-      $builtin_key = $builtin_uri->getRepositoryURIBuiltinKey();
-      $seen_builtins[$builtin_key] = true;
-
-      // If this builtin URI is disabled, don't attach it and remove the
-      // persisted version if it exists.
-      if ($builtin_uri->getIsDisabled()) {
-        if (isset($custom_map[$builtin_key])) {
-          unset($uris[$custom_map[$builtin_key]]);
-        }
-        continue;
-      }
-
-      // If the URI exists, make sure it's marked as not being disabled.
-      if (isset($custom_map[$builtin_key])) {
-        $uris[$custom_map[$builtin_key]]->setIsDisabled(false);
-      }
-    }
-
-    // Remove any builtins which no longer exist.
-    foreach ($custom_map as $builtin_key => $key) {
-      if (empty($seen_builtins[$builtin_key])) {
-        unset($uris[$key]);
-      }
-    }
-
     $this->uris = $uris;
 
     return $this;
@@ -2410,97 +2020,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     return $this->assertAttached($this->uris);
   }
 
-  public function getCloneURIs() {
-    $uris = $this->getURIs();
-
-    $clone = array();
-    foreach ($uris as $uri) {
-      if (!$uri->isBuiltin()) {
-        continue;
-      }
-
-      if ($uri->getIsDisabled()) {
-        continue;
-      }
-
-      $io_type = $uri->getEffectiveIoType();
-      $is_clone =
-        ($io_type == PhabricatorRepositoryURI::IO_READ) ||
-        ($io_type == PhabricatorRepositoryURI::IO_READWRITE);
-
-      if (!$is_clone) {
-        continue;
-      }
-
-      $clone[] = $uri;
-    }
-
-    $clone = msort($clone, 'getURIScore');
-    $clone = array_reverse($clone);
-
-    return $clone;
-  }
-
-
-  public function newBuiltinURIs() {
-    $has_callsign = ($this->getCallsign() !== null);
-    $has_shortname = ($this->getRepositorySlug() !== null);
-
-    $identifier_map = array(
-      PhabricatorRepositoryURI::BUILTIN_IDENTIFIER_CALLSIGN => $has_callsign,
-      PhabricatorRepositoryURI::BUILTIN_IDENTIFIER_SHORTNAME => $has_shortname,
-      PhabricatorRepositoryURI::BUILTIN_IDENTIFIER_ID => true,
-    );
-
-    // If the view policy of the repository is public, support anonymous HTTP
-    // even if authenticated HTTP is not supported.
-    if ($this->getViewPolicy() === PhabricatorPolicies::POLICY_PUBLIC) {
-      $allow_http = true;
-    } else {
-      $allow_http = PhabricatorEnv::getEnvConfig('diffusion.allow-http-auth');
-    }
-
-    $base_uri = PhabricatorEnv::getURI('/');
-    $base_uri = new PhutilURI($base_uri);
-    $has_https = ($base_uri->getProtocol() == 'https');
-    $has_https = ($has_https && $allow_http);
-
-    $has_http = !PhabricatorEnv::getEnvConfig('security.require-https');
-    $has_http = ($has_http && $allow_http);
-
-    // HTTP is not supported for Subversion.
-    if ($this->isSVN()) {
-      $has_http = false;
-      $has_https = false;
-    }
-
-    $phd_user = PhabricatorEnv::getEnvConfig('phd.user');
-    $has_ssh = phutil_nonempty_string($phd_user);
-
-    $protocol_map = array(
-      PhabricatorRepositoryURI::BUILTIN_PROTOCOL_SSH => $has_ssh,
-      PhabricatorRepositoryURI::BUILTIN_PROTOCOL_HTTPS => $has_https,
-      PhabricatorRepositoryURI::BUILTIN_PROTOCOL_HTTP => $has_http,
-    );
-
-    $uris = array();
-    foreach ($protocol_map as $protocol => $proto_supported) {
-      foreach ($identifier_map as $identifier => $id_supported) {
-        // This is just a dummy value because it can't be empty; we'll force
-        // it to a proper value when using it in the UI.
-        $builtin_uri = "{$protocol}://{$identifier}";
-        $uris[] = PhabricatorRepositoryURI::initializeNewURI()
-          ->setRepositoryPHID($this->getPHID())
-          ->attachRepository($this)
-          ->setBuiltinProtocol($protocol)
-          ->setBuiltinIdentifier($identifier)
-          ->setURI($builtin_uri)
-          ->setIsDisabled((int)(!$proto_supported || !$id_supported));
-      }
-    }
-
-    return $uris;
-  }
 
 
   public function getClusterRepositoryURIFromBinding(
@@ -2609,7 +2128,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
     return array(
       PhabricatorPolicyCapability::CAN_VIEW,
       PhabricatorPolicyCapability::CAN_EDIT,
-      DiffusionPushCapability::CAPABILITY,
     );
   }
 
@@ -2619,8 +2137,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
         return $this->getViewPolicy();
       case PhabricatorPolicyCapability::CAN_EDIT:
         return $this->getEditPolicy();
-      case DiffusionPushCapability::CAPABILITY:
-        return $this->getPushPolicy();
     }
   }
 
@@ -2677,14 +2193,6 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
 
       PhabricatorRepositoryURIIndex::updateRepositoryURIs($phid, array());
 
-      $lfs_refs = id(new PhabricatorRepositoryGitLFSRefQuery())
-        ->setViewer($engine->getViewer())
-        ->withRepositoryPHIDs(array($phid))
-        ->execute();
-      foreach ($lfs_refs as $ref) {
-        $engine->destroyObject($ref);
-      }
-
     $this->saveTransaction();
   }
 
@@ -2717,7 +2225,7 @@ final class PhabricatorRepository extends PhabricatorRepositoryDAO
         ->setKey('vcs')
         ->setType('string')
         ->setDescription(
-          pht('The VCS this repository uses ("git", "hg" or "svn").')),
+          pht('The VCS this repository uses ("git" or "hg").')),
       id(new PhabricatorConduitSearchFieldSpecification())
         ->setKey('callsign')
         ->setType('string')

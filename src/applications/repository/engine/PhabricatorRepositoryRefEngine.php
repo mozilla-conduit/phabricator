@@ -33,10 +33,6 @@ final class PhabricatorRepositoryRefEngine
 
     $vcs = $repository->getVersionControlSystem();
     switch ($vcs) {
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        // No meaningful refs of any type in Subversion.
-        $maps = array();
-        break;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $branches = $this->loadMercurialBranchPositions($repository);
         $bookmarks = $this->loadMercurialBookmarkPositions($repository);
@@ -514,9 +510,6 @@ final class PhabricatorRepositoryRefEngine
     switch ($vcs) {
       case PhabricatorRepositoryType::REPOSITORY_TYPE_GIT:
         $class = 'PhabricatorRepositoryGitCommitMessageParserWorker';
-        break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
-        $class = 'PhabricatorRepositorySvnCommitMessageParserWorker';
         break;
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $class = 'PhabricatorRepositoryMercurialCommitMessageParserWorker';

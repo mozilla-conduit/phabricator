@@ -64,17 +64,6 @@ final class PhabricatorRepositoryEditor
     }
 
     if ($this->getIsNewObject()) {
-      // The default state of repositories is to be hosted, if they are
-      // enabled without configuring any "Observe" URIs.
-      $object->setHosted(true);
-      $object->save();
-
-      // Create this repository's builtin URIs.
-      $builtin_uris = $object->newBuiltinURIs();
-      foreach ($builtin_uris as $uri) {
-        $uri->save();
-      }
-
       id(new DiffusionRepositoryClusterEngine())
         ->setViewer($this->getActor())
         ->setRepository($object)

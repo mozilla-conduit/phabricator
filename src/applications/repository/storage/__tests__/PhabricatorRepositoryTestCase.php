@@ -10,7 +10,6 @@ final class PhabricatorRepositoryTestCase
       'ssh://user@domain.com/path'  => 'ssh',
       'git@example.com:path'        => 'ssh',
       'git://git@example.com/path'  => 'git',
-      'svn+ssh://example.com/path'  => 'svn+ssh',
       'https://example.com/repo/'   => 'https',
       'http://example.com/'         => 'http',
       'https://user@example.com/'   => 'https',
@@ -46,58 +45,6 @@ final class PhabricatorRepositoryTestCase
     $this->assertFalse(
       $repo->shouldTrackBranch('imaginary'),
       pht('Do not track unlisted branches.'));
-  }
-
-  public function testSubversionPathInfo() {
-    $svn = PhabricatorRepositoryType::REPOSITORY_TYPE_SVN;
-
-    $repo = new PhabricatorRepository();
-    $repo->setVersionControlSystem($svn);
-
-    $repo->setDetail('remote-uri', 'http://svn.example.com/repo');
-    $this->assertEqual(
-      'http://svn.example.com/repo',
-      $repo->getSubversionPathURI());
-
-    $repo->setDetail('remote-uri', 'http://svn.example.com/repo/');
-    $this->assertEqual(
-      'http://svn.example.com/repo',
-      $repo->getSubversionPathURI());
-
-    $repo->setDetail('hosting-enabled', true);
-
-    $repo->setLocalPath('/var/repo/SVN');
-    $this->assertEqual(
-      'file:///var/repo/SVN',
-      $repo->getSubversionPathURI());
-
-    $repo->setLocalPath('/var/repo/SVN/');
-    $this->assertEqual(
-      'file:///var/repo/SVN',
-      $repo->getSubversionPathURI());
-
-    $this->assertEqual(
-      'file:///var/repo/SVN/a@',
-      $repo->getSubversionPathURI('a'));
-
-    $this->assertEqual(
-      'file:///var/repo/SVN/a@1',
-      $repo->getSubversionPathURI('a', 1));
-
-    $this->assertEqual(
-      'file:///var/repo/SVN/%3F@22',
-      $repo->getSubversionPathURI('?', 22));
-
-    $repo->setDetail('svn-subpath', 'quack/trunk/');
-
-    $this->assertEqual(
-      'file:///var/repo/SVN/quack/trunk/@',
-      $repo->getSubversionBaseURI());
-
-    $this->assertEqual(
-      'file:///var/repo/SVN/quack/trunk/@HEAD',
-      $repo->getSubversionBaseURI('HEAD'));
-
   }
 
   public function testRepositoryShortNameValidation() {

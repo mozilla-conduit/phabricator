@@ -25,11 +25,9 @@ final class DifferentialGetWorkingCopy extends Phobject {
         $origin_path,
         $path);
 
-      if (!$repo->isHosted()) {
-        id(new ArcanistGitAPI($path))->execxLocal(
-          'remote set-url origin %s',
-          $repo->getRemoteURI());
-      }
+      id(new ArcanistGitAPI($path))->execxLocal(
+        'remote set-url origin %s',
+        $repo->getRemoteURI());
     }
 
     $workspace = new ArcanistGitAPI($path);

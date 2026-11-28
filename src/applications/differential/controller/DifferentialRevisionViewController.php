@@ -1063,7 +1063,6 @@ final class DifferentialRevisionViewController
       case PhabricatorRepositoryType::REPOSITORY_TYPE_MERCURIAL:
         $raw_diff = $bundle->toGitPatch();
         break;
-      case PhabricatorRepositoryType::REPOSITORY_TYPE_SVN:
       default:
         $raw_diff = $bundle->toUnifiedDiff();
         break;
