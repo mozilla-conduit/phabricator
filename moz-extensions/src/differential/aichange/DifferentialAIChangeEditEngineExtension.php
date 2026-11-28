@@ -29,6 +29,9 @@ final class DifferentialAIChangeEditEngineExtension
     PhabricatorEditEngine $engine,
     PhabricatorApplicationTransactionInterface $object) {
 
+    $text_limits =
+      DifferentialRevisionAIChangeRequestTransaction::getTextLimits();
+
     return array(
       id(new PhabricatorConduitEditField())
         ->setKey(
@@ -51,8 +54,11 @@ final class DifferentialAIChangeEditEngineExtension
             'Map with "kind" ("merge-conflict" or "requested-edit"), '.
             '"changeDiffID" (the active diff), and optional '.
             '"baseDiffID" (the diff to compare with), "summary", '.
-            '"confidence" and "details" (remarkup), at most 32768, 64 and '.
-            '32768 bytes long.')),
+            '"confidence" and "details" (remarkup), at most %s, %s and '.
+            '%s bytes long.',
+            $text_limits[DifferentialAIChange::KEY_SUMMARY],
+            $text_limits[DifferentialAIChange::KEY_CONFIDENCE],
+            $text_limits[DifferentialAIChange::KEY_DETAILS])),
     );
   }
 
